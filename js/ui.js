@@ -23,7 +23,7 @@ const UI = {
       character: $('character-screen'), arena: $('arena-screen'),
       arenaRound: $('arena-round'), arenaCoins: $('arena-coins'), arenaBest: $('arena-best'),
       arenaLeft: $('arena-left'), arenaRecord: $('arena-record'),
-      winKills: $('win-kills'), winCoins: $('win-coins'),
+      winKills: $('win-kills'), winCoins: $('win-coins'), winReplayNote: $('win-replay-note'),
       loseKills: $('lose-kills'), loseCoins: $('lose-coins'), loseTitle: $('lose-title'),
     };
 
@@ -419,6 +419,7 @@ const UI = {
   showWin(stats) {
     this.el.winKills.textContent = stats.kills;
     this.el.winCoins.textContent = stats.coins;
+    this.el.winReplayNote.classList.toggle('hidden', !stats.replay);
     this.show('win');
   },
   showLose(stats) {

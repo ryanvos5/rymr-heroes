@@ -41,6 +41,8 @@ const Game = {
     this.worldId = worldId;
     this.level = level;
     UI.viewWorld = worldId; // level-select toont daarna deze wereld
+    // al eerder voltooid? dan bij herhaling maar 15 munten (geen farmen)
+    this.levelWasCleared = Storage.highestCleared(worldId) >= levelId;
 
     this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter);
     // dubbel-jump vanaf wereld 2
@@ -111,6 +113,7 @@ const Game = {
     this.rockets = Storage.data.rockets;
     this.time = 0;
     this.theme = THEMES.arena;
+    this.levelWasCleared = false;
     this.tutorials = []; this.tutorialMsg = ''; this.tutorialUntil = 0;
     this.buildBackdrop(ARENA_LEVEL);
     this.beginRound(1);
@@ -405,6 +408,7 @@ const Game = {
 
   onZombieKilled(z, reward) {
     if (this.level.arena) reward = Math.ceil(reward * ARENA_COIN_MULT); // minder munten in de arena
+    else if (this.levelWasCleared) reward = 0;                          // herhaald level: geen kill-munten
     this.runCoins += reward;
     this.runKills += 1;
     if (this.level.arena) this.roundKills += 1;
@@ -644,9 +648,10 @@ const Game = {
     Storage.clearLevel(this.worldId, this.level.id);
     Storage.setAmmo(this.ammo);                  // kogel-eindstand blijft behouden
     Storage.setRockets(this.rockets);            // raket-eindstand blijft behouden
-    const total = this.runCoins + this.level.reward;
+    // herhaald level = vaste 15 munten (geen farmen); eerste keer = volle beloning
+    const total = this.levelWasCleared ? 15 : (this.runCoins + this.level.reward);
     Storage.addCoins(total);
-    UI.showWin({ kills: this.runKills, coins: total });
+    UI.showWin({ kills: this.runKills, coins: total, replay: this.levelWasCleared });
   },
   lose() {
     if (this.state !== 'playing') return;
