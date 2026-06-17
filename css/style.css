@@ -222,6 +222,7 @@ body.fs #fs-btn { color: var(--accent); border-color: var(--accent); }
 /* op touch: health/munten/wapen bovenin (onder de voortgangsbalk) i.p.v. onderaan */
 body.is-touch #hud { justify-content: flex-start; gap: 8px; }
 .touch-left, .touch-right { display: flex; gap: 16px; pointer-events: auto; align-items: flex-end; }
+.fire-stack { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .tbtn {
   width: 74px;
   height: 74px;
