@@ -335,6 +335,7 @@ const WORLDS = [
 /* ---------- ZOMBIE KNOCK-OUT (arena wave-survival) ---------- */
 const ARENA_PLAYS_PER_DAY = 3;   // max keer per dag
 const ARENA_START_AMMO = 150;    // startmunitie per potje (los van je voorraad)
+const ARENA_COIN_MULT = 0.3;     // munten per kill in de arena (lager dan verhaalmodus)
 // het "level"-object voor de arena (bounded, geen finish/checkpoint)
 const ARENA_LEVEL = {
   id: 0, name: 'Arena', theme: 'arena', mode: 'arena', arena: true,
@@ -352,6 +353,6 @@ function arenaRound(round) {
     bruteChance: round >= 6 ? Math.min(0.28, 0.03 + t * 0.025) : 0,
     maxAlive: Math.min(11, 3 + Math.floor(t * 0.7)),
     spawnEvery: Math.max(450, 1300 - t * 70),
-    bonus: 20 + round * 10,                                   // munten per voltooide ronde
+    bonus: 5 + round * 3,                                     // munten per voltooide ronde (bescheiden)
   };
 }

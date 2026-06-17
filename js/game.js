@@ -355,6 +355,7 @@ const Game = {
   },
 
   onZombieKilled(z, reward) {
+    if (this.level.arena) reward = Math.ceil(reward * ARENA_COIN_MULT); // minder munten in de arena
     this.runCoins += reward;
     this.runKills += 1;
     if (this.level.arena) this.roundKills += 1;
