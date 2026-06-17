@@ -335,9 +335,10 @@ class Zombie {
         const d = Math.hypot(dxp, dyp) || 1;
         this.x += (dxp / d) * this.speed * s;
         this.y += (dyp / d) * this.speed * 0.65 * s + Math.sin(game.time / 180 + this.tint) * 0.4;
-        if (Math.abs(player.x - this.x) < this.reach && Math.abs((player.y - 16) - this.y) < 18 &&
-            game.time - this.lastBite > t.biteCd) {
-          this.bite(game, player);
+        // aanraking met een vogel = direct dood
+        if (Math.abs(player.x - this.x) < this.reach && Math.abs((player.y - 16) - this.y) < 18) {
+          game.spawnBlood(player.x, player.y - 16);
+          player.takeDamage(9999);
         }
       }
       this.walkTimer += dt;
