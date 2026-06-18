@@ -155,6 +155,19 @@ const CHARACTERS = {
     },
     desc: 'Lang & taai (+10 HP). Meleeknop = schildbash + blok (3s cooldown). Alleen het schild als melee.'
   },
+  vince: {
+    id: 'vince', name: 'Vince', cost: 850,
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'spiky',
+    fireAura: true,
+    palette: {
+      hair: '#1a1a1a', hairDark: '#000000',     // zwarte stekels
+      skin: '#d8a878', skinDark: '#b8895e',
+      eye: '#3a2414',                            // bruine ogen
+      shirt: '#7a2e1e', shirtDark: '#4a1c12',    // vurig roodbruin
+      pants: '#22201e', shoe: '#0e0e0e',
+    },
+    desc: 'Gebalanceerd. Elke 30s een vuuraura (5s): wie je dan aanraakt brandt 3s.'
+  },
   jenze: {
     id: 'jenze', name: 'Jenze', cost: 450,
     maxHp: 140, speedMul: 0.9, meleeMul: 1.3, build: 'bulky', hair: 'curly',
@@ -168,7 +181,7 @@ const CHARACTERS = {
     desc: 'Fors & taai: +40 HP, +30% melee, iets trager.'
   },
 };
-const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo'];
+const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince'];
 const SHIELD_BLOCK_CD = 3000;   // ms cooldown nadat Tygo's schild een treffer blokt
 
 /* ---------- LEVELS (Wereld 1: Verlaten Stad) ----------

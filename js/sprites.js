@@ -21,6 +21,7 @@ const Sprites = {
     const bulky = pose.build === 'bulky';
     const tall = pose.build === 'tall';
     const curly = pose.hair === 'curly';
+    const spiky = pose.hair === 'spiky';
 
     // breedtes (fors = breder lijf, lang = dunner lijf)
     const bh = bulky ? 6 : (tall ? 4 : 5);   // halve romp-breedte
@@ -58,7 +59,19 @@ const Sprites = {
     this.px(ctx, pal.skinDark, cx - hh, headTop, 2, headH);
 
     // --- haar ---
-    if (curly) {
+    if (spiky) {
+      // basis + opstaande zwarte stekels
+      this.px(ctx, pal.hair, cx - hh - 1, headTop - 1, hh * 2 + 2, 3);
+      this.px(ctx, pal.hair, cx - hh - 1, headTop, 2, 4);                  // links
+      this.px(ctx, pal.hair, cx + hh - 1, headTop, 2, 4);                  // rechts
+      const heights = [4, 6, 3, 7, 4, 6, 3];
+      for (let i = 0; i < heights.length; i++) {
+        const sxp = cx - hh - 1 + i * 2;
+        if (sxp > cx + hh) break;
+        this.px(ctx, pal.hair, sxp, headTop - 1 - heights[i], 2, heights[i] + 1);
+        this.px(ctx, pal.hairDark, sxp, headTop - 1 - heights[i], 1, heights[i] + 1);
+      }
+    } else if (curly) {
       // bobbelige krullen bovenop + aan de zijkanten
       for (let i = -hh - 1; i <= hh - 1; i += 2) {
         this.px(ctx, pal.hair, cx + i, headTop - 3, 3, 4);

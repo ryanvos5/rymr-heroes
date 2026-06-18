@@ -365,6 +365,7 @@ const UI = {
       onState: (s) => Game.onVersusState(s),
       onHit: (p) => Game.onVersusHit(p),
       onFell: () => Game.onVersusFell(),
+      onBurn: () => Game.onVersusBurn(),
       onPeerLeft: () => { if (Game.state === 'versus') Game.endVersus(true); },
     };
   },

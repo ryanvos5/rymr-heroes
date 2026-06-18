@@ -39,6 +39,13 @@ class Player {
     this.maxJumps = 1;   // wordt 2 in wereld 2 (dubbel-jump)
     this.jumps = 1;
     this.jumping = false; // bezig met een (variabele) sprong
+    // Vince: vuuraura — elke 30s, 5s lang; aanraking geeft 3s burn
+    this.fireAura = !!ch.fireAura;
+    this.auraNextAt = 30000;   // eerste aura na 30s spelen
+    this.auraUntil = 0;
+    this._auraOn = false;
+    this.burnUntil = 0;        // brandt de speler zelf (versus)
+    this.burnNextTick = 0;
   }
 
   get height() { return this.ducking ? 20 : 29; }
@@ -84,6 +91,38 @@ class Player {
       this._blockedHit = false;
       game.spawnArmorSpark(this.x + this.dir * 14, this.y - 16);
       game.shake = Math.max(game.shake, 4);
+    }
+
+    // Vince: vuuraura (elke 30s, 5s lang) — aanraking zet zombies in brand
+    if (this.fireAura) {
+      if (game.time >= this.auraNextAt) {
+        this.auraUntil = game.time + 5000;          // 5s actief
+        this.auraNextAt = game.time + 30000;        // weer over 30s
+      }
+      this._auraOn = game.time < this.auraUntil;
+      if (this._auraOn) {
+        // vuur-deeltjes om Vince heen
+        if (game.particles && game.particles.length < 240) {
+          for (let i = 0; i < 2; i++) {
+            const a = Math.random() * Math.PI * 2, r = 10 + Math.random() * 8;
+            game.particles.push(new Particle(
+              this.x + Math.cos(a) * r, this.y - 14 + Math.sin(a) * 12,
+              (Math.random() - 0.5) * 0.6, -0.6 - Math.random() * 0.8,
+              Math.random() < 0.5 ? '#ff8a2a' : '#ffd24a', 360, 2));
+          }
+        }
+        // zombies binnen de aura in brand zetten (3s)
+        for (const z of game.zombies) {
+          if (z.alive && Math.abs(z.x - this.x) < 22 && Math.abs(z.cy - (this.y - 14)) < 24) {
+            z.burnUntil = game.time + 3000;
+          }
+        }
+      }
+    }
+
+    // brandt de speler zelf? (versus) -> schade over tijd
+    if (this.burnUntil > game.time) {
+      if (game.time >= this.burnNextTick) { this.burnNextTick = game.time + 500; this.takeDamage(7); }
     }
 
     // snelheid (power-up + duik-loop is langzamer)
@@ -353,6 +392,16 @@ class Zombie {
 
   update(dt, game) {
     if (!this.alive) return;
+    // brandwond (Vince' vuuraura): schade over tijd + vuurdeeltjes
+    if (this.burnUntil && this.burnUntil > game.time) {
+      if (game.time >= (this.burnNextTick || 0)) {
+        this.burnNextTick = game.time + 500;
+        if (game.particles && game.particles.length < 260)
+          game.particles.push(new Particle(this.x + (Math.random() - 0.5) * 8, this.cy - 4, (Math.random() - 0.5) * 0.5, -0.8, '#ff8a2a', 320, 2));
+        this.takeDamage(6, 0, game, 0);
+        if (!this.alive) return;
+      }
+    }
     // de baas blijft staan tot de speler begint te lopen
     if (this.type.spawner && !game.spawnArmed) return;
     const s = game.dtScale;

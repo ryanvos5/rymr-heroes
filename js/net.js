@@ -223,6 +223,7 @@ const Net = {
     ch.on('broadcast', { event: 'state' }, (m) => { if (v.cbs.onState) v.cbs.onState(m.payload); });
     ch.on('broadcast', { event: 'hit' }, (m) => { if (v.cbs.onHit) v.cbs.onHit(m.payload); });
     ch.on('broadcast', { event: 'fell' }, (m) => { if (v.cbs.onFell) v.cbs.onFell(m.payload); });
+    ch.on('broadcast', { event: 'burn' }, (m) => { if (v.cbs.onBurn) v.cbs.onBurn(m.payload); });
     ch.on('broadcast', { event: 'bye' }, () => { if (v.cbs.onPeerLeft) v.cbs.onPeerLeft(); });
     await new Promise((resolve, reject) => {
       let done = false;

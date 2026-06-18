@@ -1143,6 +1143,7 @@ const Game = {
       onState: (s) => this.onVersusState(s),
       onHit: (p) => this.onVersusHit(p),
       onFell: () => this.onVersusFell(),
+      onBurn: () => this.onVersusBurn(),
     });
     this.state = 'versus';
     Input.clear();
@@ -1170,8 +1171,13 @@ const Game = {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       this.player.update(dt, this);                  // eigen speler: volledige besturing/fysica
       this.checkVersusHit();
-      // eraf gevallen -> punt voor de tegenstander
-      if (this.player.y > FALL_DEATH_Y && !this.player.dead) this.localFell();
+      // Vince-vuuraura raakt de tegenstander -> stuur een burn (max ~1x/0.6s)
+      if (this.player.fireAura && this.player._auraOn && v.remote.alive &&
+          Math.abs(v.remote.x - this.player.x) < 24 && Math.abs(v.remote.y - this.player.y) < 26) {
+        if (this.time >= (v.burnSentAt || 0)) { v.burnSentAt = this.time + 600; if (window.Net) Net.versusSend('burn', {}); }
+      }
+      // eraf gevallen of doodgebrand -> punt voor de tegenstander
+      if (!this.player.dead && (this.player.y > FALL_DEATH_Y || this.player.hp <= 0)) this.localFell();
     }
 
     // partikels
@@ -1229,11 +1235,18 @@ const Game = {
     this.player.x = sp.x; this.player.y = sp.y; this.player.dir = sp.dir;
     this.player.vy = 0; this.player.knockVx = 0; this.player.onGround = true;
     this.player.dead = false; this.player.respawnInvuln = 1300;
+    this.player.hp = this.player.maxHp; this.player.burnUntil = 0;   // fris (ook na burn-dood)
   },
 
   onVersusFell() {
     this.vs.myScore++;
     if (this.vs.myScore >= this.vs.target) this.endVersus(true);
+  },
+
+  onVersusBurn() {
+    const p = this.player;
+    if (p.respawnInvuln > 0 || p.dead) return;
+    p.burnUntil = this.time + 3000;     // 3s branden
   },
 
   onVersusState(s) {
