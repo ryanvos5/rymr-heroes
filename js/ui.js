@@ -84,7 +84,7 @@ const UI = {
     $('btn-versus').onclick = () => this.openVersusLobby();
     $('btn-vs-host').onclick = () => this.versusHost();
     $('btn-vs-join').onclick = () => this.versusJoin();
-    $('btn-vs-bot').onclick = () => this.startBotMatch();
+    $('btn-vs-bot').onclick = () => this.openBotSetup();
     $('btn-vs-quit').onclick = () => Game.quitVersus();
     $('btn-vs-again').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
     $('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.show('menu'); };
@@ -424,12 +424,31 @@ const UI = {
     } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '⚠ ' + (e.message || e); }
   },
 
-  // tegen de bot spelen (lokaal, willekeurige map, geen XP)
-  startBotMatch() {
+  // bot-setup: kies map + wapenmodus, dan START
+  openBotSetup() {
     this.leaveLobby();
+    this._botSetup = true;
+    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'melee' };
+    document.getElementById('versus-lobby').classList.add('hidden');
+    document.getElementById('versus-result').classList.add('hidden');
+    document.getElementById('versus-wait').classList.remove('hidden');
+    document.querySelector('.vs-wait-label').classList.add('hidden');     // geen kamercode bij bot
+    document.getElementById('vs-peer-status').textContent = 'Kies een map en speel tegen de bot:';
+    document.getElementById('vs-lobby-opts').classList.remove('hidden');
+    this.renderMapVote();
+    document.querySelectorAll('.vs-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'melee'));
+    document.getElementById('btn-vs-ready').textContent = '▶ START';
+    document.getElementById('btn-vs-ready').classList.remove('on');
+    document.getElementById('vs-ready-status').textContent = '🤖 Oefenpotje — geen XP';
+    this.show('versus');
+  },
+
+  // tegen de bot spelen (lokaal, gekozen map, geen XP)
+  startBotMatch() {
+    this._botSetup = false;
     this._vsStarted = true;
-    const map = VERSUS_MAPS[Math.floor(Math.random() * VERSUS_MAPS.length)];
-    Game.startVersus('host', { mapId: map.id, mode: 'melee', bot: true });
+    document.querySelector('.vs-wait-label').classList.remove('hidden');
+    Game.startVersus('host', { mapId: this._myVote.map, mode: this._myVote.mode, bot: true });
   },
 
   // in een kamer: toon code, wacht op tegenstander
@@ -467,16 +486,19 @@ const UI = {
   },
 
   setVoteMap(id) {
-    if (this._myReady) return;          // tijdens ready niet wisselen
+    if (!this._botSetup && this._myReady) return;       // tijdens ready niet wisselen
     this._myVote.map = id;
-    this.renderMapVote(); this.refreshLobby(); this.broadcastLobby();
+    this.renderMapVote();
+    if (!this._botSetup) { this.refreshLobby(); this.broadcastLobby(); }
   },
   setVoteMode(mode) {
-    if (this._myReady) return;
+    if (!this._botSetup && this._myReady) return;
     this._myVote.mode = mode;
-    this.refreshLobby(); this.broadcastLobby();
+    document.querySelectorAll('.vs-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+    if (!this._botSetup) { this.refreshLobby(); this.broadcastLobby(); }
   },
   toggleReady() {
+    if (this._botSetup) { this.startBotMatch(); return; }   // in bot-setup = START
     this._myReady = !this._myReady;
     this.broadcastLobby(); this.refreshLobby(); this.checkBothReady();
   },
@@ -551,7 +573,9 @@ const UI = {
 
   leaveLobby() {
     this.cancelCountdown();
-    this._vsStarted = false; this._peer = null; this._myReady = false;
+    this._vsStarted = false; this._peer = null; this._myReady = false; this._botSetup = false;
+    const lbl = document.querySelector('.vs-wait-label'); if (lbl) lbl.classList.remove('hidden');
+    const rb = document.getElementById('btn-vs-ready'); if (rb) { rb.textContent = 'READY'; rb.classList.remove('on'); }
     if (window.Net) Net.leaveVersus();
   },
 

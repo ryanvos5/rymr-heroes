@@ -1389,39 +1389,47 @@ const Game = {
     const inp = { left: false, right: false, jump: false, duck: false, attack: false, melee: false, jumpPressed: false };
     if (b.dead) return inp;
     const dx = p.x - b.x;
+    const face = () => { if (Math.abs(dx) > 8) b.dir = dx > 0 ? 1 : -1; };   // hysterese: niet flippen bij kleine afstand
 
-    // RECOVERY: in de lucht boven de leegte -> terug naar het dichtstbijzijnde platform
+    // RECOVERY: in de lucht boven de leegte -> rustig terug naar het dichtstbijzijnde platform
     if (!b.onGround) {
-      const safe = this.nearestPlatform(b.x);
+      const safe = this.platformUnder(p) ? (Math.abs(this.platformUnder(p).x - b.x) < 120 ? this.platformUnder(p) : this.nearestPlatform(b.x)) : this.nearestPlatform(b.x);
       if (safe) {
-        if (safe.x > b.x + 4) inp.right = true; else if (safe.x < b.x - 4) inp.left = true;
-        if (b.vy > 1 && b.y > safe.y + 4 && b.jumps > 0 && now >= b._jumpCd) {
-          inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 250;   // dubbel-jump om terug te komen
+        if (safe.x > b.x + 8) inp.right = true; else if (safe.x < b.x - 8) inp.left = true; else face();
+        // alleen dubbel-jumpen als hij écht onder platformhoogte zakt (geen gespartel)
+        if (b.vy > 1.5 && b.y > safe.y + 10 && b.jumps > 0 && now >= b._jumpCd) {
+          inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 350;
         }
       }
-      if (Math.abs(dx) < 28 && Math.abs(p.y - b.y) < 26) inp.melee = true;   // mep ook in de lucht
+      if (Math.abs(dx) < 30 && Math.abs(p.y - b.y) < 26) { inp.melee = true; face(); }
       return inp;
     }
 
-    if (now >= b._think) { b._think = now + 90 + Math.random() * 70; }
     const cur = this.platformUnder(b);
     const tgt = this.platformUnder(p) || this.nearestPlatform(p.x);
 
     if (cur && tgt && cur !== tgt) {
-      // naar het platform van de speler springen
+      // naar het platform van de speler bewegen + één doelgerichte sprong
       const tdx = tgt.x - b.x;
-      if (tdx > 4) inp.right = true; else if (tdx < -4) inp.left = true;
-      if (now >= b._jumpCd) { inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 600; }
+      if (tdx > 10) inp.right = true; else if (tdx < -10) inp.left = true; else face();
+      // pas springen als hij richting het doel aan de rand staat (natuurlijker dan continu hoppen)
+      const eL = cur.x - cur.w / 2, eR = cur.x + cur.w / 2;
+      const nearEdgeToTarget = (tdx > 0 && b.x > eR - 14) || (tdx < 0 && b.x < eL + 14);
+      if ((nearEdgeToTarget || tgt.y < cur.y - 8) && now >= b._jumpCd) {
+        inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 650;
+      }
     } else {
-      // zelfde platform: nader de speler en mep van dichtbij
-      if (Math.abs(dx) > 22) { if (dx > 0) inp.right = true; else inp.left = true; }
-      if (Math.abs(dx) < 30 && Math.abs(p.y - b.y) < 24) inp.melee = true;
-      if (p.y < b.y - 16 && Math.abs(dx) < 60 && now >= b._jumpCd) { inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 600; }
+      // zelfde platform: nader met een deadzone (geen jitter), mep van dichtbij
+      const aDx = Math.abs(dx);
+      if (aDx > 28) { if (dx > 0) inp.right = true; else inp.left = true; }
+      else face();                                     // dichtbij genoeg -> stilstaan en kijken
+      if (aDx < 32 && Math.abs(p.y - b.y) < 24) { inp.melee = true; face(); }
+      if (p.y < b.y - 18 && aDx < 64 && now >= b._jumpCd) { inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 650; }
       // niet van de rand de leegte in lopen
       if (cur) {
-        const eL = cur.x - cur.w / 2 + 7, eR = cur.x + cur.w / 2 - 7;
-        if (inp.right && b.x > eR) inp.right = false;
-        if (inp.left && b.x < eL) inp.left = false;
+        const eL = cur.x - cur.w / 2 + 8, eR = cur.x + cur.w / 2 - 8;
+        if (inp.right && b.x > eR) { inp.right = false; face(); }
+        if (inp.left && b.x < eL) { inp.left = false; face(); }
       }
     }
     return inp;
