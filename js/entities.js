@@ -24,7 +24,9 @@ class Player {
     this.maxHp = ch.maxHp || 100;
     this.hp = this.maxHp;
     this.speed = 2.2 * (ch.speedMul || 1);
-    this.w = this.build === 'bulky' ? 14 : (this.build === 'tall' ? 13 : 12);
+    this.w = this.build === 'bulky' ? 14 : (this.build === 'tall' ? 13 : (this.build === 'small' ? 10 : 12));
+    // hitbox-breedte tegen projectielen (klein = lastiger te raken)
+    this.hitHalfW = this.build === 'small' ? 5 : (this.build === 'bulky' ? 9 : 8);
     // schild-blok (Tygo)
     this.shieldBlock = !!ch.shieldBlock;
     this.blockCdUntil = 0;
@@ -44,6 +46,9 @@ class Player {
     this.auraNextAt = 30000;   // eerste aura na 30s spelen
     this.auraUntil = 0;
     this._auraOn = false;
+    // Timo: automatische rage — elke 30s, 3s lang (2x schade)
+    this.autoRage = !!ch.autoRage;
+    this.rageNextAt = 30000;
     this.burnUntil = 0;        // brandt de speler zelf (versus)
     this.burnNextTick = 0;
   }
@@ -118,6 +123,14 @@ class Player {
           }
         }
       }
+    }
+
+    // Timo: automatische rage (elke 30s, 3s lang -> 2x schade)
+    if (this.autoRage && game.time >= this.rageNextAt) {
+      this.buffs.rage = game.time + 3000;
+      this.rageNextAt = game.time + 30000;
+      if (game.particles) for (let i = 0; i < 8; i++)
+        game.particles.push(new Particle(this.x + (Math.random() - 0.5) * 14, this.y - 14, (Math.random() - 0.5) * 2, -1 - Math.random(), '#ff5a3a', 360, 2));
     }
 
     // brandt de speler zelf? (versus) -> schade over tijd
@@ -760,12 +773,13 @@ class EnemyShot {
     if (this.life > 5000 || this.x < 6 || this.x > game.level.length + 60 || this.y > CONFIG.VIEW_H + 10) { this.alive = false; return; }
     const p = game.player;
     let hit;
+    const hw = (p.hitHalfW != null) ? p.hitHalfW : 8;   // kleine karakters = kleinere hitbox
     if (this.aimed) {
       // gerichte bom: treft op nabijheid (ontwijk door weg te bewegen/springen)
-      hit = Math.abs(p.x - this.x) < 12 && Math.abs((p.y - 16) - this.y) < 14;
+      hit = Math.abs(p.x - this.x) < hw + 4 && Math.abs((p.y - 16) - this.y) < 14;
     } else {
       // grond-zuur op torso-hoogte: spring eroverheen (airHeight > 22 = mis)
-      hit = Math.abs(p.x - this.x) < 11 && (CONFIG.GROUND_Y - p.y) < 22;
+      hit = Math.abs(p.x - this.x) < hw + 3 && (CONFIG.GROUND_Y - p.y) < 22;
     }
     if (hit) {
       p.takeDamage(this.dmg);

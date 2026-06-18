@@ -20,19 +20,20 @@ const Sprites = {
     const weapon = pose.weapon;
     const bulky = pose.build === 'bulky';
     const tall = pose.build === 'tall';
+    const small = pose.build === 'small';
     const curly = pose.hair === 'curly';
     const spiky = pose.hair === 'spiky';
 
-    // breedtes (fors = breder lijf, lang = dunner lijf)
-    const bh = bulky ? 6 : (tall ? 4 : 5);   // halve romp-breedte
-    const hh = bulky ? 5 : 4;                 // halve hoofd-breedte
-    const legW = bulky ? 4 : (tall ? 2 : 3);
+    // breedtes (fors = breder, lang = dunner, klein = smaller)
+    const bh = bulky ? 6 : (tall ? 4 : (small ? 4 : 5));   // halve romp-breedte
+    const hh = bulky ? 5 : (small ? 3 : 4);                // halve hoofd-breedte
+    const legW = bulky ? 4 : (tall ? 2 : (small ? 2 : 3));
 
-    // hoogtematen (lang = hoger)
-    const hM = tall ? 1.32 : 1;
+    // hoogtematen (lang = hoger, klein = lager)
+    const hM = tall ? 1.32 : (small ? 0.8 : 1);
     const legH = Math.round((duck ? 4 : 9) * hM);
     const torsoH = Math.round((duck ? 8 : 11) * hM);
-    const headH = duck ? 8 : 9;
+    const headH = duck ? 8 : (small ? 8 : 9);
 
     const legTop = footY - legH;
     const torsoTop = legTop - torsoH;
