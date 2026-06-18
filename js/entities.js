@@ -377,6 +377,24 @@ class Zombie {
         this.y += Math.max(-0.6 * s, Math.min(0.6 * s, targetY - this.y));
         if (Math.abs(this.x - player.x) > 50) this.x += this.dir * this.speed * s;
         else this.x += Math.sin(game.time / 1000) * 0.4 * s;
+      } else if (t.dropper) {
+        // kleine luchtballon: zweeft hoog en dropt af en toe een zombie van bovenaf
+        const targetY = 48 + Math.sin(game.time / 700 + this.tint) * 8;
+        this.y += Math.max(-0.5 * s, Math.min(0.5 * s, targetY - this.y));
+        const dxp = player.x - this.x;
+        if (Math.abs(dxp) > 24) this.x += Math.sign(dxp) * this.speed * s;   // drijf naar (boven) de speler
+        this.dropTimer = (this.dropTimer || 0) + dt;
+        const aliveCount = game.zombies.reduce((n, q) => n + (q.alive ? 1 : 0), 0);
+        const ceiling = (game.level.maxAlive || 10) + 6;   // niet eindeloos blijven stapelen
+        if (this.dropTimer >= (t.dropEvery || 3200) && aliveCount < ceiling) {
+          this.dropTimer = 0;
+          const r = Math.random();
+          const dt2 = r < 0.35 ? ZOMBIE_TYPES.runner : (r < 0.5 ? ZOMBIE_TYPES.crawler : ZOMBIE_TYPES.walker);
+          const dz = new Zombie(this.x, game.level, dt2);
+          dz.y = this.y + 8; dz.vy = 1; dz.onGround = false; dz.emerging = 180;  // valt naar beneden
+          game.pendingZombies.push(dz);
+          for (let k = 0; k < 5; k++) game.spawnBlood(this.x + (Math.random() - 0.5) * 8, this.y + 8);
+        }
       } else {
         // vogel: duik richting de speler (x én y), met wat gewiebel
         const dxp = player.x - this.x, dyp = (player.y - 16) - this.y;

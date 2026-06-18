@@ -141,6 +141,7 @@ const Sprites = {
     if (id === 'boss') return this.drawBoss(ctx, cx, footY, dir, z);
     if (id === 'ape') return this.drawApe(ctx, cx, footY, dir, z);
     if (id === 'balloon') return this.drawBalloon(ctx, cx, footY, dir, z);
+    if (id === 'dropper') return this.drawDropper(ctx, cx, footY, dir, z);
     if (id === 'flyer') return this.drawFlyer(ctx, cx, footY, dir, z);
     if (id === 'brute') return this.drawBrute(ctx, cx, footY, dir, z);
     if (id === 'crawler') return this.drawCrawler(ctx, cx, footY, dir, z);
@@ -160,6 +161,24 @@ const Sprites = {
     this.px(ctx, '#caa84a', hx + dir * 2, cy - 2, 2, 2);     // snavel
     this.px(ctx, '#ff3838', hx + (dir > 0 ? 0 : 1), cy - 3, 1, 1); // rood oog
     this.px(ctx, '#8a2222', cx - 1, cy, 2, 1);              // bloedvlek
+  },
+
+  // kleine luchtballon die zombies dropt (wereld 3)
+  drawDropper(ctx, cx, cy, dir, z) {
+    const top = cy - 13;
+    // ballon-bol
+    ctx.fillStyle = '#5aa0c0'; ctx.beginPath(); ctx.ellipse(cx, top, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
+    this.px(ctx, '#3f7f9c', cx - 1, top - 13, 2, 26);          // verticale streep
+    this.px(ctx, '#cfe6f0', cx - 3, top - 13, 6, 2);           // bovenkapje
+    this.px(ctx, '#3f7f9c', cx - 5, top, 10, 1);               // glansband
+    // touwen + mandje
+    this.px(ctx, '#2a2018', cx - 5, cy - 2, 1, 6);
+    this.px(ctx, '#2a2018', cx + 4, cy - 2, 1, 6);
+    this.px(ctx, '#6b4a2a', cx - 6, cy + 3, 12, 6);            // mand
+    this.px(ctx, '#54381f', cx - 6, cy + 7, 12, 2);
+    // groen zombiekopje dat over de rand kijkt
+    this.px(ctx, '#5a8a3a', cx - 3, cy, 6, 5);
+    this.px(ctx, '#ff3030', cx + (dir > 0 ? 1 : -2), cy + 1, 2, 2); // rood oog
   },
 
   // eindbaas: zombie in een luchtballon

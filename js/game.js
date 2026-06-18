@@ -53,6 +53,7 @@ const Game = {
     this.boss = null; this.shake = 0; this.lastHazard = -9999; this.bossAmmoTimer = 0;
     this.cam.x = 0;
     this.spawnTimer = 0; this.spawned = 0; this.spawnArmed = false;
+    this.endWaveDone = false; this.killReqBonus = 0;
     this.runCoins = 0; this.runKills = 0;
     this.ammo = Storage.data.ammo;   // blijvende voorraad uit vorige levels
     this.rockets = Storage.data.rockets;
@@ -558,6 +559,18 @@ const Game = {
       return;
     }
 
+    // jungle: kleine luchtballon die zombies van bovenaf dropt (max 2 tegelijk)
+    if (this.level.dropperChance && Math.random() < this.level.dropperChance) {
+      const droppers = this.zombies.reduce((n, z) => n + (z.alive && z.type.id === 'dropper' ? 1 : 0), 0);
+      if (droppers < 2) {
+        const z = new Zombie(this.cam.x + CONFIG.VIEW_W + 20, this.level, ZOMBIE_TYPES.dropper);
+        z.y = 44 + Math.random() * 18;
+        this.zombies.push(z);
+        this.spawned++;
+        return;
+      }
+    }
+
     // probeer uit een deur in beeld te komen, anders vanaf de rechterkant
     let spawned = false;
     if (Math.random() < this.level.doorChance) {
@@ -601,6 +614,27 @@ const Game = {
     if (!this.spawnArmed && (this.player.x > 76 || Input.state.left || Input.state.right ||
         Input.state.attack || Input.state.melee || Input.jumpPressed)) this.spawnArmed = true;
     this.updateSpawns(dt);
+
+    // extra eindgolf: bij het naderen van de finish komt er nog een flinke lading bij
+    // (telt mee voor kill-all, zodat je 'm echt moet opruimen voor de finish)
+    if (this.level.endWave && !this.endWaveDone && this.spawnArmed &&
+        this.player.x > this.level.length * 0.82) {
+      this.endWaveDone = true;
+      const base = this.level.length;
+      const n = 6 + Math.round((this.level.zombieCount || 30) * 0.10);
+      for (let i = 0; i < n; i++) {
+        const r = Math.random();
+        const type = r < 0.4 ? ZOMBIE_TYPES.runner : (r < 0.62 ? ZOMBIE_TYPES.crawler : ZOMBIE_TYPES.walker);
+        this.pendingZombies.push(new Zombie(base - 30 + Math.random() * 110, this.level, type));
+      }
+      // plus een paar luchtballonnen boven de finish
+      for (let i = 0; i < 2; i++) {
+        const d = new Zombie(base - 40 + Math.random() * 90, this.level, ZOMBIE_TYPES.dropper);
+        d.y = 46 + Math.random() * 12;
+        this.pendingZombies.push(d);
+      }
+      this.killReqBonus += n;   // deze golf hoort ook verslagen te worden
+    }
 
     // in de boss fight valt er regelmatig munitie uit de lucht boven de speler
     if (this.level.isBoss && this.spawnArmed && this.boss && this.boss.alive) {
@@ -731,7 +765,7 @@ const Game = {
   },
 
   // aantal nog te doden zombies (kill-all-levels)
-  zombiesRemaining() { return Math.max(0, this.level.zombieCount - this.runKills); },
+  zombiesRemaining() { return Math.max(0, this.level.zombieCount + (this.killReqBonus || 0) - this.runKills); },
 
   // arena voorbij: munten behoud je, highscore bijwerken
   arenaOver() {

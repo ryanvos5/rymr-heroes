@@ -187,6 +187,13 @@ const ZOMBIE_TYPES = {
     flying: true, boss: true, knockback: true, knockResist: 0,
     spawner: true, shootEvery: 1700, shotSpeed: 3.2, shotDmg: 16, color: '#3a6a2a',
   },
+  // kleine luchtballon (wereld 3): zweeft hoog en dropt af en toe een zombie van bovenaf
+  dropper: {
+    id: 'dropper', hpMul: 1.3, speedMul: 0.5, dmg: 12, biteCd: 1000,
+    reach: 16, lunge: false, scale: 1.0, coin: 22, ammoDrop: 6, ammoDropChance: 0.5,
+    flying: true, dropper: true, dropEvery: 3200,
+    knockChance: 0, knockPlayer: 0, healChance: 0, color: '#8a9c54',
+  },
   // eindbaas wereld 3: mega zombie-aap die in één sprong naar de speler toe duikt
   ape: {
     id: 'ape', hpMul: 1.0, speedMul: 0.5, dmg: 30, biteCd: 900,
@@ -400,23 +407,25 @@ function buildWorld3() {
         reward: 130 + i * 18,
       });
     } else {
-      // ---- normaal jungle-gevechtslevel: vaste grond, veel zombies ----
+      // ---- normaal jungle-gevechtslevel: vaste grond, VEEL en taaie zombies ----
       const length = Math.round(2600 + i * 300);          // 2600 -> 5000
       levels.push({
         id, name: 'Jungle ' + id, theme: 'jungle', mode: 'reach',
         killAll: true, noObstacles: true,                 // geen straat-obstakels in de jungle
         flyerChance: +(0.12 + t * 0.10).toFixed(2),        // af en toe een vogel (gewone schade)
+        dropperChance: +(0.12 + t * 0.10).toFixed(2),      // kleine luchtballon die zombies dropt
+        endWave: true,                                      // extra golf bij de finish
         length,
-        zombieCount: Math.round(26 + i * 6),               // 26 -> 74 (veel zombies)
-        spawnEvery: Math.round(1300 - t * 600),            // 1300 -> 700 (sneller)
-        zombieHp: Math.round(48 + i * 9),                  // 48 -> 120
-        zombieSpeed: +(0.7 + t * 0.5).toFixed(2),
-        runnerChance: +(0.10 + t * 0.22).toFixed(2),
-        crawlerChance: +(0.06 + t * 0.18).toFixed(2),
-        bruteChance: i >= 3 ? +(0.05 + t * 0.12).toFixed(2) : 0,
+        zombieCount: Math.round(34 + i * 8),               // 34 -> 98 (veel meer zombies)
+        spawnEvery: Math.round(1150 - t * 550),            // 1150 -> 600 (sneller)
+        zombieHp: Math.round(60 + i * 11),                 // 60 -> 148 (taaier — AK47 loopt er niet meer doorheen)
+        zombieSpeed: +(0.8 + t * 0.5).toFixed(2),          // 0.8 -> 1.3
+        runnerChance: +(0.16 + t * 0.26).toFixed(2),       // meer snelle zombies
+        crawlerChance: +(0.10 + t * 0.20).toFixed(2),
+        bruteChance: i >= 2 ? +(0.06 + t * 0.16).toFixed(2) : 0,  // brutes eerder en vaker
         doorChance: 0,
-        maxAlive: Math.round(7 + i * 1.1),                 // 7 -> 16 tegelijk (drukker)
-        reward: 90 + i * 18,
+        maxAlive: Math.round(9 + i * 1.4),                 // 9 -> 20 tegelijk (drukker)
+        reward: 110 + i * 22,
         midTime: Math.round(length * 11 + 5000),           // royale checkpoint-tijd
       });
     }
