@@ -1148,7 +1148,7 @@ const Game = {
       remote: {
         x: rb.x, y: rb.y, tx: rb.x, ty: rb.y,
         dir: role === 'host' ? -1 : 1, walkPhase: 0, attacking: false, swingWeapon: null,
-        alive: true, charId: 'ryan', lastSeen: 0,
+        alive: true, charId: 'ryan', lastSeen: 0, hp: 100, maxHp: 100,
       },
     };
 
@@ -1284,7 +1284,10 @@ const Game = {
     for (const b of this.bullets) {
       if (b.alive && r.alive && Math.abs(b.x - r.x) < 11 && Math.abs(b.y - (r.y - 16)) < 16) {
         b.alive = false;
-        if (window.Net) Net.versusSend('hit', { dir: Math.sign(b.vx) || 1, power: 9, vy: -3 });
+        const dmg = Math.round((b.damage || 20) * 0.4);
+        const kd = Math.sign(b.vx) || 1;
+        if (this.vsBot) this.applyHitToBot(kd, 9, -3, dmg);
+        else if (window.Net) Net.versusSend('hit', { dir: kd, power: 9, vy: -3, dmg: dmg });
         this.spawnBlood(b.x, b.y);
       }
     }
@@ -1313,8 +1316,10 @@ const Game = {
       const dx = (r.x - p.x) * p.dir;
       if (dx > -10 && dx < reach && Math.abs(r.y - p.y) < 30) {
         const kdir = (r.x >= p.x ? 1 : -1);
-        if (this.vsBot) this.applyHitToBot(kdir, 15, -5.5);          // bot wegslaan
-        else Net.versusSend('hit', { dir: p.dir, power: 15, vy: -5.5 });
+        const wd = (WEAPONS[p.meleeId] ? WEAPONS[p.meleeId].damage : 34) * (p.meleeMul || 1) * (p.hasBuff('rage', this.time) ? 1.6 : 1);
+        const dmg = Math.round(wd * 0.45);                            // versus-melee-schade
+        if (this.vsBot) this.applyHitToBot(kdir, 15, -5.5, dmg);      // bot wegslaan + schade
+        else Net.versusSend('hit', { dir: p.dir, power: 15, vy: -5.5, dmg: dmg });
         this.spawnBlood(r.x, r.y - 16);
         this.shake = Math.max(this.shake, 6);
       }
@@ -1336,6 +1341,7 @@ const Game = {
     r.x = r.tx = b.x; r.y = r.ty = b.y; r.dir = b.dir; r.onGround = b.onGround;
     r.attacking = this.time < b.attackAnimUntil; r.swingWeapon = (this.time < (b.swingUntil || 0)) ? b.swingWeapon : null;
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
+    r.hp = b.hp; r.maxHp = b.maxHp;
 
     // bot's mep raakt de speler?
     const bsw = b.swingUntil || 0;
@@ -1344,7 +1350,8 @@ const Game = {
       const dxp = (this.player.x - b.x) * b.dir;
       if (dxp > -10 && dxp < 36 && Math.abs(this.player.y - b.y) < 30 && this.player.respawnInvuln <= 0 && !this.player.dead) {
         const kd = this.player.x >= b.x ? 1 : -1;
-        this.onVersusHit({ dir: kd, power: 15, vy: -5.5 });
+        const wd = (WEAPONS[b.meleeId] ? WEAPONS[b.meleeId].damage : 34) * (b.meleeMul || 1) * (b.hasBuff('rage', this.time) ? 1.6 : 1);
+        this.onVersusHit({ dir: kd, power: 15, vy: -5.5, dmg: Math.round(wd * 0.45) });
         this.shake = Math.max(this.shake, 6);
       }
     }
@@ -1357,10 +1364,11 @@ const Game = {
     if (!b.dead && (b.y > FALL_DEATH_Y || b.hp <= 0)) { b.dead = true; this.onVersusFell(); }
   },
 
-  applyHitToBot(dir, power, vy) {
+  applyHitToBot(dir, power, vy, dmg) {
     const b = this.bot;
     if (!b || b.respawnInvuln > 0 || b.dead) return;
     b.knockVx = dir * power; b.vy = vy; b.onGround = false;
+    if (dmg) b.takeDamage(dmg, 0, this, 0);            // HP-schade
     this.shake = Math.max(this.shake, 7);
   },
 
@@ -1441,6 +1449,7 @@ const Game = {
     p.knockVx = (payload.dir || 1) * (payload.power || 15);
     p.vy = payload.vy || -5.5;
     p.onGround = false;
+    if (payload.dmg) p.takeDamage(payload.dmg);        // HP-schade
     this.shake = Math.max(this.shake, 7);
   },
 
@@ -1480,6 +1489,8 @@ const Game = {
     r.onGround = s.g !== 0; r.attacking = s.a === 1;
     r.swingWeapon = s.sw || null; r.walkPhase = s.wp || 0;
     r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
+    if (typeof s.h === 'number') r.hp = s.h;
+    if (typeof s.mh === 'number') r.maxHp = s.mh;
     r.lastSeen = this.time;
   },
 
@@ -1491,6 +1502,7 @@ const Game = {
       g: p.onGround ? 1 : 0, a: this.time < p.attackAnimUntil ? 1 : 0,
       sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
+      h: Math.round(p.hp), mh: p.maxHp,
     });
   },
 

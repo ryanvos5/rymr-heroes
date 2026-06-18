@@ -595,6 +595,11 @@ const UI = {
     const them = document.getElementById('vs-score-them');
     if (me) me.textContent = v.myScore;
     if (them) them.textContent = v.oppScore;
+    // HP-balken
+    const hpMe = document.getElementById('vs-hp-me');
+    const hpThem = document.getElementById('vs-hp-them');
+    if (hpMe && Game.player) hpMe.style.width = Math.max(0, Math.min(100, (Game.player.hp / Game.player.maxHp) * 100)) + '%';
+    if (hpThem && v.remote) hpThem.style.width = Math.max(0, Math.min(100, (v.remote.hp / (v.remote.maxHp || 100)) * 100)) + '%';
     const cd = document.getElementById('vs-countdown');
     if (cd) {
       if (v.countdown > 0) { cd.classList.remove('hidden'); cd.textContent = Math.ceil(v.countdown / 1000); }

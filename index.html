@@ -11,7 +11,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0d0f14" />
   <title>Topleven Adventures — Wereld 1</title>
-  <link rel="stylesheet" href="css/style.css?v=bot2" />
+  <link rel="stylesheet" href="css/style.css?v=hp1" />
 </head>
 <body>
   <div id="game-root">
@@ -213,9 +213,15 @@
 
     <!-- ===== 1 vs 1 score (tijdens het spel) ===== -->
     <div id="versus-hud" class="hidden">
-      <span id="vs-score-me">0</span>
-      <span class="vs-score-vs">JIJ — TEGEN</span>
-      <span id="vs-score-them">0</span>
+      <div class="vs-side vs-side-me">
+        <span id="vs-score-me" class="vs-score">0</span>
+        <div class="vs-hp"><div id="vs-hp-me" class="vs-hp-fill me"></div></div>
+      </div>
+      <span class="vs-score-vs">JIJ · TEGEN</span>
+      <div class="vs-side vs-side-them">
+        <span id="vs-score-them" class="vs-score">0</span>
+        <div class="vs-hp"><div id="vs-hp-them" class="vs-hp-fill them"></div></div>
+      </div>
       <button id="btn-vs-quit" title="Stoppen">✕</button>
       <div id="vs-countdown" class="vs-countdown hidden"></div>
       <div id="vs-round-banner" class="vs-round-banner hidden"></div>
@@ -299,14 +305,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="js/config.js?v=bot2"></script>
-  <script src="js/storage.js?v=bot2"></script>
-  <script src="js/net.js?v=bot2"></script>
-  <script src="js/input.js?v=bot2"></script>
-  <script src="js/sprites.js?v=bot2"></script>
-  <script src="js/entities.js?v=bot2"></script>
-  <script src="js/ui.js?v=bot2"></script>
-  <script src="js/game.js?v=bot2"></script>
-  <script src="js/main.js?v=bot2"></script>
+  <script src="js/config.js?v=hp1"></script>
+  <script src="js/storage.js?v=hp1"></script>
+  <script src="js/net.js?v=hp1"></script>
+  <script src="js/input.js?v=hp1"></script>
+  <script src="js/sprites.js?v=hp1"></script>
+  <script src="js/entities.js?v=hp1"></script>
+  <script src="js/ui.js?v=hp1"></script>
+  <script src="js/game.js?v=hp1"></script>
+  <script src="js/main.js?v=hp1"></script>
 </body>
 </html>
