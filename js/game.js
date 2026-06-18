@@ -1566,7 +1566,7 @@ const Game = {
     }
     ctx.globalAlpha = 1;
 
-    // tegenstander (ghost)
+    // tegenstander (ghost) — ROOD pijltje erboven
     const r = this.vs.remote;
     if (r.alive) {
       const rc = (CHARACTERS[r.charId] || CHARACTERS.ryan);
@@ -1575,21 +1575,36 @@ const Game = {
         walkPhase: r.walkPhase, airborne: !r.onGround, attacking: r.attacking,
         weapon: r.swingWeapon || 'bat', build: rc.build, hair: rc.hair,
       });
+      this.drawVsMarker(ctx, Math.round(r.x), Math.round(r.y), rc.build, '#ff5a5a');
     }
 
-    // eigen speler (knippert tijdens respawn-onkwetsbaarheid)
+    // eigen speler — GROEN pijltje erboven (knippert tijdens respawn)
     const p = this.player;
     const blink = p.respawnInvuln > 0 && Math.floor(this.time / 90) % 2 === 0;
-    if (!p.dead && !blink) {
-      Sprites.shadow(ctx, p.x, p.onGround ? p.y + 1 : CONFIG.GROUND_Y, 7);
-      const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
-      Sprites.drawCharacter(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal, {
-        walkPhase: p.walkPhase, airborne: !p.onGround, ducking: p.ducking,
-        attacking: this.time < p.attackAnimUntil,
-        weapon: swinging ? p.swingWeapon : p.weaponId, build: p.build, hair: p.hairStyle,
-      });
+    if (!p.dead) {
+      if (!blink) {
+        Sprites.shadow(ctx, p.x, p.onGround ? p.y + 1 : CONFIG.GROUND_Y, 7);
+        const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
+        Sprites.drawCharacter(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal, {
+          walkPhase: p.walkPhase, airborne: !p.onGround, ducking: p.ducking,
+          attacking: this.time < p.attackAnimUntil,
+          weapon: swinging ? p.swingWeapon : p.weaponId, build: p.build, hair: p.hairStyle,
+        });
+      }
+      this.drawVsMarker(ctx, Math.round(p.x), Math.round(p.y), p.build, '#5aff7a');
     }
     ctx.restore();
+  },
+
+  // gekleurd pijltje boven een speler (groen = jij, rood = tegenstander)
+  drawVsMarker(ctx, x, footY, build, color) {
+    const head = build === 'tall' ? 46 : (build === 'small' ? 28 : 36);
+    const bob = Math.round(Math.sin(this.time / 280) * 1.5);
+    const ty = footY - head - 4 + bob;                 // bovenkant van het pijltje
+    ctx.fillStyle = '#000';                              // donkere rand voor contrast
+    ctx.beginPath(); ctx.moveTo(x - 5, ty - 1); ctx.lineTo(x + 5, ty - 1); ctx.lineTo(x, ty + 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(x - 4, ty); ctx.lineTo(x + 4, ty); ctx.lineTo(x, ty + 5); ctx.closePath(); ctx.fill();
   },
 
   // ---------- hoofdloop ----------
