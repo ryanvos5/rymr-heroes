@@ -439,11 +439,11 @@ class Zombie {
       if (!this.onGround) {
         this.x += (this.leapVx || 0) * s;                 // boog richting de speler
       } else if (this.leapVx) {
-        // net geland na een sprong -> schokgolf + dreun als hij dichtbij is
+        // net geland na een sprong -> schokgolf; alleen schade bij ECHT contact
         this.leapVx = 0;
         game.shake = Math.max(game.shake, 9);
         for (let k = 0; k < 8; k++) game.spawnBlood(this.x + (Math.random() - 0.5) * 30, CONFIG.GROUND_Y);
-        if (dist <= this.reach + 16) { this.bite(game, player); this.lastBite = game.time; }
+        if (this.apeTouches(player)) { player.takeDamage(t.dmg); this.lastBite = game.time; }
       } else if (this.crouchT > 0) {
         this.crouchT -= dt;                                // ineengedoken (telegraaf vóór de sprong)
         if (this.crouchT <= 0) {
@@ -455,8 +455,8 @@ class Zombie {
         }
       } else {
         this.apeCd -= dt;
-        if (dist <= this.reach + 6 && game.time - this.lastBite > t.biteCd) {
-          this.bite(game, player); this.lastBite = game.time;   // dichtbij: mep
+        if (this.apeTouches(player) && game.time - this.lastBite > t.biteCd) {
+          player.takeDamage(t.dmg); this.lastBite = game.time;  // alleen bij echt contact
         } else if (this.apeCd <= 0 && dist > 38) {
           this.crouchT = 300;                              // duik ineen om te springen
           this.apeCd = 2000 + Math.random() * 1400;        // pauze tot de volgende sprong
@@ -465,6 +465,8 @@ class Zombie {
           this.separate(game, s);
         }
       }
+      // binnen de (kleine) arena houden
+      this.x = Math.max(20, Math.min(game.level.length + 20, this.x));
       this.walkTimer += dt;
       if (this.walkTimer > 150) { this.walkTimer = 0; this.walkPhase = (this.walkPhase + 1) % 4; }
       if (this.hitFlash > 0) this.hitFlash -= dt;
@@ -517,6 +519,14 @@ class Zombie {
     this.walkTimer += dt;
     if (this.walkTimer > 150) { this.walkTimer = 0; this.walkPhase = (this.walkPhase + 1) % 4; }
     if (this.hitFlash > 0) this.hitFlash -= dt;
+  }
+
+  // raakt de mega-aap de speler ECHT? (alleen bij lijf-contact: dichtbij + niet eroverheen gesprongen)
+  apeTouches(player) {
+    const dx = Math.abs(this.x - player.x);
+    if (dx > this.halfW + 8) return false;            // buiten de lijfbreedte -> mis (ontwijk horizontaal)
+    const apeHeadTop = this.y - 76;                     // bovenkant van de aap-kop (sprite)
+    return player.y > apeHeadTop;                       // hoog over zijn kop springen = veilig
   }
 
   // kan deze zombie de speler op deze hoogte raken?

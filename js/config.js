@@ -430,10 +430,10 @@ function buildWorld3() {
       });
     }
   }
-  // level 10: MEGA ZOMBIE-AAP (springt in één keer naar je toe)
+  // level 10: MEGA ZOMBIE-AAP (springt in één keer naar je toe) — KLEINE arena: ontwijken!
   levels.push({
     id: 10, name: 'AAP BOSS', theme: 'jungle', mode: 'boss', isBoss: true, apeBoss: true,
-    length: 1600, zombieCount: 0, spawnEvery: 999999,
+    length: 380, zombieCount: 0, spawnEvery: 999999,
     zombieHp: 60, zombieSpeed: 1.1, maxAlive: 4,
     doorChance: 0, noObstacles: true, reward: 600,
   });
