@@ -175,6 +175,7 @@ class Player {
     this.swingWeapon = w.id;                 // welk wapen er nu gezwaaid wordt (voor de tekening)
     this.swingUntil = game.time + 140;
     const reach = w.range;
+    const knock = (w.knock != null) ? w.knock : 9;        // per-wapen terugslag
     const dmg = w.damage * this.meleeMul * (this.hasBuff('rage', game.time) ? 2 : 1);
     for (const z of game.zombies) {
       if (!z.alive) continue;
@@ -188,8 +189,11 @@ class Player {
         continue;
       }
       const dx = (z.x - this.x) * this.dir;
-      if (dx > -6 && dx < reach && Math.abs(z.y - this.y) < 30) {
-        z.takeDamage(dmg, this.dir, game, 9); // melee slaat zombies hard naar achter
+      // 'arc'-wapens (flail/bo staff) raken vijanden aan BEIDE kanten (zwiep om je heen)
+      const hit = w.arc ? (Math.abs(z.x - this.x) < reach) : (dx > -6 && dx < reach);
+      if (hit && Math.abs(z.y - this.y) < 30) {
+        const kdir = (z.x >= this.x ? 1 : -1);             // altijd van de speler vandaan
+        z.takeDamage(dmg, kdir, game, knock);
       }
     }
     // explosieve vaten kapotslaan

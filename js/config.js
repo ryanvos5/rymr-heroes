@@ -27,14 +27,64 @@ const CONFIG = {
 */
 const WEAPONS = {
   bat: {
-    id: 'bat', name: 'Knuppel', type: 'melee',
+    id: 'bat', name: 'Bat', type: 'melee',
     damage: 34, cooldown: 360, range: 30, cost: 0,
     desc: 'Je trouwe startwapen.'
+  },
+  club: {
+    id: 'club', name: 'Club', type: 'melee',
+    damage: 40, cooldown: 400, range: 28, knock: 14, cost: 120,
+    desc: 'Goedkoop en hard: flinke terugslag.'
   },
   machete: {
     id: 'machete', name: 'Machete', type: 'melee',
     damage: 58, cooldown: 300, range: 36, cost: 150,
-    desc: 'Scherper en sneller dan de knuppel.'
+    desc: 'Scherper en sneller dan de bat.'
+  },
+  sword: {
+    id: 'sword', name: 'Sword', type: 'melee',
+    damage: 46, cooldown: 330, range: 34, knock: 9, cost: 250,
+    desc: 'Gebalanceerd: degelijke schade én snelheid.'
+  },
+  dagger: {
+    id: 'dagger', name: 'Dagger', type: 'melee',
+    damage: 24, cooldown: 150, range: 24, knock: 4, cost: 350,
+    desc: 'Razendsnel, maar kort bereik en weinig schade.'
+  },
+  axe: {
+    id: 'axe', name: 'Axe', type: 'melee',
+    damage: 74, cooldown: 520, range: 32, knock: 16, cost: 700,
+    desc: 'Zware klap met grote terugslag — maar traag.'
+  },
+  spear: {
+    id: 'spear', name: 'Spear', type: 'melee',
+    damage: 48, cooldown: 420, range: 56, knock: 8, cost: 900,
+    desc: 'Lang bereik — raak vijanden van veraf.'
+  },
+  mace: {
+    id: 'mace', name: 'Mace', type: 'melee',
+    damage: 66, cooldown: 480, range: 30, knock: 20, cost: 1100,
+    desc: 'Beukt vijanden ver weg (enorme knockback).'
+  },
+  flail: {
+    id: 'flail', name: 'Flail', type: 'melee',
+    damage: 58, cooldown: 430, range: 36, knock: 12, arc: true, cost: 1500,
+    desc: 'Zwiept in een boog — raakt vijanden aan béide kanten.'
+  },
+  bostaff: {
+    id: 'bostaff', name: 'Bo Staff', type: 'melee',
+    damage: 34, cooldown: 200, range: 44, knock: 13, arc: true, cost: 1800,
+    desc: 'Snelle, brede vegen die hordes om je heen wegduwen.'
+  },
+  katana: {
+    id: 'katana', name: 'Katana', type: 'melee',
+    damage: 70, cooldown: 300, range: 36, knock: 9, cost: 2200,
+    desc: 'Vlijmscherp: hoge schade én snel.'
+  },
+  halberd: {
+    id: 'halberd', name: 'Halberd', type: 'melee',
+    damage: 82, cooldown: 560, range: 54, knock: 14, cost: 3200,
+    desc: 'Lang bereik én zware schade, maar traag.'
   },
   pistol: {
     id: 'pistol', name: 'Pistol', type: 'ranged',
@@ -58,14 +108,17 @@ const WEAPONS = {
   },
   // intern melee-wapen van Tygo (niet in de shop)
   shield: {
-    id: 'shield', name: 'Schild', type: 'melee',
+    id: 'shield', name: 'Shield', type: 'melee',
     damage: 34, cooldown: 360, range: 30, cost: 0,
-    desc: 'Schildbash + blok.'
+    desc: 'Shield bash + block.'
   },
 };
 
-// volgorde in de shop
-const WEAPON_ORDER = ['bat', 'machete', 'pistol', 'uzi', 'ak47', 'rocket'];
+// volgorde in de shop: eerst alle melee (oplopend in prijs), dan de vuurwapens
+const WEAPON_ORDER = [
+  'bat', 'club', 'machete', 'sword', 'dagger', 'axe', 'spear', 'mace', 'flail', 'bostaff', 'katana', 'halberd',
+  'pistol', 'uzi', 'ak47', 'rocket',
+];
 // raketten: prijs per stuk in de shop + zeldzame drop-kans (alleen als je de RPG hebt)
 const ROCKET_COST = 250;
 const ROCKET_DROP_CHANCE = 0.02;   // ~2% per kill -> soms 0 in een heel level

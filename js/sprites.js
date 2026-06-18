@@ -111,12 +111,57 @@ const Sprites = {
 
     // wapen aan de hand
     if (w.type === 'melee') {
-      if (w.id === 'machete') {
-        this.px(ctx, '#cfd6df', handX, armY - (attacking ? 8 : 2), 3 * flip, attacking ? 11 : 9);
-        this.px(ctx, '#5a3a22', handX, armY + 1, 2 * flip, 3);
-      } else { // knuppel
-        this.px(ctx, '#7a5230', handX, armY - (attacking ? 7 : 1), 3 * flip, attacking ? 10 : 8);
-        this.px(ctx, '#5a3a22', handX, armY + 2, 2 * flip, 3);
+      const atk = attacking;
+      const steel = '#cfd6df', steelDk = '#9aa3ad', wood = '#7a5230', woodDk = '#5a3a22', gold = '#caa84a';
+      const id = w.id;
+      if (id === 'machete') {
+        this.px(ctx, steel, handX, armY - (atk ? 8 : 2), 3 * flip, atk ? 11 : 9);
+        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 3);
+      } else if (id === 'sword') {
+        this.px(ctx, gold, handX, armY - 1, 5 * flip, 2);                              // pareerstang
+        this.px(ctx, steel, handX + 2 * flip, armY - (atk ? 10 : 3), 3 * flip, atk ? 14 : 11);
+        this.px(ctx, steelDk, handX + 2 * flip, armY - (atk ? 10 : 3), 1 * flip, atk ? 14 : 11);
+        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 3);
+      } else if (id === 'dagger') {
+        this.px(ctx, steel, handX, armY - (atk ? 6 : 2), 2 * flip, atk ? 8 : 6);
+        this.px(ctx, gold, handX, armY, 3 * flip, 1);
+        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 2);
+      } else if (id === 'club') {
+        this.px(ctx, wood, handX, armY - (atk ? 6 : 1), 3 * flip, atk ? 9 : 7);
+        this.px(ctx, woodDk, handX + 2 * flip, armY - (atk ? 7 : 2), 3 * flip, atk ? 6 : 5);  // dikke kop
+      } else if (id === 'axe') {
+        this.px(ctx, wood, handX, armY - 2, 2 * flip, 11);                              // steel
+        this.px(ctx, steel, handX + 1 * flip, armY - (atk ? 8 : 4), 6 * flip, 6);       // blad
+        this.px(ctx, steelDk, handX + 1 * flip, armY - (atk ? 8 : 4), 6 * flip, 2);
+      } else if (id === 'spear') {
+        this.px(ctx, wood, handX, armY + 1, (atk ? 17 : 14) * flip, 2);                 // lange schacht
+        this.px(ctx, steel, handX + (atk ? 17 : 14) * flip, armY - 1, 4 * flip, 4);     // punt
+        this.px(ctx, steelDk, handX + (atk ? 17 : 14) * flip, armY - 1, 4 * flip, 1);
+      } else if (id === 'mace') {
+        this.px(ctx, wood, handX, armY - 1, 2 * flip, 9);
+        this.px(ctx, '#6b7480', handX - 1 * flip, armY - (atk ? 10 : 6), 6 * flip, 6);  // bal
+        this.px(ctx, '#9aa3ad', handX - 1 * flip, armY - (atk ? 10 : 6), 6 * flip, 2);
+        this.px(ctx, '#4a4f57', handX + 2 * flip, armY - (atk ? 12 : 8), 2 * flip, 2);  // spike
+      } else if (id === 'flail') {
+        this.px(ctx, woodDk, handX, armY - 1, 2 * flip, 6);                             // handvat
+        this.px(ctx, '#888f99', handX + 1 * flip, armY - 3, 1 * flip, 4);               // ketting
+        this.px(ctx, '#6b7480', handX + 1 * flip, armY - (atk ? 9 : 6), 5 * flip, 5);   // bal
+        this.px(ctx, '#9aa3ad', handX + 1 * flip, armY - (atk ? 9 : 6), 5 * flip, 2);
+      } else if (id === 'bostaff') {
+        this.px(ctx, wood, handX - (atk ? 11 : 9) * flip, armY + 1, (atk ? 24 : 20) * flip, 2);  // lange staf, beide kanten
+        this.px(ctx, woodDk, handX - (atk ? 11 : 9) * flip, armY + 2, (atk ? 24 : 20) * flip, 1);
+      } else if (id === 'katana') {
+        this.px(ctx, '#1a1a1a', handX, armY, 2 * flip, 3);                              // tsuba
+        this.px(ctx, steel, handX + 2 * flip, armY - (atk ? 9 : 3), 3 * flip, atk ? 13 : 11);
+        this.px(ctx, '#eef2f6', handX + 2 * flip, armY - (atk ? 9 : 3), 1 * flip, atk ? 13 : 11);
+      } else if (id === 'halberd') {
+        this.px(ctx, wood, handX, armY + 1, (atk ? 18 : 15) * flip, 2);                 // lange schacht
+        this.px(ctx, steel, handX + (atk ? 13 : 10) * flip, armY - 5, 6 * flip, 6);     // bijlblad
+        this.px(ctx, steelDk, handX + (atk ? 13 : 10) * flip, armY - 5, 6 * flip, 2);
+        this.px(ctx, steel, handX + (atk ? 18 : 15) * flip, armY - 6, 2 * flip, 5);     // punt bovenop
+      } else { // bat
+        this.px(ctx, wood, handX, armY - (atk ? 7 : 1), 3 * flip, atk ? 10 : 8);
+        this.px(ctx, woodDk, handX, armY + 2, 2 * flip, 3);
       }
     } else {
       // vuurwapens
@@ -782,14 +827,41 @@ const Sprites = {
     const cx = 26, y = 24;
     const w = WEAPONS[weaponId];
     if (w.type === 'melee') {
+      const steel = '#cfd6df', steelDk = '#9aa3ad', wood = '#7a5230', woodDk = '#5a3a22', gold = '#caa84a';
+      const L = cx - 14;
       if (weaponId === 'machete') {
-        this.px(ctx, '#cfd6df', cx - 12, y - 8, 20, 5);
-        this.px(ctx, '#9aa3ad', cx - 12, y - 8, 20, 2);
-        this.px(ctx, '#5a3a22', cx + 6, y - 9, 6, 7);
-      } else {
-        this.px(ctx, '#7a5230', cx - 12, y - 7, 16, 5);
-        this.px(ctx, '#9a6a3a', cx - 12, y - 7, 16, 2);
-        this.px(ctx, '#5a3a22', cx + 2, y - 6, 6, 4);
+        this.px(ctx, steel, cx - 12, y - 8, 20, 5); this.px(ctx, steelDk, cx - 12, y - 8, 20, 2); this.px(ctx, woodDk, cx + 6, y - 9, 6, 7);
+      } else if (weaponId === 'sword') {
+        this.px(ctx, woodDk, L, y - 2, 5, 4); this.px(ctx, gold, L + 5, y - 4, 2, 8);
+        this.px(ctx, steel, L + 7, y - 3, 18, 5); this.px(ctx, steelDk, L + 7, y - 3, 18, 2);
+      } else if (weaponId === 'dagger') {
+        this.px(ctx, woodDk, L + 2, y - 2, 4, 4); this.px(ctx, gold, L + 6, y - 3, 2, 6);
+        this.px(ctx, steel, L + 8, y - 2, 12, 4); this.px(ctx, steelDk, L + 8, y - 2, 12, 1);
+      } else if (weaponId === 'club') {
+        this.px(ctx, wood, L + 2, y - 2, 12, 5); this.px(ctx, wood, L + 12, y - 4, 10, 9); this.px(ctx, woodDk, L + 12, y - 4, 10, 2);
+      } else if (weaponId === 'axe') {
+        this.px(ctx, wood, L + 4, y - 6, 4, 16); this.px(ctx, woodDk, L + 4, y - 6, 2, 16);
+        this.px(ctx, steel, L + 8, y - 7, 12, 9); this.px(ctx, steelDk, L + 8, y - 7, 12, 3);
+      } else if (weaponId === 'spear') {
+        this.px(ctx, wood, L, y - 1, 22, 3); this.px(ctx, steel, L + 20, y - 3, 8, 7); this.px(ctx, steelDk, L + 20, y - 3, 8, 2);
+      } else if (weaponId === 'mace') {
+        this.px(ctx, wood, L, y - 1, 16, 4);
+        this.px(ctx, '#6b7480', L + 13, y - 7, 12, 12); this.px(ctx, '#9aa3ad', L + 13, y - 7, 12, 4);
+        this.px(ctx, '#4a4f57', L + 24, y - 1, 3, 3); this.px(ctx, '#4a4f57', L + 18, y - 9, 3, 3);
+      } else if (weaponId === 'flail') {
+        this.px(ctx, woodDk, L, y - 1, 12, 4); this.px(ctx, '#888f99', L + 12, y - 3, 6, 2);
+        this.px(ctx, '#6b7480', L + 17, y - 6, 10, 10); this.px(ctx, '#9aa3ad', L + 17, y - 6, 10, 3);
+      } else if (weaponId === 'bostaff') {
+        this.px(ctx, wood, L - 2, y - 1, 30, 4); this.px(ctx, woodDk, L - 2, y + 1, 30, 1);
+        this.px(ctx, woodDk, L - 2, y - 1, 2, 4); this.px(ctx, woodDk, L + 26, y - 1, 2, 4);
+      } else if (weaponId === 'katana') {
+        this.px(ctx, woodDk, L, y - 1, 5, 4); this.px(ctx, '#1a1a1a', L + 5, y - 3, 2, 8);
+        this.px(ctx, steel, L + 7, y - 4, 19, 5); this.px(ctx, '#eef2f6', L + 7, y - 4, 19, 2);
+      } else if (weaponId === 'halberd') {
+        this.px(ctx, wood, L, y - 2, 26, 3); this.px(ctx, steel, L + 14, y - 9, 9, 9);
+        this.px(ctx, steelDk, L + 14, y - 9, 9, 3); this.px(ctx, steel, L + 23, y - 11, 4, 6);
+      } else { // bat
+        this.px(ctx, wood, cx - 12, y - 7, 16, 5); this.px(ctx, '#9a6a3a', cx - 12, y - 7, 16, 2); this.px(ctx, woodDk, cx + 2, y - 6, 6, 4);
       }
     } else {
       const body = '#3a3f46', dark = '#23262b', wood = '#6b4a2a';
