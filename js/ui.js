@@ -441,11 +441,14 @@ const UI = {
     const code = (window.Net && Net.versus && Net.versus.code) || document.getElementById('vs-room-code').textContent;
     if (!code || code === '----') return;
     const url = location.origin + location.pathname + '?join=' + code;
-    const text = 'Speel 1v1 tegen me in Topleven Adventures! Tik om mee te doen: ' + url;
+    const text =
+      'Doe mee met mijn 1v1 in Topleven Adventures! 🎮\n\n' +
+      '• Tik de link (opent in je browser): ' + url + '\n' +
+      '• Of open de game-app en doe mee met code: ' + code;
     if (navigator.share) {
-      navigator.share({ title: 'Topleven Adventures — 1v1', text: 'Speel 1v1 tegen me!', url: url }).catch(() => {});
+      navigator.share({ title: 'Topleven Adventures — 1v1', text: text }).catch(() => {});
     } else if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => alert('Uitnodigingslink gekopieerd! Plak in WhatsApp.')).catch(() => {
+      navigator.clipboard.writeText(text).then(() => alert('Uitnodiging gekopieerd! Plak in WhatsApp.')).catch(() => {
         window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
       });
     } else {
