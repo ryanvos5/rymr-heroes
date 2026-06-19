@@ -10,6 +10,8 @@ window.addEventListener('DOMContentLoaded', () => {
   UI.init();
   Game.init(document.getElementById('game-canvas'));
   UI.show('menu');
+  // uitnodigingslink (?join=CODE) -> direct de lobby in
+  try { UI.autoJoinFromURL(); } catch (e) { console.warn('autoJoin', e); }
 
   // oriëntatie bijhouden (voor de draai-hint) + canvas herschalen
   function updateOrientation() {

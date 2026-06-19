@@ -85,6 +85,7 @@ const UI = {
     $('btn-vs-host').onclick = () => this.versusHost();
     $('btn-vs-join').onclick = () => this.versusJoin();
     $('btn-vs-bot').onclick = () => this.openBotSetup();
+    $('btn-vs-share').onclick = () => this.shareInvite();
     $('btn-vs-quit').onclick = () => Game.quitVersus();
     $('btn-vs-again').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
     $('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.leaveLobby(); this.show('menu'); };
@@ -432,6 +433,36 @@ const UI = {
       const c = await Net.versusJoin(code, this._versusCbs());
       this._enterRoom(c);
     } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '⚠ ' + (e.message || e); }
+  },
+
+  // uitnodiging delen (WhatsApp / deelmenu) met een directe join-link
+  shareInvite() {
+    const code = (window.Net && Net.versus && Net.versus.code) || document.getElementById('vs-room-code').textContent;
+    if (!code || code === '----') return;
+    const url = location.origin + location.pathname + '?join=' + code;
+    const text = 'Speel 1v1 tegen me in Topleven Adventures! Tik om mee te doen: ' + url;
+    if (navigator.share) {
+      navigator.share({ title: 'Topleven Adventures — 1v1', text: 'Speel 1v1 tegen me!', url: url }).catch(() => {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => alert('Uitnodigingslink gekopieerd! Plak in WhatsApp.')).catch(() => {
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      });
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+  },
+
+  // automatisch een kamer joinen via een ?join=CODE link (uitnodiging)
+  autoJoinFromURL(tries) {
+    tries = tries || 0;
+    let code = '';
+    try { const m = (location.search || '').match(/[?&]join=([A-Za-z0-9]{3,6})/); if (m) code = m[1].toUpperCase(); } catch (e) {}
+    if (!code) return;
+    if (!(window.Net && Net.ready) && tries < 24) { setTimeout(() => this.autoJoinFromURL(tries + 1), 250); return; }
+    try { history.replaceState(null, '', location.origin + location.pathname); } catch (e) {}
+    this.openVersusLobby();
+    const inp = document.getElementById('vs-code-input'); if (inp) inp.value = code;
+    this.versusJoin();
   },
 
   // bot-setup: kies map + wapenmodus, dan START
