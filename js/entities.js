@@ -41,6 +41,8 @@ class Player {
     this.maxJumps = 1;   // wordt 2 in wereld 2 (dubbel-jump)
     this.jumps = 1;
     this.dblJumpMul = ch.dblJumpMul || 1;   // Tygo springt z'n dubbel-jump hoger
+    this.groundPound = !!ch.groundPound;    // Just: stamp-schade bij de landing
+    this._poundCd = 0; this._poundHit = false;
     this.jumping = false; // bezig met een (variabele) sprong
     // Vince: vuuraura — elke 30s, 5s lang; aanraking geeft 3s burn
     this.fireAura = !!ch.fireAura;
@@ -177,6 +179,7 @@ class Player {
     // zwaartekracht
     const prevFeetY = this.y;
     const wasGround = this.onGround;
+    const fallSpeed = this.vy;               // valsnelheid bij frame-start (voor de stamp)
     this.onGround = false;
     this.vy += CONFIG.GRAVITY * s;
     this.y += this.vy * s;
@@ -204,6 +207,20 @@ class Player {
     }
     // bij landing de sprongen weer opladen
     if (this.onGround) this.jumps = this.maxJumps;
+
+    // Just: STAMP bij een harde landing -> schade rondom
+    if (this.groundPound && !wasGround && this.onGround && fallSpeed > 3.5 && game.time >= this._poundCd) {
+      this._poundCd = game.time + 450;
+      this._poundHit = true;                 // versus leest dit (raakt de tegenstander)
+      game.shake = Math.max(game.shake || 0, 7);
+      if (game.particles) for (let i = 0; i < 10; i++)
+        game.particles.push(new Particle(this.x + (Math.random() - 0.5) * 34, this.y, (Math.random() - 0.5) * 3.5, -0.6 - Math.random(), '#d8d0c0', 320, 2));
+      // campagne: zombies in de buurt
+      if (game.zombies) for (const z of game.zombies) {
+        if (z.alive && Math.abs(z.x - this.x) < 36 && Math.abs(z.cy - this.y) < 42)
+          z.takeDamage(Math.round(30 * this.meleeMul), (z.x >= this.x ? 1 : -1), game, 9);
+      }
+    }
 
     // loop-animatie
     if (moving && this.onGround) {

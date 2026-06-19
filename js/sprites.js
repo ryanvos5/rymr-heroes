@@ -21,16 +21,18 @@ const Sprites = {
     const bulky = pose.build === 'bulky';
     const tall = pose.build === 'tall';
     const small = pose.build === 'small';
+    const stocky = pose.build === 'stocky';               // dik & klein
     const curly = pose.hair === 'curly';
     const spiky = pose.hair === 'spiky';
+    const bald = pose.hair === 'bald';
 
-    // breedtes (fors = breder, lang = dunner, klein = smaller)
-    const bh = bulky ? 6 : (tall ? 4 : (small ? 4 : 5));   // halve romp-breedte
-    const hh = bulky ? 5 : (small ? 3 : 4);                // halve hoofd-breedte
-    const legW = bulky ? 4 : (tall ? 2 : (small ? 2 : 3));
+    // breedtes (fors = breder, lang = dunner, klein = smaller, stevig = breed & laag)
+    const bh = bulky ? 6 : (tall ? 4 : (small ? 4 : (stocky ? 6 : 5)));   // halve romp-breedte
+    const hh = bulky ? 5 : (small ? 3 : (stocky ? 5 : 4));                // halve hoofd-breedte
+    const legW = bulky ? 4 : (tall ? 2 : (small ? 2 : (stocky ? 4 : 3)));
 
-    // hoogtematen (lang = hoger, klein = lager)
-    const hM = tall ? 1.32 : (small ? 0.8 : 1);
+    // hoogtematen (lang = hoger, klein/stevig = lager)
+    const hM = tall ? 1.32 : (small ? 0.8 : (stocky ? 0.82 : 1));
     const legH = Math.round((duck ? 4 : 9) * hM);
     const torsoH = Math.round((duck ? 8 : 11) * hM);
     const headH = duck ? 8 : (small ? 8 : 9);
@@ -60,7 +62,13 @@ const Sprites = {
     this.px(ctx, pal.skinDark, cx - hh, headTop, 2, headH);
 
     // --- haar ---
-    if (spiky) {
+    if (bald) {
+      // kaal bovenop, klein beetje blond haar achter op het hoofd + dun randje
+      const backX = dir > 0 ? cx - hh - 1 : cx + hh - 1;                   // achterkant van het hoofd
+      this.px(ctx, pal.hair, backX, headTop + 1, 2, headH - 2);            // pluk haar achter
+      this.px(ctx, pal.hairDark, backX, headTop + 1, 1, headH - 2);
+      this.px(ctx, pal.hair, cx - hh, headTop + headH - 3, hh * 2, 2);     // dun randje onderaan
+    } else if (spiky) {
       // basis + opstaande zwarte stekels
       this.px(ctx, pal.hair, cx - hh - 1, headTop - 1, hh * 2 + 2, 3);
       this.px(ctx, pal.hair, cx - hh - 1, headTop, 2, 4);                  // links

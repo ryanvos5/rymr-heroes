@@ -1244,6 +1244,17 @@ const Game = {
       if (this.vsMode === 'smash') this.updateSmash(dt);  // drops spawnen/oppakken + wapen-timer
       if (this.vsBot) this.updateBot(dt);              // de AI-tegenstander
       this.checkVersusHit();
+      // Just: stamp-schade op de tegenstander bij de landing
+      if (this.player._poundHit) {
+        this.player._poundHit = false;
+        const r = v.remote;
+        if (r.alive && Math.abs(r.x - this.player.x) < 40 && Math.abs(r.y - this.player.y) < 30) {
+          const kd = r.x >= this.player.x ? 1 : -1;
+          if (this.vsBot) this.applyHitToBot(kd, 16, -6, 24);
+          else if (window.Net) Net.versusSend('hit', { dir: kd, power: 16, vy: -6, dmg: 24 });
+          this.shake = Math.max(this.shake, 8);
+        }
+      }
       if (this.vsMode === 'both' || this.vsMode === 'smash') this.updateVersusBullets(dt);
       // Vince-vuuraura raakt de tegenstander
       if (this.player.fireAura && this.player._auraOn && v.remote.alive &&
@@ -1492,6 +1503,16 @@ const Game = {
         }
       }
       this.botBullets = this.botBullets.filter((bl) => bl.alive && bl.life < 1500 && bl.x > -20 && bl.x < this.vsMapW + 20);
+    }
+
+    // bot (Just): stamp-schade op de speler bij de landing
+    if (b._poundHit) {
+      b._poundHit = false;
+      if (Math.abs(this.player.x - b.x) < 40 && Math.abs(this.player.y - b.y) < 30 && this.player.respawnInvuln <= 0 && !this.player.dead) {
+        const kd = this.player.x >= b.x ? 1 : -1;
+        this.onVersusHit({ dir: kd, power: 16, vy: -6, dmg: 24 });
+        this.shake = Math.max(this.shake, 8);
+      }
     }
 
     // bot's mep raakt de speler?

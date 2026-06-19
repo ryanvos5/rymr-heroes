@@ -155,6 +155,19 @@ const CHARACTERS = {
     },
     desc: 'Lang & taai (+10 HP). Hogere dubbel-jump. Gebruikt elk melee-wapen.'
   },
+  just: {
+    id: 'just', name: 'Just', cost: 800,
+    maxHp: 130, speedMul: 0.8, meleeMul: 1.2, build: 'stocky', hair: 'bald',
+    groundPound: true,
+    palette: {
+      hair: '#c8a85a', hairDark: '#9a7e3a',     // klein beetje blond haar
+      skin: '#d8a878', skinDark: '#b8895e',
+      eye: '#2f6fb0',                            // blauwe ogen
+      shirt: '#5a4030', shirtDark: '#3a2820',
+      pants: '#2a2622', shoe: '#161210',
+    },
+    desc: 'Dik & klein, traag maar sterk (+30 HP, +20% melee). Stamp bij de landing schade in de buurt.'
+  },
   timo: {
     id: 'timo', name: 'Timo', cost: 900,
     maxHp: 90, speedMul: 1.05, meleeMul: 1.0, build: 'small', hair: 'natural',
@@ -194,7 +207,7 @@ const CHARACTERS = {
     desc: 'Fors & taai: +40 HP, +30% melee, iets trager.'
   },
 };
-const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo'];
+const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just'];
 const SHIELD_BLOCK_CD = 3000;   // ms cooldown nadat Tygo's schild een treffer blokt
 
 /* ---------- LEVELS (Wereld 1: Verlaten Stad) ----------
