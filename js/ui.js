@@ -85,8 +85,6 @@ const UI = {
     $('btn-vs-host').onclick = () => this.versusHost();
     $('btn-vs-join').onclick = () => this.versusJoin();
     $('btn-vs-bot').onclick = () => this.openBotSetup();
-    $('btn-vs-share').onclick = () => this.shareInvite();
-    $('invite-banner').onclick = () => this.acceptInvite();
     $('btn-vs-quit').onclick = () => Game.quitVersus();
     $('btn-vs-again').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
     $('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.leaveLobby(); this.show('menu'); };
@@ -436,52 +434,6 @@ const UI = {
     } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '⚠ ' + (e.message || e); }
   },
 
-  // uitnodiging delen (WhatsApp / deelmenu) met een directe join-link
-  shareInvite() {
-    const code = (window.Net && Net.versus && Net.versus.code) || document.getElementById('vs-room-code').textContent;
-    if (!code || code === '----') return;
-    const url = location.origin + location.pathname + '?join=' + code;
-    const text =
-      'Doe mee met mijn 1v1 in Topleven Adventures! 🎮\n\n' +
-      '• Tik de link (opent in je browser): ' + url + '\n' +
-      '• Of open de game-app en doe mee met code: ' + code;
-    if (navigator.share) {
-      navigator.share({ title: 'Topleven Adventures — 1v1', text: text }).catch(() => {});
-    } else if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('Uitnodiging gekopieerd! Plak in WhatsApp.')).catch(() => {
-        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-      });
-    } else {
-      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-    }
-  },
-
-  // uitnodigingslink (?join=CODE): NIET meteen joinen, maar via het startscherm
-  autoJoinFromURL() {
-    let code = '';
-    try { const m = (location.search || '').match(/[?&]join=([A-Za-z0-9]{3,6})/); if (m) code = m[1].toUpperCase(); } catch (e) {}
-    if (!code) return;
-    try { history.replaceState(null, '', location.origin + location.pathname); } catch (e) {}
-    this._pendingJoin = code;
-    this.show('menu');                 // altijd via het startscherm
-    this.refreshInviteBanner();
-  },
-
-  refreshInviteBanner() {
-    const el = document.getElementById('invite-banner');
-    if (!el) return;
-    if (this._pendingJoin) { el.classList.remove('hidden'); el.textContent = '🎮 MEEDOEN MET 1v1 (' + this._pendingJoin + ')'; }
-    else el.classList.add('hidden');
-  },
-
-  acceptInvite() {
-    const code = this._pendingJoin; this._pendingJoin = null; this.refreshInviteBanner();
-    if (!code) return;
-    this.openVersusLobby();
-    const inp = document.getElementById('vs-code-input'); if (inp) inp.value = code;
-    this.versusJoin();
-  },
-
   // bot-setup: kies map + wapenmodus, dan START
   openBotSetup() {
     this.leaveLobby();
@@ -763,8 +715,7 @@ const UI = {
     this.el.menuCoins.textContent = Storage.data.coins;
     const upBtn = document.getElementById('btn-update');
     if (upBtn) upBtn.classList.toggle('hidden', name !== 'menu');
-    if (name === 'menu') { this.updateArenaButton(); this.refreshInviteBanner(); }
-    else { const ib = document.getElementById('invite-banner'); if (ib) ib.classList.add('hidden'); }
+    if (name === 'menu') this.updateArenaButton();
   },
 
   // wereld 2 is pas open als wereld 1 (incl. boss) is uitgespeeld
