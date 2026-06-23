@@ -1532,7 +1532,7 @@ const Game = {
       if (this.vsMode === 'both' && b._rangedId) {
         const wd = WEAPONS[b._rangedId] || WEAPONS.pistol;
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * (wd.bulletSpeed || 7), wd.damage, 0);
-        b._shootCd = this.time + 750;
+        b._shootCd = this.time + 1100;
       } else if (this.vsMode === 'smash' && b.fireballs > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 7.5, 0, 0); bl.kind = 'fire'; bl.hitDmg = 22; bl.power = 14;
         b.fireballs--; b._shootCd = this.time + 600;
@@ -1623,7 +1623,8 @@ const Game = {
   // is een ander platform bereikbaar met een (dubbel-)sprong?
   reachablePlatform(cur, tgt) {
     if (!cur || !tgt) return false;
-    return Math.abs(tgt.x - cur.x) < 170 && (cur.y - tgt.y) < 95;
+    // wat de bot met een (dubbel)sprong echt haalt: niet te ver en niet te hoog -> niet de leegte in
+    return Math.abs(tgt.x - cur.x) < 140 && (cur.y - tgt.y) < 80;
   },
 
   // de AI: nadert de speler, springt tussen platforms, mept, blokt, herstelt aan de rand
@@ -1635,27 +1636,31 @@ const Game = {
     const aDx = Math.abs(dx);
     const face = () => { if (aDx > 8) b.dir = dx > 0 ? 1 : -1; };
 
-    // RECOVERY: in de lucht -> terug naar het dichtstbijzijnde platform
+    // IN DE LUCHT: koers naar het doelplatform (of anders het dichtstbijzijnde) en land erop
     if (!b.onGround) {
-      const safe = this.nearestPlatform(b.x);
-      if (safe) {
-        if (safe.x > b.x + 8) inp.right = true; else if (safe.x < b.x - 8) inp.left = true; else face();
-        if (b.vy > 1.5 && b.y > safe.y + 10 && b.jumps > 0 && now >= b._jumpCd) {
-          inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 350;
+      const target = (b._jumpTarget && this.platforms.indexOf(b._jumpTarget) >= 0) ? b._jumpTarget : this.nearestPlatform(b.x);
+      if (target) {
+        if (target.x > b.x + 6) inp.right = true; else if (target.x < b.x - 6) inp.left = true; else face();
+        if (b.vy < 0) inp.jump = true;                    // sprong vasthouden tijdens stijgen = volle hoogte
+        // tweede sprong om de oversteek of de hoogte te halen
+        if (b.jumps > 0 && now >= b._jumpCd && b.vy > 1 &&
+            (Math.abs(target.x - b.x) > 30 || b.y > target.y + 6)) {
+          inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 300;
         }
       }
-      if (aDx < 30 && Math.abs(p.y - b.y) < 26) { inp.melee = true; face(); }
+      if (aDx < 30 && Math.abs(p.y - b.y) < 26 && now >= (b._meleeCd || 0)) { inp.melee = true; b._meleeCd = now + 700; face(); }
       return inp;
     }
 
     const cur = this.platformUnder(b);
+    b._jumpTarget = null;                                 // op de grond: geen sprongdoel meer
     const eL = cur ? cur.x - cur.w / 2 + 9 : 0;          // veilige randen
     const eR = cur ? cur.x + cur.w / 2 - 9 : CONFIG.VIEW_W;
 
     // BLOKKEN: speler vlakbij en haalt uit -> soms bukken (schild)
     if (aDx < 32 && Math.abs(p.y - b.y) < 24 && this.time < (p.swingUntil || 0) &&
-        now >= (b._blockUntil || 0) && now >= (b._blockCd || 0) && Math.random() < 0.55) {
-      b._blockUntil = now + 480; b._blockCd = now + 1200;
+        now >= (b._blockUntil || 0) && now >= (b._blockCd || 0) && Math.random() < 0.30) {
+      b._blockUntil = now + 420; b._blockCd = now + 1600;
     }
     if (now < (b._blockUntil || 0)) { inp.duck = true; face(); return inp; }   // gebukt blokken
 
@@ -1664,21 +1669,21 @@ const Game = {
     const tgt = playerAirAbove ? cur : (this.platformUnder(p) || this.nearestPlatform(p.x));
 
     if (cur && tgt && cur !== tgt && this.reachablePlatform(cur, tgt)) {
-      // doelgericht naar een ANDER, bereikbaar platform springen
+      // doelgericht naar een ANDER, bereikbaar platform springen (doel vasthouden in de lucht)
       const tdx = tgt.x - b.x;
       if (tdx > 6) inp.right = true; else if (tdx < -6) inp.left = true; else face();
-      const nearEdge = (tdx > 0 && b.x > eR - 4) || (tdx < 0 && b.x < eL + 4) || tgt.y < cur.y - 8;
-      if (nearEdge && now >= b._jumpCd) { inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 650; }
+      const nearEdge = (tdx > 0 && b.x > eR - 6) || (tdx < 0 && b.x < eL + 6) || tgt.y < cur.y - 8;
+      if (nearEdge && now >= b._jumpCd) { inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 700; b._jumpTarget = tgt; }
     } else {
       // op het huidige platform: nader de speler MAAR blijf binnen de veilige randen
       const want = aDx > 26 ? (dx > 0 ? 1 : -1) : 0;
       if (want > 0 && b.x < eR) inp.right = true;
       else if (want < 0 && b.x > eL) inp.left = true;
       else face();
-      if (aDx < 32 && Math.abs(p.y - b.y) < 24) { inp.melee = true; face(); }
-      // speler hoog erboven -> spring (alleen veilig midden op het platform)
+      if (aDx < 32 && Math.abs(p.y - b.y) < 24 && now >= (b._meleeCd || 0)) { inp.melee = true; b._meleeCd = now + 700; face(); }
+      // speler hoog erboven -> spring erachteraan (alleen veilig midden op het platform)
       if (p.y < b.y - 18 && aDx < 50 && b.x > eL + 4 && b.x < eR - 4 && now >= b._jumpCd) {
-        inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 650;
+        inp.jump = true; inp.jumpPressed = true; b._jumpCd = now + 700; b._jumpTarget = tgt;
       }
     }
     return inp;
