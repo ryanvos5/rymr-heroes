@@ -27,8 +27,18 @@ const Game = {
     requestAnimationFrame((t) => this.loop(t));
   },
 
-  // letterbox: behoud 16:9 zonder vervorming
+  // full-screen: de interne BREEDTE groeit mee met het scherm (hoogte vast),
+  // zodat de canvas het hele scherm vult -> geen zwarte zijbalken op brede schermen (iPhone).
   resize() {
+    const aspect = (window.innerWidth || 1) / (window.innerHeight || 1);
+    let vw = Math.round(CONFIG.VIEW_H * aspect);
+    vw = Math.max(360, Math.min(520, vw));            // grenzen tegen extreme schermen
+    if (vw % 2) vw++;                                  // even breedte = nettere pixels
+    if (vw !== CONFIG.VIEW_W) {
+      CONFIG.VIEW_W = vw;
+      this.canvas.width = vw;                          // interne resolutie aanpassen
+      this.ctx.imageSmoothingEnabled = false;          // (canvas.width reset de context)
+    }
     const scale = Math.min(window.innerWidth / CONFIG.VIEW_W, window.innerHeight / CONFIG.VIEW_H);
     this.canvas.style.width = Math.floor(CONFIG.VIEW_W * scale) + 'px';
     this.canvas.style.height = Math.floor(CONFIG.VIEW_H * scale) + 'px';
@@ -1343,8 +1353,10 @@ const Game = {
   updateVersusCamera() {
     const map = this.vsMap || VERSUS_MAPS[0];
     const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H;
-    let tx = this.player.x - W / 2;
-    tx = Math.max(0, Math.min((this.vsMapW || W) - W, tx));
+    const mapW = this.vsMapW || W;
+    let tx;
+    if (mapW <= W) tx = (mapW - W) / 2;                     // map smaller dan het scherm -> gecentreerd
+    else { tx = this.player.x - W / 2; tx = Math.max(0, Math.min(mapW - W, tx)); }
     let ty = this.player.y - H * 0.62;
     ty = Math.max(map.camTop || 0, Math.min(map.camBottom || 0, ty));
     this.vsCamX += (tx - this.vsCamX) * 0.18;

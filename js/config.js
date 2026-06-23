@@ -422,7 +422,7 @@ function xpForLevel(L) { return 75 * L * (L - 1); }   // totale XP nodig voor le
    sky = [boven, onder] kleuren, void = afgrond-kleur onderin. */
 const VERSUS_MAPS = [
   {
-    id: 'jungle', name: 'Jungle', sky: ['#16331f', '#0c1a12'], void: '#06090d', plat: 'leaf',
+    id: 'jungle', name: 'Jungle', sky: ['#16331f', '#0c1a12'], void: '#06090d', plat: 'leaf', w: 360,
     spawnL: { x: 78, y: 140 }, spawnR: { x: 282, y: 140 },
     platforms: [
       { x: 78, y: 140, w: 74 }, { x: 282, y: 140, w: 74 }, { x: 180, y: 104, w: 64 },
@@ -430,7 +430,7 @@ const VERSUS_MAPS = [
     ],
   },
   {
-    id: 'bergen', name: 'De Bergen', sky: ['#2a3e5e', '#1a2436'], void: '#0a1018', plat: 'rock',
+    id: 'bergen', name: 'De Bergen', sky: ['#2a3e5e', '#1a2436'], void: '#0a1018', plat: 'rock', w: 360,
     spawnL: { x: 60, y: 150 }, spawnR: { x: 300, y: 150 },
     platforms: [
       { x: 60, y: 150, w: 58 }, { x: 300, y: 150, w: 58 }, { x: 180, y: 150, w: 56 },
@@ -438,7 +438,7 @@ const VERSUS_MAPS = [
     ],
   },
   {
-    id: 'stad', name: 'Stad', sky: ['#1a2438', '#0d1018'], void: '#05070c', plat: 'metal',
+    id: 'stad', name: 'Stad', sky: ['#1a2438', '#0d1018'], void: '#05070c', plat: 'metal', w: 360,
     spawnL: { x: 66, y: 160 }, spawnR: { x: 294, y: 160 },
     platforms: [
       { x: 66, y: 160, w: 76 }, { x: 294, y: 160, w: 76 },
@@ -448,7 +448,7 @@ const VERSUS_MAPS = [
     ],
   },
   {
-    id: 'lava', name: 'Vulkaan', sky: ['#3a1410', '#1a0805'], void: '#5a1408', plat: 'obsidian',
+    id: 'lava', name: 'Vulkaan', sky: ['#3a1410', '#1a0805'], void: '#5a1408', plat: 'obsidian', w: 360,
     spawnL: { x: 64, y: 150 }, spawnR: { x: 296, y: 150 },
     platforms: [
       { x: 64, y: 150, w: 60 }, { x: 296, y: 150, w: 60 },
