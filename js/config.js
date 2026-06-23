@@ -14,10 +14,6 @@ const CONFIG = {
   GROUND_Y: 173,        // y van de grond (voeten staan hier)
   GRAVITY: 0.6,
   JUMP_VELOCITY: -11,
-  // dash (2x snel links/rechts tikken)
-  DASH_SPEED: 5.4,      // px/frame tijdens de dash
-  DASH_TIME: 170,       // ms dat de dash duurt
-  DASH_CD: 550,         // ms cooldown tussen dashes
 };
 
 /* ---------- WAPENS ----------

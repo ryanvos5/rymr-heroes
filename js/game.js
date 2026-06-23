@@ -1370,7 +1370,7 @@ const Game = {
 
   updateSmash(dt) {
     const p = this.player;
-    if (p._weaponUntil && this.time > p._weaponUntil) { p.meleeId = p.baseMelee || 'bat'; p.weaponId = p.rangedId || p.meleeId; p._weaponUntil = 0; }
+    if (p._weaponUntil && this.time > p._weaponUntil) { p.meleeId = p.baseMelee || 'bat'; p.weaponId = p.rangedId || p.meleeId; p._weaponUntil = 0; p.swingWeapon = null; }
     // drops spawnen: host (online) of lokaal (bot)
     if (this.vsBot || this.vs.role === 'host') {
       this._dropTimer -= dt;
@@ -1390,7 +1390,7 @@ const Game = {
         if (d.taken) continue;
         if (Math.abs(this.bot.x - d.x) < 16 && Math.abs((this.bot.y - 12) - d.y) < 22) { d.taken = true; this.applyDrop(this.bot, d); }
       }
-      if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot.weaponId = this.bot.rangedId || this.bot.meleeId; this.bot._weaponUntil = 0; }
+      if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot.weaponId = this.bot.rangedId || this.bot.meleeId; this.bot._weaponUntil = 0; this.bot.swingWeapon = null; }
     }
     this.drops = this.drops.filter((d) => !d.taken && this.time - d.born < 16000);
 
@@ -1605,7 +1605,8 @@ const Game = {
     const sp = this.vs.botSpawn;
     b.x = sp.x; b.y = sp.y; b.dir = sp.dir; b.vy = 0; b.knockVx = 0;
     b.onGround = true; b.dead = false; b.respawnInvuln = 1300; b.hp = b.maxHp; b.burnUntil = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.fireballs = 0; b.smashRockets = 0; b._weaponUntil = 0; }
+    b.swingWeapon = null; b.swingUntil = 0;
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b._weaponUntil = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -1715,8 +1716,10 @@ const Game = {
     this.player.vy = 0; this.player.knockVx = 0; this.player.onGround = true;
     this.player.dead = false; this.player.respawnInvuln = 1300;
     this.player.hp = this.player.maxHp; this.player.burnUntil = 0;   // fris (ook na burn-dood)
+    this.player.swingWeapon = null; this.player.swingUntil = 0;       // geen lingerende mep-animatie
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
+      this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
       this.player.fireballs = 0; this.player.smashRockets = 0; this.player._weaponUntil = 0;
     }
   },
