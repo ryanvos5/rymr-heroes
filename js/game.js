@@ -1141,6 +1141,7 @@ const Game = {
     this.powerUps = []; this.enemyShots = []; this.obstacles = []; this.rocketShots = []; this.platforms = [];
     this.ghostBullets = []; this.botBullets = [];
     this.drops = []; this._dropTimer = SMASH_DROP_EVERY; this._dropId = 1;
+    this.portals = []; this._portalTimer = SMASH_PORTAL_EVERY;
     this.ammo = mode === 'both' ? 999 : 0;
     this.rockets = 0;
     this.boss = null; this.shake = 0; this.cam.x = 0; this.time = 0; this.dtScale = 1;
@@ -1189,6 +1190,7 @@ const Game = {
         onOver: (p) => this.onVersusOver(p),
         onDrop: (p) => this.onVersusDrop(p),
         onPickup: (p) => this.onVersusPickup(p),
+        onPortal: (p) => this.onVersusPortal(p),
       });
     }
     this.state = 'versus';
@@ -1391,6 +1393,55 @@ const Game = {
       if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot._weaponUntil = 0; }
     }
     this.drops = this.drops.filter((d) => !d.taken && this.time - d.born < 16000);
+
+    // ----- portalen: af en toe een paar dat je naar de overkant teleporteert -----
+    if (!this.portals) this.portals = [];
+    if (this.vsBot || this.vs.role === 'host') {
+      this._portalTimer -= dt;
+      if (this._portalTimer <= 0 && this.portals.length === 0) { this._portalTimer = SMASH_PORTAL_EVERY; this.spawnPortal(); }
+    }
+    this.checkPortal(this.player);
+    if (this.vsBot && this.bot && !this.bot.dead) this.checkPortal(this.bot);
+    this.portals = this.portals.filter((pt) => this.time - pt.born < SMASH_PORTAL_LIFE);
+  },
+
+  // portaalpaar: één in de linkerhelft, één in de rechterhelft (host/lokaal bepaalt)
+  spawnPortal() {
+    const mapW = this.vsMapW;
+    const left = this.platforms.filter((p) => p.x < mapW * 0.5);
+    const right = this.platforms.filter((p) => p.x >= mapW * 0.5);
+    if (!left.length || !right.length) return;
+    const a = left[Math.floor(Math.random() * left.length)];
+    const b = right[Math.floor(Math.random() * right.length)];
+    const id = this._dropId++;
+    const pt = { id, ax: Math.round(a.x), ay: Math.round(a.y), bx: Math.round(b.x), by: Math.round(b.y), born: this.time };
+    this.portals.push(pt);
+    if (window.Net && !this.vsBot) Net.versusSend('portal', { id: pt.id, ax: pt.ax, ay: pt.ay, bx: pt.bx, by: pt.by });
+  },
+
+  // speler die in een portaalmond stapt -> naar de andere mond
+  checkPortal(pl) {
+    if (!this.portals || !this.portals.length || pl.dead) return;
+    if (this.time < (pl._portalCd || 0)) return;
+    for (const pt of this.portals) {
+      let tx = null, ty = null;
+      if (Math.abs(pl.x - pt.ax) < 13 && Math.abs(pl.y - pt.ay) < 20) { tx = pt.bx; ty = pt.by; }
+      else if (Math.abs(pl.x - pt.bx) < 13 && Math.abs(pl.y - pt.by) < 20) { tx = pt.ax; ty = pt.ay; }
+      if (tx != null) {
+        for (let i = 0; i < 16; i++) this.particles.push(new Particle(pl.x, pl.y - 12, (Math.random() - 0.5) * 3.2, (Math.random() - 0.5) * 3.2, '#b06bff', 360, 2));
+        pl.x = tx; pl.y = ty; pl.vy = 0; pl.knockVx = 0; pl.onGround = true;
+        pl._portalCd = this.time + 1300;     // niet meteen terugstappen
+        for (let i = 0; i < 16; i++) this.particles.push(new Particle(pl.x, pl.y - 12, (Math.random() - 0.5) * 3.2, (Math.random() - 0.5) * 3.2, '#6bd0ff', 360, 2));
+        this.shake = Math.max(this.shake, 5);
+        break;
+      }
+    }
+  },
+
+  onVersusPortal(p) {
+    if (!this.portals) this.portals = [];
+    if (this.portals.some((pt) => pt.id === p.id)) return;
+    this.portals.push({ id: p.id, ax: p.ax, ay: p.ay, bx: p.bx, by: p.by, born: this.time });
   },
 
   spawnDrop() {
@@ -1777,6 +1828,9 @@ const Game = {
       if (pf.mv) { ctx.globalAlpha = 0.5; Sprites.px(ctx, '#ffe9a0', pf.x - 1, pf.y - 5, 2, 2); ctx.globalAlpha = 1; }
     }
 
+    // portalen (Power Smash) — achter de spelers
+    if (this.portals) for (const pt of this.portals) this.drawPortal(ctx, pt);
+
     // drops (Power Smash)
     if (this.drops) for (const d of this.drops) { if (!d.taken) this.drawDrop(ctx, d); }
 
@@ -1850,6 +1904,30 @@ const Game = {
     else if (d.kind === 'health') { Sprites.px(ctx, '#ffffff', x - 5, y - 5, 10, 10); Sprites.px(ctx, '#d33', x - 1, y - 5, 3, 10); Sprites.px(ctx, '#d33', x - 5, y - 1, 10, 3); }
     else if (d.kind === 'rage') { Sprites.px(ctx, '#ff5a3a', x - 4, y - 5, 8, 9); Sprites.px(ctx, '#ffd24a', x - 1, y - 3, 2, 5); }
     else if (d.kind === 'speed') { Sprites.px(ctx, '#3ad0ff', x - 4, y - 5, 8, 9); Sprites.px(ctx, '#eaffff', x - 1, y - 3, 2, 5); }
+  },
+
+  // portaalmond (Power Smash): draaiende paars/blauwe ovaal op een platform
+  drawPortal(ctx, pt) {
+    const t = this.time;
+    const mouth = (cx, footY) => {
+      const cy = footY - 12, H = 13, W = 8, phase = t / 140;
+      // zachte glow eromheen
+      ctx.globalAlpha = 0.22; Sprites.px(ctx, '#b06bff', cx - W - 3, cy - H - 3, (W + 3) * 2, (H + 3) * 2); ctx.globalAlpha = 1;
+      // ovaal opgebouwd uit rijen, kleur swirlt met hoogte + tijd
+      for (let dy = -H; dy <= H; dy++) {
+        const k = 1 - (dy * dy) / (H * H); if (k <= 0) continue;
+        const w = Math.max(1, Math.round(W * Math.sqrt(k)));
+        const band = Math.sin(phase + dy * 0.6);
+        const col = band > 0.4 ? '#dff0ff' : (band > -0.2 ? '#b06bff' : '#7a3df0');
+        Sprites.px(ctx, col, cx - w, cy + dy, w * 2, 1);
+      }
+      // donkere kern
+      Sprites.px(ctx, '#2a1147', cx - 2, cy - 5, 4, 10);
+      // twee draaiende sterretjes
+      for (let i = 0; i < 2; i++) { const aa = phase + i * Math.PI; Sprites.px(ctx, '#eaffff', Math.round(cx + Math.cos(aa) * W), Math.round(cy + Math.sin(aa) * H), 2, 2); }
+    };
+    mouth(pt.ax, pt.ay);
+    mouth(pt.bx, pt.by);
   },
 
   // blok-stand (bukken): glanzend schildje vóór de speler

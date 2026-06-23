@@ -389,6 +389,8 @@ const SMASH_DROP_EVERY = 5000;       // ms tussen drops (host bepaalt)
 const SMASH_WEAPON_TIME = 13000;     // opgepakt melee-wapen ben je na ~13s weer kwijt
 const SMASH_FIREBALL_SHOTS = 3;      // aantal vuurballen
 const SMASH_ROCKETS = 3;             // raketten bij een RPG-drop
+const SMASH_PORTAL_EVERY = 14000;    // ms tussen portalen (host bepaalt)
+const SMASH_PORTAL_LIFE = 11000;     // hoe lang een portaalpaar blijft staan
 // dropsoorten + relatieve kans
 const SMASH_DROPS = [
   { kind: 'weapon', w: 34 },         // willekeurig melee-wapen
