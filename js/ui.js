@@ -94,7 +94,14 @@ const UI = {
     $('btn-vs-bot').onclick = () => this.openBotSetup();
     const diffSlider = document.getElementById('vs-diff-slider');
     if (diffSlider) diffSlider.oninput = () => this.setBotDiff(parseInt(diffSlider.value, 10));
-    $('btn-vs-quit').onclick = () => Game.quitVersus();
+    $('btn-vs-quit').onclick = () => {
+      // online tijdens een live match: bevestigen + verlaten = jij verliest, tegenstander wint
+      if (Game.state === 'versus' && !Game.vsBot && window.Net && Net.versus) {
+        if (confirm('Weet je zeker dat je de match wilt verlaten?')) Game.forfeitVersus();
+      } else {
+        Game.quitVersus();
+      }
+    };
     $('btn-vs-again').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
     $('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.leaveLobby(); this.show('menu'); };
     $('btn-vs-rematch').onclick = () => this.doRematch();
@@ -107,15 +114,6 @@ const UI = {
     // spel updaten (verse versie laden zonder het icoon te verwijderen)
     $('btn-update').onclick = () => this.forceUpdate();
 
-    // fullscreen
-    const fsBtn = document.getElementById('fs-btn');
-    if (fsBtn) fsBtn.onclick = () => this.toggleFullscreen();
-    ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) =>
-      document.addEventListener(ev, () => {
-        const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        document.body.classList.toggle('fs', on);
-      })
-    );
 
     if (Input.isTouch()) document.body.classList.add('is-touch');
   },
@@ -545,7 +543,7 @@ const UI = {
       onShot: (p) => Game.onVersusShot(p),
       onOver: (p) => Game.onVersusOver(p),
       onPeerLeft: () => {
-        if (Game.state === 'versus') { Game.endVersus(true); }   // tegenstander quit mid-game = jij wint
+        if (Game.state === 'versus') { Game.endVersus(true, true); }   // tegenstander verliet = jij wint (forfeit)
         else if (Game.state === 'versusOver') {                   // op het uitslagscherm: rematch onmogelijk
           const rb = document.getElementById('btn-vs-rematch'); if (rb) { rb.disabled = true; rb.textContent = '🔁 REMATCH'; }
           const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = 'Tegenstander is weg — geen rematch mogelijk.';
@@ -787,7 +785,7 @@ const UI = {
     }
   },
 
-  showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned) {
+  showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft) {
     const rb = document.getElementById('vs-round-banner'); if (rb) rb.classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     document.body.classList.remove('in-game');
@@ -810,8 +808,14 @@ const UI = {
     this._rematchMine = false; this._rematchPeer = false; this._vsStarted = false; this._isBotResult = !!isBot;
     const rbtn = document.getElementById('btn-vs-rematch');
     const rs = document.getElementById('vs-rematch-status');
-    rbtn.disabled = false; rbtn.textContent = '🔁 REMATCH'; rbtn.classList.remove('hidden');
-    rs.textContent = isBot ? '' : 'Beiden moeten op rematch drukken.';
+    if (peerLeft) {
+      // tegenstander heeft de match verlaten -> geen rematch mogelijk
+      rbtn.disabled = true; rbtn.classList.add('hidden');
+      rs.textContent = '🏃 Tegenstander heeft de match verlaten.';
+    } else {
+      rbtn.disabled = false; rbtn.textContent = '🔁 REMATCH'; rbtn.classList.remove('hidden');
+      rs.textContent = isBot ? '' : 'Beiden moeten op rematch drukken.';
+    }
 
     document.getElementById('versus-result').classList.remove('hidden');
     this.refreshAuthUI();

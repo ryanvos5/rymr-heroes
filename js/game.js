@@ -1224,6 +1224,8 @@ const Game = {
       });
     }
     this.state = 'versus';
+    const qb = document.getElementById('btn-vs-quit');     // online = LEAVE, bot = ✕
+    if (qb) { qb.textContent = this.vsBot ? '✕' : 'LEAVE'; qb.classList.toggle('leave', !this.vsBot); }
     Input.clear();
     UI.showVersus();
   },
@@ -2097,7 +2099,7 @@ const Game = {
     });
   },
 
-  endVersus(won) {
+  endVersus(won, peerLeft) {
     if (this.vs && this.vs.over) return;
     if (this.vs) this.vs.over = true;
     this.state = 'versusOver';
@@ -2121,7 +2123,16 @@ const Game = {
       else Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
       Storage.save();
     }
-    UI.showVersusResult(won, this.vs ? this.vs.myScore : 0, this.vs ? this.vs.oppScore : 0, gained, isBot, coinsEarned);
+    UI.showVersusResult(won, this.vs ? this.vs.myScore : 0, this.vs ? this.vs.oppScore : 0, gained, isBot, coinsEarned, peerLeft);
+  },
+
+  // online match zelf verlaten: jij krijgt een loss (geen XP/munten), tegenstander wint (via 'bye')
+  forfeitVersus() {
+    if (this.vs && !this.vsBot) {
+      Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
+      Storage.save();
+    }
+    this.quitVersus();   // Net.leaveVersus() stuurt 'bye' -> tegenstander wint
   },
 
   quitVersus() {
