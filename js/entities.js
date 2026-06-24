@@ -304,7 +304,7 @@ class Player {
     const ranged = this.rangedId ? WEAPONS[this.rangedId] : null;
     const melee = WEAPONS[this.meleeId];
     const gunsJammed = game.level.mode === 'melee';   // melee-only ronde
-    if (inp.attack && !this.giant) {
+    if (inp.attack && !this.giant && !game.level.versus) {   // in versus regelt smashFire het vuren
       if (ranged && !gunsJammed) this.useRanged(game, ranged);
       else this.useMelee(game, melee);
     }
