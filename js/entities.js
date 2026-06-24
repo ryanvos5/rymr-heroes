@@ -335,6 +335,12 @@ class Player {
       this._blockedHit = true;
       return;
     }
+    // Shield-powerup: vangt eerst de schade op (blauw balkje boven je hp)
+    if (this.shieldHp > 0) {
+      const absorbed = Math.min(this.shieldHp, n);
+      this.shieldHp -= absorbed; n -= absorbed;
+      if (n <= 0) return;
+    }
     this.hp = Math.max(0, this.hp - n);
   }
 }

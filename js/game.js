@@ -1165,7 +1165,7 @@ const Game = {
     this.vulcanSmoke = []; this.vulcanBg = [];
     // Pirate: zeemonster-tentakel
     this.tentacle = map.pirate ? { state: 'idle', nextAt: this.time + PIRATE_TENT_EVERY, x: 360, mode: 'flat', hitP: false, hitB: false } : null;
-    this.player.cannon = 0;
+    this.player.cannon = 0; this.player.shieldHp = 0;
     this.ammo = mode === 'both' ? 999 : 0;
     this.rockets = 0;
     this.boss = null; this.shake = 0; this.cam.x = 0; this.time = 0; this.dtScale = 1;
@@ -1751,6 +1751,7 @@ const Game = {
     if (mid === 'cave' || mid === 'sky') pool.push({ kind: 'lightning', w: 8 });   // bliksem op Cave + Sky
     if (mid === 'cave') pool.push({ kind: 'rock', w: 8 });                          // steen alleen op Cave
     if (mid === 'pirate') pool.push({ kind: 'cannon', w: 9 });                      // kanonskogel alleen op Pirate Ship
+    if (mid === 'pirate' || mid === 'sky') pool.push({ kind: 'shield', w: 9 });     // shield op Pirate + Sky
     let tot = 0; for (const d of pool) tot += d.w;
     let r = Math.random() * tot, kind = 'health';
     for (const d of pool) { r -= d.w; if (r <= 0) { kind = d.kind; break; } }
@@ -1791,6 +1792,7 @@ const Game = {
       } else { const xs = this.rockTargetXs(this.player.x); this.castRocks(xs); }   // bot pakte de steen
     }
     else if (d.kind === 'cannon') { pl.cannon = (pl.cannon || 0) + 2; }            // 2 kanonskogels
+    else if (d.kind === 'shield') { pl.shieldHp = SMASH_SHIELD; }                  // +50 hp schild
   },
 
   onVersusDrop(p) {
@@ -1860,6 +1862,7 @@ const Game = {
     r.stunned = b.stunUntil && this.time < b.stunUntil;
     r.flat = b.flatUntil && this.time < b.flatUntil;
     r.rage = b.hasBuff('rage', this.time); r.burn = b.burnUntil > this.time;
+    r.shieldHp = b.shieldHp || 0;
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
     r.hp = b.hp; r.maxHp = b.maxHp; r.ducking = b.ducking;
 
@@ -1954,7 +1957,7 @@ const Game = {
     b.x = sp.x; b.y = sp.y; b.dir = sp.dir; b.vy = 0; b.knockVx = 0;
     b.onGround = true; b.dead = false; b.respawnInvuln = 1300; b.hp = b.maxHp; b.burnUntil = 0;
     b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b._weaponUntil = 0; }
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -2119,7 +2122,7 @@ const Game = {
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
       this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
-      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player._weaponUntil = 0;
+      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0;
     }
   },
 
@@ -2156,6 +2159,7 @@ const Game = {
     r.flat = s.fl === 1;
     r.hat = s.ht || 'none';
     r.rage = s.rg === 1; r.burn = s.bn === 1;
+    r.shieldHp = s.shp || 0;
     r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
     r.ducking = s.dk === 1;
     if (typeof s.h === 'number') r.hp = s.h;
@@ -2171,7 +2175,7 @@ const Game = {
       g: p.onGround ? 1 : 0, a: this.time < p.attackAnimUntil ? 1 : 0,
       sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
       wid: p.weaponId || 0, su: (p.stunUntil && this.time < p.stunUntil) ? 1 : 0, fl: (p.flatUntil && this.time < p.flatUntil) ? 1 : 0, ht: Storage.data.equippedHat || 'none',
-      rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0,
+      rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0, shp: Math.round(p.shieldHp || 0),
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
     });
@@ -2405,6 +2409,15 @@ const Game = {
       Sprites.px(ctx, '#777', x - 2, y - 2, 2, 2);
       Sprites.px(ctx, '#6a4a2a', x - 1, y - 7, 2, 3);   // lont
       Sprites.px(ctx, '#ff8a3a', x - 1, y - 9, 2, 2);   // vonkje
+    }
+    else if (d.kind === 'shield') {
+      // schild-icoon (blauw)
+      Sprites.px(ctx, '#2f7ad0', x - 5, y - 6, 10, 9);
+      Sprites.px(ctx, '#7fc8ff', x - 5, y - 6, 10, 3);
+      Sprites.px(ctx, '#2f7ad0', x - 4, y + 3, 8, 2);
+      Sprites.px(ctx, '#1a4f8e', x - 5, y - 6, 2, 9);
+      Sprites.px(ctx, '#dff0ff', x - 1, y - 4, 2, 5);   // glans / kruis
+      Sprites.px(ctx, '#dff0ff', x - 3, y - 2, 6, 2);
     }
   },
 

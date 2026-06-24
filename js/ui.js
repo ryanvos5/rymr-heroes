@@ -769,6 +769,11 @@ const UI = {
     const hpThem = document.getElementById('vs-hp-them');
     if (hpMe && Game.player) hpMe.style.width = Math.max(0, Math.min(100, (Game.player.hp / Game.player.maxHp) * 100)) + '%';
     if (hpThem && v.remote) hpThem.style.width = Math.max(0, Math.min(100, (v.remote.hp / (v.remote.maxHp || 100)) * 100)) + '%';
+    // shield-balkjes (blauw, boven de hp)
+    const shMe = document.getElementById('vs-shield-me'), shThem = document.getElementById('vs-shield-them');
+    const setShield = (el, amt) => { if (!el) return; const on = amt > 0; el.classList.toggle('hidden', !on); if (on) el.firstElementChild.style.width = Math.max(0, Math.min(100, (amt / (typeof SMASH_SHIELD !== 'undefined' ? SMASH_SHIELD : 50)) * 100)) + '%'; };
+    if (Game.player) setShield(shMe, Game.player.shieldHp || 0);
+    if (v.remote) setShield(shThem, v.remote.shieldHp || 0);
     const cd = document.getElementById('vs-countdown');
     if (cd) {
       if (v.countdown > 0) { cd.classList.remove('hidden'); cd.textContent = Math.ceil(v.countdown / 1000); }

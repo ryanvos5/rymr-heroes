@@ -414,6 +414,7 @@ const CAVE_BEAM_KNOCK = 24;          // harde knockback
 // steen (alleen Cave, Smash): 3 grote stenen vallen; geraakt = 2s platgedrukt
 const SMASH_ROCK_COUNT = 3;
 const SMASH_ROCK_FLAT = 2000;        // 2s plat (niet bewegen)
+const SMASH_SHIELD = 50;             // shield-powerup: +50 hp als blauw balkje (Pirate + Sky)
 const SMASH_ROCK_SPREAD = 55;        // spreiding rond de tegenstander
 
 // combo's: opeenvolgende treffers binnen het tijdvenster -> hoger (x1..x5), meer schade + XP
