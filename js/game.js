@@ -2264,6 +2264,8 @@ const Game = {
     ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, W + 8, H + Math.abs(camY) + 320);
     ctx.globalAlpha = 0.5; ctx.fillStyle = '#04060a'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y + 18, W + 8, H + Math.abs(camY) + 320); ctx.globalAlpha = 1;
 
+    if (map.pirate) this.drawPirateHull(ctx);           // scheepsromp onder het dek
+
     // platforms (bewegende krijgen een pijltjes-hint; zachte wolken pluizig; Vulcan = steen/schuin; Pirate = hout/masten)
     const platStyle = map.wood ? 'wood' : (map.stone ? 'stone' : null);
     for (const pf of this.platforms) {
@@ -2274,6 +2276,7 @@ const Game = {
       if (pf.mv) { ctx.globalAlpha = 0.5; Sprites.px(ctx, '#ffe9a0', pf.x - 1, pf.y - 5, 2, 2); ctx.globalAlpha = 1; }
     }
 
+    if (map.pirate) this.drawPirateMast(ctx);           // middenmast loopt door het dek heen
     if (map.cave) this.drawCaveButtons(ctx);            // knoppen op de platforms
 
     // portalen (Power Smash) — achter de spelers
@@ -2510,37 +2513,89 @@ const Game = {
     Sprites.px(ctx, '#3a2615', x - pf.w / 2, pf.y - 5, pf.w, 4);          // randje van het nest
   },
 
-  // piratenschip-achtergrond: lucht, water onderaan, schip-silhouet + zeil
+  // piratenschip-achtergrond: water + zeil + (langzaam opkomend) zeemonster op de achtergrond
   drawPirateBg(ctx) {
     const W = this.vsMapW, deckY = 178;
-    // water (golvend) onder het dek
+    // water (golvend) ver op de achtergrond
     for (let i = 0; i < W; i += 16) {
-      const wy = deckY + 14 + Math.round(Math.sin(this.time / 300 + i * 0.05) * 2);
-      Sprites.px(ctx, '#2a6a9a', i, wy, 16, this.vsFallY - wy + 30);
-      Sprites.px(ctx, '#3a8ac0', i, wy, 10, 2);
+      const wy = deckY - 8 + Math.round(Math.sin(this.time / 320 + i * 0.05) * 2);
+      ctx.globalAlpha = 0.5; Sprites.px(ctx, '#1d4f78', i, wy, 16, deckY - wy + 6); ctx.globalAlpha = 1;
+      Sprites.px(ctx, '#2f74a8', i, wy, 9, 2);
     }
     // groot zeil op de achtergrond
     ctx.globalAlpha = 0.5;
-    Sprites.px(ctx, '#d8cba8', W / 2 - 70, 30, 140, 70);
-    Sprites.px(ctx, '#c8b890', W / 2 - 70, 30, 140, 4);
-    Sprites.px(ctx, '#b84a3a', W / 2 - 12, 44, 24, 22);                   // doodskopvlag-vlak
+    Sprites.px(ctx, '#d8cba8', W / 2 - 70, 26, 140, 64);
+    Sprites.px(ctx, '#c8b890', W / 2 - 70, 26, 140, 4);
+    Sprites.px(ctx, '#b84a3a', W / 2 - 12, 40, 24, 20);                   // doodskopvlag-vlak
     ctx.globalAlpha = 1;
-    Sprites.px(ctx, '#3a2615', W / 2 - 2, 24, 4, 80);                     // grote mast achter
+    // zeemonster komt LANGZAAM uit het water op de achtergrond (achter het schip)
+    this.drawSeaMonster(ctx);
   },
 
-  // zeemonster-tentakel (waarschuwing: water borrelt; daarna slaat hij toe)
+  // het zeemonster-hoofd dat langzaam uit het achtergrondwater opkomt
+  drawSeaMonster(ctx) {
+    const v = this.tentacle; if (!v || v.state === 'idle') return;
+    const deckY = 178, x = v.x;
+    let rise = 0;
+    if (v.state === 'warn') rise = Math.max(0, Math.min(1, (PIRATE_TENT_WARN - (v.nextAt - this.time)) / PIRATE_TENT_WARN));
+    else if (v.state === 'strike') rise = 1;
+    const top = (deckY + 6) - Math.round(96 * rise);     // top van de kop, komt langzaam omhoog
+    const h = (deckY + 6) - top;
+    if (h < 4) return;
+    Sprites.px(ctx, '#14352a', x - 26, top, 52, h);       // donkere kop
+    Sprites.px(ctx, '#1f5640', x - 26, top, 52, 4);       // bovenrand
+    Sprites.px(ctx, '#0e261d', x - 26, top, 4, h);        // schaduw
+    if (h > 22) {                                         // gloeiende ogen verschijnen
+      Sprites.px(ctx, '#ffe27a', x - 14, top + 9, 6, 6); Sprites.px(ctx, '#ffe27a', x + 8, top + 9, 6, 6);
+      Sprites.px(ctx, '#000', x - 12, top + 11, 3, 3); Sprites.px(ctx, '#000', x + 10, top + 11, 3, 3);
+    }
+  },
+
+  // zeemonster-tentakel: waarschuwing (water borrelt), daarna slaat 'ie LANGZAAM HARD op en neer
   drawTentacle(ctx) {
     const v = this.tentacle; if (!v || v.state === 'idle') return;
-    const x = v.x, deckY = 178, waterY = deckY + 14;
+    const x = v.x, deckY = 178, waterY = deckY + 4;
     if (v.state === 'warn') {
-      for (let i = 0; i < 6; i++) { const bx = x + Math.sin(this.time / 100 + i) * 12; const by = waterY - ((this.time / 160 + i * 5) % 12); Sprites.px(ctx, '#7fe0a0', Math.round(bx), Math.round(by), 3, 3); }
-      ctx.globalAlpha = 0.5; Sprites.px(ctx, '#3aa86a', x - 14, waterY - 2, 28, 4); ctx.globalAlpha = 1;
+      for (let i = 0; i < 7; i++) { const bx = x + Math.sin(this.time / 110 + i) * 14; const by = waterY - ((this.time / 170 + i * 6) % 18); Sprites.px(ctx, '#7fe0a0', Math.round(bx), Math.round(by), 3, 3); }
+      ctx.globalAlpha = 0.5; Sprites.px(ctx, '#3aa86a', x - 16, waterY - 2, 32, 4); ctx.globalAlpha = 1;
     } else if (v.state === 'strike') {
-      const topY = (this.vsMap.camTop || 0) + 4, h = waterY - topY;
-      for (let i = 0; i < h; i += 4) { const wob = Math.round(Math.sin(this.time / 80 + i * 0.2) * (4 + i * 0.05)); Sprites.px(ctx, '#2e8a58', x - 4 + wob, waterY - i, 8, 4); Sprites.px(ctx, '#3aa86a', x - 2 + wob, waterY - i, 3, 4); }
-      // zuignappen
-      for (let i = 6; i < h; i += 10) { const wob = Math.round(Math.sin(this.time / 80 + i * 0.2) * (4 + i * 0.05)); Sprites.px(ctx, '#1e5e3a', x - 4 + wob, waterY - i, 2, 2); }
+      // de tentakel zwaait langzaam met grote slag op en neer
+      const sway = Math.sin(this.time / 240);                            // langzaam
+      const topY = (this.vsMap.camTop || 0) + 8 + Math.round(sway * 34);  // tip zwaait op/neer
+      const h = waterY - topY;
+      for (let i = 0; i < h; i += 4) {
+        const t = i / h;
+        const wob = Math.round(Math.sin(this.time / 200 + i * 0.1) * (4 + t * 22));
+        const w = Math.max(4, Math.round(12 - t * 7));
+        Sprites.px(ctx, '#2e8a58', x - w / 2 + wob, waterY - i, w, 4);
+        Sprites.px(ctx, '#3aa86a', x - w / 2 + wob + 1, waterY - i, 2, 4);
+        if (i % 12 === 0) Sprites.px(ctx, '#1e5e3a', x - w / 2 + wob, waterY - i, 2, 2);   // zuignap
+      }
     }
+  },
+
+  // scheepsromp onder het dek (boot-vorm: breed bovenaan, smaller onderaan)
+  drawPirateHull(ctx) {
+    const W = this.vsMapW, deckY = 178;
+    const left = 90, right = W - 90, bottom = deckY + 48;
+    for (let y = 0; y < bottom - deckY; y++) {
+      const t = y / (bottom - deckY);
+      const inset = Math.round(t * t * 80);              // krommer naar onderen -> boog
+      const lx = left + inset, rx = right - inset;
+      const col = y < 4 ? '#6b4a2b' : (y < 10 ? '#5a3d22' : '#46301c');
+      Sprites.px(ctx, col, lx, deckY + y, rx - lx, 1);
+    }
+    // plank-naden + kiel-streep
+    for (let px = left + 30; px < right - 20; px += 60) Sprites.px(ctx, '#3a2615', px, deckY + 4, 1, 30);
+    Sprites.px(ctx, '#3a2615', Math.round(W / 2) - 1, deckY + 4, 2, 42);
+  },
+
+  // de middenmast loopt door het dek heen tot in de romp
+  drawPirateMast(ctx) {
+    const W = this.vsMapW, x = Math.round(W / 2);
+    Sprites.px(ctx, '#5a3d22', x - 3, 18, 6, 200);       // dikke mast van boven tot in de romp
+    Sprites.px(ctx, '#4a3219', x - 3, 18, 2, 200);       // schaduwkant
+    Sprites.px(ctx, '#6b4a2b', x - 34, 30, 68, 4);       // ra (dwarsbalk voor het zeil)
   },
 
   // Vulcan-achtergrond: verre vulkanen met gloeiende krater, lavaspatten + rook
