@@ -1165,7 +1165,7 @@ const Game = {
     this.vulcanSmoke = []; this.vulcanBg = [];
     // Pirate: zeemonster-tentakel
     this.tentacle = map.pirate ? { state: 'idle', nextAt: this.time + PIRATE_TENT_EVERY, x: 360, mode: 'flat', hitP: false, hitB: false } : null;
-    this.player.cannon = 0; this.player.shieldHp = 0;
+    this.player.cannon = 0; this.player.shieldHp = 0; this.player.gunAmmo = 0; this.player.giant = false; this.player._baseMaxHp = this.player.maxHp; this.player._caged = false;
     // Jungle: lianen + gorilla in de kooi + papegaaien
     this.vsVines = map.vines || null;
     this.gorilla = map.cage ? { x: map.cage.x, y: map.cage.floorY, hp: GORILLA_HP, maxHp: GORILLA_HP, dir: -1, alive: true, state: 'idle', swipeUntil: 0, swipeCd: 0, respawnAt: 0, hitFlash: 0, _net: 0 } : null;
@@ -1209,6 +1209,7 @@ const Game = {
       b.x = rb.x; b.y = rb.y; b.dir = this.vs.botSpawn.dir; b.onGround = true;
       b._think = 0; b._jumpCd = 0; b._shootCd = 0; b._blockUntil = 0; b._rangedId = botRanged;
       b.baseMelee = botMelee; b.fireballs = 0; b.smashRockets = 0; b._weaponUntil = 0; b._fireCd = 0;
+      b.cannon = 0; b.shieldHp = 0; b.gunAmmo = 0; b.giant = false; b._baseMaxHp = b.maxHp; b._caged = false;
       this.bot = b;
       this.vs.remote.charId = botChar;
     } else if (window.Net) {
@@ -1292,7 +1293,10 @@ const Game = {
       if (this.vsMap && this.vsMap.vulcan) this.updateVulcan(dt);   // lavastraal + sfeer
       if (this.vsMap && this.vsMap.pirate) this.updatePirate(dt);   // zeemonster-tentakel
       if (this.vsMap && this.vsMap.jungle2) this.updateGorilla(dt); // kooi-gorilla
+      if (this.vsMap && this.vsMap.jungle2) this.confineCage(this.player);   // opgesloten tot de gorilla dood is
+      if (this.player.giant) this.giantContact(dt);     // reus: bots iemand weg / stamp
       if (this.vsBot) this.updateBot(dt);              // de AI-tegenstander
+      if (this.vsMap && this.vsMap.jungle2 && this.vsBot) this.confineCage(this.bot);
       this.checkVersusHit();
       // Just: stamp-schade op de tegenstander bij de landing
       if (this.player._poundHit) {
@@ -1420,11 +1424,17 @@ const Game = {
   smashFire() {
     const p = this.player;
     if (!p.dead && Input.state.attack) {
-      if (p.cannon > 0) {                                   // kanonskogel: altijd vuren; alleen richting de tegenstander = homing
+      if (p.giant) { /* reus kan niet aanvallen */ }
+      else if (p.cannon > 0) {                              // kanonskogel: altijd vuren; alleen richting de tegenstander = homing
         if (this.time >= (p._fireCd || 0)) {
           const oppX = this.vsBot ? (this.bot ? this.bot.x : p.x + p.dir * 100) : this.vs.remote.x;
           const facing = (Math.sign(oppX - p.x) === p.dir) || Math.abs(oppX - p.x) < 8;
           p.cannon--; p._fireCd = this.time + 900; this.spawnCannon(p, facing);   // niet gericht -> mist
+        }
+      } else if (p.gunAmmo > 0 && p.rangedId === 'ak47') {  // AK47: snelvuur tot de kogels op zijn
+        if (this.time >= (p._fireCd || 0)) {
+          p.gunAmmo--; p._fireCd = this.time + 150; this.spawnVersusGun(p);
+          if (p.gunAmmo <= 0) { p.rangedId = null; p.weaponId = p.meleeId || 'bat'; }
         }
       } else if (p.fireballs > 0 || p.smashRockets > 0) {  // vuurwapen opgepakt -> vuren
         if (this.time >= (p._fireCd || 0)) {
@@ -1446,6 +1456,15 @@ const Game = {
     this.bullets.push(bl);
     this.spawnMuzzleFlash(p.x + dir * 14, p.y - 16, dir);
     this.shake = Math.max(this.shake, 5);
+  },
+
+  // AK47-kogel (Jungle): snel, rechtdoor
+  spawnVersusGun(p) {
+    const dir = p.dir;
+    const bl = new Bullet(p.x + dir * 14, p.y - 16, dir * 9, 0, 0);
+    bl.kind = 'gun'; bl.hitDmg = 13; bl.power = 7; bl.vy = 0; bl.life = 0;
+    this.bullets.push(bl);
+    this.spawnMuzzleFlash(p.x + dir * 14, p.y - 16, dir);
   },
 
   spawnVersusProjectile(shooter, kind) {
@@ -1476,7 +1495,7 @@ const Game = {
     // bot pakt op + wapen-timer
     if (this.vsBot && this.bot && !this.bot.dead) {
       for (const d of this.drops) {
-        if (d.taken) continue;
+        if (d.taken || d.kind === 'giant') continue;          // bot pakt geen Giant (kan dan niet aanvallen)
         if (Math.abs(this.bot.x - d.x) < 16 && Math.abs((this.bot.y - 12) - d.y) < 22) { d.taken = true; this.applyDrop(this.bot, d); }
       }
       if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot.weaponId = this.bot.rangedId || this.bot.meleeId; this.bot._weaponUntil = 0; this.bot.swingWeapon = null; }
@@ -1719,9 +1738,10 @@ const Game = {
       if (g.state === 'swipe' && this.time < g.swipeUntil && !g._hitDone) {
         g._hitDone = true;
         const kd = (t) => t.x >= g.x ? 1 : -1;
-        if (this._inCage(this.player) && Math.abs(this.player.x - g.x) < GORILLA_REACH && this.player.respawnInvuln <= 0) this.onVersusHit({ dir: kd(this.player), power: 18, vy: -7, dmg: 18 });
-        if (this.vsBot) { if (this._inCage(this.bot) && Math.abs(this.bot.x - g.x) < GORILLA_REACH) this.applyHitToBot(kd(this.bot), 18, -7, 18); }
-        else if (this._inCage(this.vs.remote) && Math.abs(this.vs.remote.x - g.x) < GORILLA_REACH && window.Net) Net.versusSend('hit', { dir: kd(this.vs.remote), power: 18, vy: -7, dmg: 18 });
+        // gorilla geeft GEEN knockback, alleen schade (power 0)
+        if (this._inCage(this.player) && Math.abs(this.player.x - g.x) < GORILLA_REACH && this.player.respawnInvuln <= 0) this.onVersusHit({ dir: kd(this.player), power: 0, vy: 0, dmg: 18 });
+        if (this.vsBot) { if (this._inCage(this.bot) && Math.abs(this.bot.x - g.x) < GORILLA_REACH) this.applyHitToBot(kd(this.bot), 0, 0, 18); }
+        else if (this._inCage(this.vs.remote) && Math.abs(this.vs.remote.x - g.x) < GORILLA_REACH && window.Net) Net.versusSend('hit', { dir: kd(this.vs.remote), power: 0, vy: 0, dmg: 18 });
       }
       if (g.state === 'swipe' && this.time >= g.swipeUntil) g.state = 'idle';
       g._net += dt; if (g._net >= 100) { g._net = 0; this._broadcastGorilla(); }
@@ -1753,7 +1773,35 @@ const Game = {
   _gorillaDie() {
     const g = this.gorilla; g.alive = false; g.hp = 0; g.state = 'dead'; g.respawnAt = this.time + GORILLA_RESPAWN;
     this.shake = Math.max(this.shake, 9);
+    if (this.player) this.player._caged = false;
+    if (this.bot) this.bot._caged = false;
     for (let i = 0; i < 18; i++) this.particles.push(new Particle(g.x, g.y - 16, (Math.random() - 0.5) * 4, -Math.random() * 3, Math.random() < 0.5 ? '#5a3d22' : '#3a2615', 420, 3));
+  },
+
+  // opgesloten in de kooi tot de gorilla dood is (tralies dicht)
+  confineCage(e) {
+    const g = this.gorilla, cg = this.jungleCage; if (!g || !cg || !e || e.dead) return;
+    if (!g.alive) { e._caged = false; return; }
+    if (this._inCage(e)) e._caged = true;
+    if (e._caged) {
+      e.x = Math.max(cg.x - cg.w / 2 + 10, Math.min(cg.x + cg.w / 2 - 10, e.x));
+      if (e.y < cg.top + 16) { e.y = cg.top + 16; if (e.vy < 0) e.vy = 0; }   // plafond: kun je er niet uit
+    }
+  },
+  // de reus (Giant): bots iemand weg of stampt 'm (op iemand springen = schade)
+  giantContact(dt) {
+    const p = this.player; if (!p.giant || p.dead) return;
+    const opp = this.vsBot ? this.bot : this.vs.remote;
+    const oppDead = this.vsBot ? (!opp || opp.dead) : (!opp || opp.alive === false);
+    if (oppDead) return;
+    const dxp = opp.x - p.x;
+    if (Math.abs(dxp) < 24 && Math.abs(opp.y - p.y) < 34 && this.time >= (p._giantHitCd || 0)) {
+      p._giantHitCd = this.time + 250;
+      const stomp = p.vy > 2 && p.y < opp.y - 4;          // op iemand springen = schade
+      const kd = dxp >= 0 ? 1 : -1;
+      if (this.vsBot) this.applyHitToBot(kd, 16, stomp ? -6 : -2, stomp ? 22 : 0);
+      else if (window.Net) Net.versusSend('hit', { dir: kd, power: 16, vy: stomp ? -6 : -2, dmg: stomp ? 22 : 0 });
+    }
   },
 
   // ---- steen-powerup: 3 grote stenen vallen -> geraakt = 2s platgedrukt ----
@@ -1830,6 +1878,7 @@ const Game = {
     if (mid === 'cave') pool.push({ kind: 'rock', w: 8 });                          // steen alleen op Cave
     if (mid === 'pirate') pool.push({ kind: 'cannon', w: 9 });                      // kanonskogel alleen op Pirate Ship
     if (mid === 'pirate' || mid === 'sky') pool.push({ kind: 'shield', w: 9 });     // shield op Pirate + Sky
+    if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); }  // Giant + AK47 op Jungle
     let tot = 0; for (const d of pool) tot += d.w;
     let r = Math.random() * tot, kind = 'health';
     for (const d of pool) { r -= d.w; if (r <= 0) { kind = d.kind; break; } }
@@ -1844,7 +1893,16 @@ const Game = {
 
   applyDrop(pl, d) {
     for (let i = 0; i < 8; i++) this.particles.push(new Particle(d.x, d.y, (Math.random() - 0.5) * 2, -Math.random() * 2, '#ffe27a', 340, 2));
+    // een ander vuurwapen pakken vervangt de AK47
+    if (d.kind === 'fireball' || d.kind === 'rocket' || d.kind === 'cannon' || d.kind === 'giant') { pl.gunAmmo = 0; if (pl.rangedId === 'ak47') pl.rangedId = null; }
     if (d.kind === 'weapon') { pl.meleeId = d.wid; pl.weaponId = pl.rangedId || d.wid; pl._weaponUntil = this.time + SMASH_WEAPON_TIME; }
+    else if (d.kind === 'giant') {                                    // REUS: gigantisch, dubbel leven, kan niet aanvallen
+      pl._baseMaxHp = pl._baseMaxHp || pl.maxHp;
+      pl.giant = true; pl.maxHp = pl._baseMaxHp * 2; pl.hp = pl.maxHp;
+      pl.fireballs = 0; pl.smashRockets = 0; pl.cannon = 0; pl.gunAmmo = 0; pl.rangedId = null;
+      for (let i = 0; i < 14; i++) this.particles.push(new Particle(pl.x, pl.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, '#7affa0', 420, 3));
+    }
+    else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = 50; pl.weaponId = 'ak47'; }   // AK47 met 50 kogels
     else if (d.kind === 'fireball') pl.fireballs = SMASH_FIREBALL_SHOTS;
     else if (d.kind === 'rocket') pl.smashRockets = SMASH_ROCKETS;
     else if (d.kind === 'health') pl.hp = Math.min(pl.maxHp, pl.hp + 40);
@@ -1896,6 +1954,7 @@ const Game = {
 
   checkVersusHit() {
     const p = this.player, r = this.vs.remote;
+    if (p.giant) return;                              // reus kan niet aanvallen
     if (!r.alive) return;
     // alleen op het moment dat een NIEUWE mep begint (1 mep = 1 treffer)
     const sw = p.swingUntil || 0;
@@ -1951,7 +2010,7 @@ const Game = {
     r.stunned = b.stunUntil && this.time < b.stunUntil;
     r.flat = b.flatUntil && this.time < b.flatUntil;
     r.rage = b.hasBuff('rage', this.time); r.burn = b.burnUntil > this.time;
-    r.shieldHp = b.shieldHp || 0;
+    r.shieldHp = b.shieldHp || 0; r.giant = !!b.giant;
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
     r.hp = b.hp; r.maxHp = b.maxHp; r.ducking = b.ducking;
 
@@ -1975,6 +2034,10 @@ const Game = {
       } else if (this.vsMode === 'smash' && b.cannon > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 8, 0, 0); bl.kind = 'cannon'; bl.hitDmg = 18; bl.power = 42;
         b.cannon--; b._shootCd = this.time + 900;
+      } else if (this.vsMode === 'smash' && b.gunAmmo > 0 && b.rangedId === 'ak47') {
+        bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 9, 0, 0); bl.kind = 'gun'; bl.hitDmg = 13; bl.power = 7;
+        b.gunAmmo--; b._shootCd = this.time + 220;
+        if (b.gunAmmo <= 0) { b.rangedId = null; b.weaponId = b.meleeId || 'bat'; }
       }
       if (bl) { b.dir = sdir; this.botBullets.push(bl); this.spawnMuzzleFlash(b.x + sdir * 14, b.y - 16, sdir); }
     }
@@ -2046,8 +2109,9 @@ const Game = {
     const sp = this.vs.botSpawn;
     b.x = sp.x; b.y = sp.y; b.dir = sp.dir; b.vy = 0; b.knockVx = 0;
     b.onGround = true; b.dead = false; b.respawnInvuln = 1300; b.hp = b.maxHp; b.burnUntil = 0;
-    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; }
+    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0; b.vine = null; b._caged = false;
+    if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -2207,12 +2271,14 @@ const Game = {
     this.player.dead = false; this.player.respawnInvuln = 1300;
     this.player.hp = this.player.maxHp; this.player.burnUntil = 0;   // fris (ook na burn-dood)
     this.player.stunUntil = 0; this.player.flatUntil = 0; this.player._beamSafeUntil = 0;
-    this.player.combo = 0; this.player.comboUntil = 0; this.player.vine = null;
+    this.player.combo = 0; this.player.comboUntil = 0; this.player.vine = null; this.player._caged = false;
     this.player.swingWeapon = null; this.player.swingUntil = 0;       // geen lingerende mep-animatie
+    if (this.player.giant) { this.player.giant = false; if (this.player._baseMaxHp) this.player.maxHp = this.player._baseMaxHp; }  // reus eindigt bij rondewissel
+    this.player.hp = this.player.maxHp;
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
       this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
-      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0;
+      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0;
     }
   },
 
@@ -2250,6 +2316,7 @@ const Game = {
     r.hat = s.ht || 'none';
     r.rage = s.rg === 1; r.burn = s.bn === 1;
     r.shieldHp = s.shp || 0;
+    r.giant = s.gi === 1;
     r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
     r.ducking = s.dk === 1;
     if (typeof s.h === 'number') r.hp = s.h;
@@ -2265,7 +2332,7 @@ const Game = {
       g: p.onGround ? 1 : 0, a: this.time < p.attackAnimUntil ? 1 : 0,
       sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
       wid: p.weaponId || 0, su: (p.stunUntil && this.time < p.stunUntil) ? 1 : 0, fl: (p.flatUntil && this.time < p.flatUntil) ? 1 : 0, ht: Storage.data.equippedHat || 'none',
-      rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0, shp: Math.round(p.shieldHp || 0),
+      rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0, shp: Math.round(p.shieldHp || 0), gi: p.giant ? 1 : 0,
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
     });
@@ -2405,12 +2472,14 @@ const Game = {
     const r = this.vs.remote;
     if (r.alive) {
       const rc = (CHARACTERS[r.charId] || CHARACTERS.ryan);
-      if (r.onGround) Sprites.shadow(ctx, r.x, r.y + 1, 7);
-      Sprites.drawCharacter(ctx, Math.round(r.x), Math.round(r.y), r.dir, rc.palette, {
+      if (r.onGround) Sprites.shadow(ctx, r.x, r.y + 1, r.giant ? 11 : 7);
+      ctx.save(); ctx.translate(Math.round(r.x), Math.round(r.y)); const rg = r.giant ? 1.6 : 1; ctx.scale(rg, rg);
+      Sprites.drawCharacter(ctx, 0, 0, r.dir, rc.palette, {
         walkPhase: r.walkPhase, airborne: !r.onGround, attacking: r.attacking, ducking: r.ducking,
-        weapon: r.swingWeapon || r.heldWeapon || 'bat', build: rc.build, hair: rc.hair, squash: r.flat,
+        weapon: r.giant ? null : (r.swingWeapon || r.heldWeapon || 'bat'), build: rc.build, hair: rc.hair, squash: r.flat,
         hat: r.hat || 'none', t: this.time, rage: r.rage, burning: r.burn,
       });
+      ctx.restore();
       if (r.ducking) this.drawBlockGuard(ctx, Math.round(r.x), Math.round(r.y), r.dir);
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
       this.drawVsMarker(ctx, Math.round(r.x), Math.round(r.y), rc.build, '#ff5a5a');
@@ -2421,16 +2490,18 @@ const Game = {
     const blink = p.respawnInvuln > 0 && Math.floor(this.time / 90) % 2 === 0;
     if (!p.dead) {
       if (!blink) {
-        if (p.onGround) Sprites.shadow(ctx, p.x, p.y + 1, 7);
+        if (p.onGround) Sprites.shadow(ctx, p.x, p.y + 1, p.giant ? 11 : 7);
         const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
-        Sprites.drawCharacter(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal, {
+        ctx.save(); ctx.translate(Math.round(p.x), Math.round(p.y)); const pg = p.giant ? 1.6 : 1; ctx.scale(pg, pg);
+        Sprites.drawCharacter(ctx, 0, 0, p.dir, p.pal, {
           walkPhase: p.walkPhase, airborne: !p.onGround, ducking: p.ducking,
           attacking: this.time < p.attackAnimUntil,
-          weapon: swinging ? p.swingWeapon : p.weaponId, build: p.build, hair: p.hairStyle,
+          weapon: p.giant ? null : (swinging ? p.swingWeapon : p.weaponId), build: p.build, hair: p.hairStyle,
           squash: (p.flatUntil && this.time < p.flatUntil),
           hat: Storage.data.equippedHat, t: this.time,
           rage: p.hasBuff('rage', this.time), burning: p.burnUntil > this.time,
         });
+        ctx.restore();
         if (p.ducking && p.onGround) this.drawBlockGuard(ctx, Math.round(p.x), Math.round(p.y), p.dir);
         if (p.stunUntil && this.time < p.stunUntil) this.drawStunAura(ctx, Math.round(p.x), Math.round(p.y));
       }
@@ -2511,6 +2582,22 @@ const Game = {
       Sprites.px(ctx, '#1a4f8e', x - 5, y - 6, 2, 9);
       Sprites.px(ctx, '#dff0ff', x - 1, y - 4, 2, 5);   // glans / kruis
       Sprites.px(ctx, '#dff0ff', x - 3, y - 2, 6, 2);
+    }
+    else if (d.kind === 'giant') {
+      // Giant-icoon (grote groene vuist)
+      Sprites.px(ctx, '#2f8a3a', x - 5, y - 5, 10, 9);
+      Sprites.px(ctx, '#3fb04a', x - 5, y - 5, 10, 3);
+      Sprites.px(ctx, '#1f5e28', x - 5, y + 3, 10, 1);
+      Sprites.px(ctx, '#7affa0', x - 3, y - 3, 2, 2);
+      Sprites.px(ctx, '#cfffe0', x + 2, y - 8, 2, 2);   // sprankel
+    }
+    else if (d.kind === 'ak47') {
+      // AK47-icoon
+      Sprites.px(ctx, '#2a2a2e', x - 6, y - 2, 12, 3);  // loop
+      Sprites.px(ctx, '#5a3a22', x + 2, y - 1, 4, 5);   // kolf
+      Sprites.px(ctx, '#3a2f22', x - 2, y + 1, 3, 4);   // magazijn (gebogen)
+      Sprites.px(ctx, '#1a1a1e', x - 1, y + 4, 3, 2);
+      Sprites.px(ctx, '#888', x - 6, y - 2, 3, 1);
     }
   },
 
@@ -2701,10 +2788,20 @@ const Game = {
   drawVines(ctx) {
     if (!this.vsVines) return;
     for (const vn of this.vsVines) {
-      for (let i = 0; i < vn.len; i += 6) { const wob = Math.round(Math.sin(this.time / 600 + i * 0.1) * 2); Sprites.px(ctx, '#3a6b2a', vn.x - 1 + wob, vn.ay + i, 3, 6); }
+      let angle = null, len = vn.len;
+      // hangt iemand eraan? -> de liaan slingert mee
+      if (this.player.vine && Math.abs(this.player.vine.vx - vn.x) < 2) { angle = this.player.vine.angle; len = this.player.vine.len; }
+      else if (this.vs && this.vs.remote && this.vs.remote.alive && !this.vs.remote.onGround) {
+        const r = this.vs.remote, dx = r.x - vn.x, dy = r.y - vn.ay, dist = Math.hypot(dx, dy);
+        if (Math.abs(dx) < 16 && dy > 20 && dist < vn.len + 18) { angle = Math.atan2(dx, dy); len = Math.min(vn.len, dist); }
+      }
+      if (angle == null) angle = Math.sin(this.time / 900 + vn.x * 0.05) * 0.16;   // zachte sway als er niemand hangt
+      for (let i = 0; i <= len; i += 6) {
+        const sx = vn.x + Math.sin(angle) * i, sy = vn.ay + Math.cos(angle) * i;
+        Sprites.px(ctx, (i % 18 < 9) ? '#3a6b2a' : '#346024', Math.round(sx) - 1, Math.round(sy), 3, 6);
+      }
       Sprites.px(ctx, '#2a5020', vn.x - 2, vn.ay - 2, 5, 4);                   // ankerknoop
-      const wob2 = Math.round(Math.sin(this.time / 600 + vn.len * 0.1) * 2);
-      Sprites.px(ctx, '#4a8a3a', vn.x - 3 + wob2, vn.ay + vn.len, 7, 4);       // blad aan het eind
+      Sprites.px(ctx, '#4a8a3a', Math.round(vn.x + Math.sin(angle) * len) - 3, Math.round(vn.ay + Math.cos(angle) * len), 7, 4);  // blad
     }
   },
   drawGorilla(ctx) {
@@ -2723,11 +2820,18 @@ const Game = {
   },
   drawCage(ctx) {
     const cg = this.jungleCage; const L = cg.x - cg.w / 2, R = cg.x + cg.w / 2, top = cg.top, bot = cg.floorY + 4;
-    Sprites.px(ctx, '#5a5a62', L - 4, top - 4, cg.w + 8, 5);                   // dak
     Sprites.px(ctx, '#6b6b73', L - 4, top, 4, bot - top); Sprites.px(ctx, '#6b6b73', R, top, 4, bot - top);   // hoekpalen
     ctx.globalAlpha = 0.45;
-    for (let bx = L + 6; bx < R; bx += 15) Sprites.px(ctx, '#9a9aa2', bx, top, 2, bot - top);   // tralies (doorzichtig)
+    for (let bx = L + 6; bx < R; bx += 15) Sprites.px(ctx, '#9a9aa2', bx, top, 2, bot - top);   // zijtralies (doorzichtig)
     ctx.globalAlpha = 1;
+    // bovenkant: tralies dicht zolang er iemand opgesloten is (gorilla leeft)
+    const closed = this.gorilla && this.gorilla.alive && (this.player._caged || (this.bot && this.bot._caged) || (!this.vsBot && this._inCage(this.vs.remote)));
+    if (closed) {
+      Sprites.px(ctx, '#5a5a62', L - 4, top - 5, cg.w + 8, 5);                 // dwarsbalk
+      for (let bx = L; bx <= R; bx += 9) Sprites.px(ctx, '#9a9aa2', bx, top - 4, 2, 7);   // dichte spijlen over de opening
+    } else {
+      Sprites.px(ctx, '#5a5a62', L - 4, top - 4, cg.w + 8, 4);                 // open: alleen de dwarsbalk
+    }
   },
 
   // scheepsromp onder het dek (boot-vorm: breed bovenaan, smaller onderaan)
