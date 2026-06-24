@@ -1832,8 +1832,10 @@ const Game = {
         p.comboUntil = this.time + COMBO_WINDOW;
         const wd = (WEAPONS[p.meleeId] ? WEAPONS[p.meleeId].damage : 34) * (p.meleeMul || 1) * (p.hasBuff('rage', this.time) ? 1.6 : 1) * comboMul(p.combo);
         const dmg = Math.round(wd * 0.45);                            // versus-melee-schade
-        if (this.vsBot) this.applyHitToBot(kdir, 15, -5.5, dmg);      // bot wegslaan + schade
-        else Net.versusSend('hit', { dir: p.dir, power: 15, vy: -5.5, dmg: dmg });
+        const kp = 15 + Math.max(0, p.combo - 1) * 8;                 // vanaf x2 fors meer knockback (x1=15 .. x5=47)
+        const kvy = -5.5 - Math.max(0, p.combo - 1) * 0.7;            // en iets meer omhoog
+        if (this.vsBot) this.applyHitToBot(kdir, kp, kvy, dmg);       // bot wegslaan + schade
+        else Net.versusSend('hit', { dir: p.dir, power: kp, vy: kvy, dmg: dmg });
         // combo-XP (alleen online — geen XP-farmen tegen de bot)
         const cx = comboXp(p.combo);
         p._lastComboXp = this.vsBot ? 0 : cx;
@@ -1926,7 +1928,8 @@ const Game = {
         b.combo = (this.time < (b.comboUntil || 0)) ? Math.min(COMBO_MAX, (b.combo || 0) + 1) : 1;
         b.comboUntil = this.time + COMBO_WINDOW;
         const wd = (WEAPONS[b.meleeId] ? WEAPONS[b.meleeId].damage : 34) * (b.meleeMul || 1) * (b.hasBuff('rage', this.time) ? 1.6 : 1) * comboMul(b.combo);
-        this.onVersusHit({ dir: kd, power: 15, vy: -5.5, dmg: Math.round(wd * 0.45) });
+        const kp = 15 + Math.max(0, b.combo - 1) * 8;                 // bot: vanaf x2 ook fors meer knockback
+        this.onVersusHit({ dir: kd, power: kp, vy: -5.5 - Math.max(0, b.combo - 1) * 0.7, dmg: Math.round(wd * 0.45) });
         this.shake = Math.max(this.shake, 6);
       }
     }
