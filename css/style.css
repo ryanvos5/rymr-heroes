@@ -415,8 +415,8 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
     max(clamp(8px, 2vh, 16px), env(safe-area-inset-bottom))
     max(clamp(14px, 3.5vw, 34px), env(safe-area-inset-left));
 }
-.menu-top { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: clamp(46px, 13vh, 96px); }
-.menu-logo-img { height: clamp(46px, 13vh, 96px); width: auto; max-width: 70%; image-rendering: pixelated; }
+.menu-top { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: clamp(60px, 17vh, 128px); }
+.menu-logo-img { height: clamp(60px, 17vh, 128px); width: auto; max-width: 82%; image-rendering: pixelated; }
 .menu-logo {
   font-family: var(--pixel-font); font-weight: 900; letter-spacing: 1px;
   font-size: clamp(15px, 3vw, 28px); color: #fff; text-shadow: 2px 2px 0 #000, 0 2px 6px rgba(0,0,0,.4);
