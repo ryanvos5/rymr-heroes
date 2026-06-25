@@ -533,7 +533,9 @@ const VERSUS_MAPS = [
     id: 'dohyo', name: 'Dohyo', sky: ['#caa066', '#7a5a36'], void: '#140a06', plat: 'dohyo', dohyo: true, w: 360,
     spawnL: { x: 145, y: 150 }, spawnR: { x: 215, y: 150 },
     platforms: [
-      { x: 180, y: 150, w: 138 },   // de ring: één klein platform
+      { x: 180, y: 150, w: 138 },   // de ring (midden, onder)
+      { x: 64, y: 104, w: 58 },     // zwevend platform links
+      { x: 296, y: 104, w: 58 },    // zwevend platform rechts
     ],
   },
   {

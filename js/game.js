@@ -2505,7 +2505,18 @@ const Game = {
       else Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
       Storage.save();
     }
-    UI.showVersusResult(won, this.vs ? this.vs.myScore : 0, this.vs ? this.vs.oppScore : 0, gained, isBot, coinsEarned, peerLeft);
+    const myScore = this.vs ? this.vs.myScore : 0, oppScore = this.vs ? this.vs.oppScore : 0;
+    if (peerLeft) { UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft); return; }
+    // korte win-celebratie met de naam van de winnaar, dan pas het uitslagscherm
+    const winnerName = won
+      ? ((window.Net && Net.isLoggedIn && Net.isLoggedIn()) ? Net.nickname() : 'Jij')
+      : (isBot ? 'Bot' : 'Tegenstander');
+    UI.showWinCelebration(winnerName, won);
+    const self = this;
+    setTimeout(function () {
+      if (self.state !== 'versusOver') return;   // intussen weggegaan
+      UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft);
+    }, 2600);
   },
 
   // online match zelf verlaten: jij krijgt een loss (geen XP/munten), tegenstander wint (via 'bye')

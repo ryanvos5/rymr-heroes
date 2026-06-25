@@ -882,6 +882,32 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   display: inline-flex; align-items: center; gap: 5px;
 }
 .shop-tab.active { border-color: #d2622e; color: #ffe9c0; background: linear-gradient(180deg, #7a3418, #4a1c0c); box-shadow: 0 0 8px rgba(255,90,25,.5); }
+.shop-back { margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
+
+/* ====== Win-celebratie (kort, vóór het uitslagscherm) ====== */
+.vs-win {
+  position: absolute; inset: 0; z-index: 55;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 45%, rgba(120,50,10,0.45), rgba(8,6,10,0.78));
+  pointer-events: none;
+}
+.vs-win.hidden { display: none; }
+.vs-win-inner { text-align: center; animation: winPop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
+.vs-win-trophy .ic { width: clamp(40px, 9vw, 78px); height: clamp(40px, 9vw, 78px); filter: drop-shadow(0 0 12px rgba(255,180,60,.9)); }
+.vs-win-title {
+  font-family: var(--pixel-font); font-weight: 900; letter-spacing: 4px;
+  font-size: clamp(18px, 4vw, 34px); color: #ffe27a;
+  text-shadow: 0 0 12px rgba(255,150,40,.9), 2px 2px 0 #000; margin-top: 4px;
+}
+.vs-win-name {
+  font-family: var(--pixel-font); font-weight: 900;
+  font-size: clamp(26px, 7vw, 60px); color: #fff;
+  text-shadow: 0 0 14px rgba(255,120,40,.8), 3px 3px 0 #000; margin-top: 2px;
+  animation: winGlow 1s ease-in-out infinite alternate;
+}
+@keyframes winPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes winGlow { from { text-shadow: 0 0 10px rgba(255,120,40,.6), 3px 3px 0 #000; } to { text-shadow: 0 0 22px rgba(255,170,60,1), 3px 3px 0 #000; } }
+@media (prefers-reduced-motion: reduce) { .vs-win-inner, .vs-win-name { animation: none !important; } }
 .shop-card.locked { opacity: 0.6; }
 
 /* ====== Level grid ====== */

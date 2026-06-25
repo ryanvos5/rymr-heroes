@@ -839,7 +839,14 @@ const UI = {
     }
   },
 
+  showWinCelebration(name, won) {
+    const el = document.getElementById('vs-win'); if (!el) return;
+    const nm = document.getElementById('vs-win-name'); if (nm) nm.textContent = name || 'Winnaar';
+    el.classList.remove('hidden');
+  },
+
   showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft) {
+    const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     const rb = document.getElementById('vs-round-banner'); if (rb) rb.classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     document.body.classList.remove('in-game');
@@ -943,6 +950,7 @@ const UI = {
     // versus-HUD nooit laten hangen op een gewoon scherm (score/HP-balken/✕)
     const vh = document.getElementById('versus-hud'); if (vh) vh.classList.add('hidden');
     const vrb = document.getElementById('vs-round-banner'); if (vrb) vrb.classList.add('hidden');
+    const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
 
     // muntentellers bijwerken
     this.el.menuCoins.textContent = Storage.data.coins;
