@@ -1403,6 +1403,9 @@ const Game = {
         b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp;
         b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale;
         b.life += dt; if (b.life > 2500) b.alive = false;
+      } else if ((b.kind === 'fire' || b.kind === 'rocket') && r.alive && r.heli && Math.sign(r.x - b.x) === Math.sign(b.vx)) {
+        this._homeBullet(b, r.x, r.y - 12, b.kind === 'rocket' ? 6 : 7.5);   // gericht op een heli -> raakt altijd
+        b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale; b.life += dt; if (b.life > 2500) b.alive = false;
       } else {
         if ((b.kind === 'fire' || b.kind === 'rocket') && r.alive) this._softAim(b, r);  // klein beetje hulp dichtbij
         b.update(dt, this);
@@ -1517,15 +1520,16 @@ const Game = {
     const frozen = (p.stunUntil && this.time < p.stunUntil) || (p.flatUntil && this.time < p.flatUntil);
     const inp = frozen ? {} : Input.state;
     const s = HELI_SPEED * this.dtScale;
-    if (inp.left && !inp.right) { p.x -= s; p.dir = -1; }
-    if (inp.right && !inp.left) { p.x += s; p.dir = 1; }
-    if (inp.jump) p.y -= s;
-    if (inp.duck) p.y += s;
+    const dx = ((inp.right && !inp.left) ? s : 0) - ((inp.left && !inp.right) ? s : 0);
+    const dy = (inp.jump ? -s : 0) + (inp.duck ? s : 0);
+    // botst niet door platforms heen (as voor as, anders blokkeren)
+    if (dx) { if (!this.heliHits(p.x + dx, p.y)) p.x += dx; p.dir = dx > 0 ? 1 : -1; }
+    if (dy) { if (!this.heliHits(p.x, p.y + dy)) p.y += dy; }
     p.vy = 0; p.knockVx = 0; p.onGround = false; p.walkPhase = 0;
-    // grenzen: binnen de map en niet de afgrond in (heli vliegt)
-    p.x = Math.max(14, Math.min(this.vsMapW - 14, p.x));
-    const top = ((this.vsMap && this.vsMap.camTop != null) ? this.vsMap.camTop : -40) - 24;
-    p.y = Math.max(top, Math.min(CONFIG.GROUND_Y - 2, p.y));
+    // niet uit beeld vliegen: binnen het zichtbare scherm (camera) én de map houden
+    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H;
+    p.x = Math.max(Math.max(14, this.vsCamX + 16), Math.min(Math.min(this.vsMapW - 14, this.vsCamX + W - 16), p.x));
+    p.y = Math.max(this.vsCamY + 14, Math.min(Math.min(CONFIG.GROUND_Y - 2, this.vsCamY + H - 12), p.y));
     // minigun (vuurknop, ingedrukt houden = doorvuren)
     if (!frozen && Input.state.attack && p.heliMinigun > 0 && this.time >= (p._heliFireCd || 0)) {
       p._heliFireCd = this.time + 80; p.heliMinigun--; this.spawnHeliBullet(p);
@@ -1542,6 +1546,21 @@ const Game = {
     bl.kind = 'gun'; bl.hitDmg = 7; bl.power = 5; bl.vy = 0; bl.life = 0;
     this.bullets.push(bl);
     this.spawnMuzzleFlash(p.x + dir * 18, p.y - 10, dir);
+  },
+  // botst de heli (box rond p) tegen een platform?
+  heliHits(x, y) {
+    const hw = 16, htop = 28, hbot = 2;
+    for (const pf of this.platforms) {
+      if (pf.mast) continue;
+      const pl = pf.x - pf.w / 2, pr = pf.x + pf.w / 2, pt = pf.y - 2, pb = pf.y + 12;
+      if (x + hw > pl && x - hw < pr && y + hbot > pt && y - htop < pb) return true;
+    }
+    return false;
+  },
+  // sterke homing (mist nooit) — voor raket/vuurbal die gericht op een heli wordt afgevuurd
+  _homeBullet(b, tx, ty, sp) {
+    const ang = Math.atan2(ty - b.y, tx - b.x);
+    b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp;
   },
   endHeli(p) {
     p.heli = false; p.heliMinigun = 0; p.heliRockets = 0;
@@ -2214,7 +2233,10 @@ const Game = {
     // bot-kogels bewegen + de speler raken
     if (this.botBullets && this.botBullets.length) {
       for (const bl of this.botBullets) {
-        if ((bl.kind === 'fire' || bl.kind === 'rocket') && !this.player.dead && this.player.respawnInvuln <= 0) this._softAim(bl, this.player);
+        if ((bl.kind === 'fire' || bl.kind === 'rocket') && !this.player.dead && this.player.respawnInvuln <= 0) {
+          if (this.player.heli && Math.sign(this.player.x - bl.x) === Math.sign(bl.vx)) this._homeBullet(bl, this.player.x, this.player.y - 12, bl.kind === 'rocket' ? 6 : 7.5);
+          else this._softAim(bl, this.player);
+        }
         bl.x += bl.vx * this.dtScale; bl.y += (bl.vy || 0) * this.dtScale; bl.life += dt;
       }
       for (const bl of this.botBullets) {
