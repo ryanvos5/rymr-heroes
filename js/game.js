@@ -1375,6 +1375,15 @@ const Game = {
     }
   },
 
+  // klein beetje stuurhulp: alleen als de kogel de juiste kant op vliegt én dichtbij het doel is (niet te veel)
+  _softAim(b, t) {
+    const dx = t.x - b.x;
+    if (Math.sign(dx) !== Math.sign(b.vx) || Math.abs(dx) > 80) return;
+    const dy = (t.y - 14) - b.y;
+    b.vy = (b.vy || 0) + Math.max(-0.12, Math.min(0.12, dy * 0.02)) * this.dtScale;
+    b.vy = Math.max(-3, Math.min(3, b.vy));
+  },
+
   // kogels in 'beide wapens'-modus: aankondigen, bewegen, treffers op de tegenstander
   updateVersusBullets(dt) {
     const r = this.vs.remote;
@@ -1390,7 +1399,10 @@ const Game = {
         b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp;
         b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale;
         b.life += dt; if (b.life > 2500) b.alive = false;
-      } else { b.update(dt, this); }   // niet gericht (mist) of gewone kogel -> rechtdoor
+      } else {
+        if ((b.kind === 'fire' || b.kind === 'rocket') && r.alive) this._softAim(b, r);  // klein beetje hulp dichtbij
+        b.update(dt, this);
+      }   // niet gericht (mist) of gewone kogel -> rechtdoor
     }
     for (const b of this.bullets) {
       const rw = b.kind === 'rocket' ? 16 : (b.kind === 'cannon' ? 18 : 11);
@@ -2013,7 +2025,7 @@ const Game = {
         if (window.Net && !this.vsBot) Net.versusSend('rocks', { xs });
       } else { const xs = this.rockTargetXs(this.player.x); this.castRocks(xs); }   // bot pakte de steen
     }
-    else if (d.kind === 'cannon') { pl.cannon = (pl.cannon || 0) + 2; }            // 2 kanonskogels
+    else if (d.kind === 'cannon') { pl.cannon = (pl.cannon || 0) + 1; }            // 1 kanonskogel
     else if (d.kind === 'shield') { pl.shieldHp = SMASH_SHIELD; }                  // +50 hp schild
   },
 
@@ -2130,7 +2142,10 @@ const Game = {
     }
     // bot-kogels bewegen + de speler raken
     if (this.botBullets && this.botBullets.length) {
-      for (const bl of this.botBullets) { bl.x += bl.vx * this.dtScale; bl.life += dt; }
+      for (const bl of this.botBullets) {
+        if ((bl.kind === 'fire' || bl.kind === 'rocket') && !this.player.dead && this.player.respawnInvuln <= 0) this._softAim(bl, this.player);
+        bl.x += bl.vx * this.dtScale; bl.y += (bl.vy || 0) * this.dtScale; bl.life += dt;
+      }
       for (const bl of this.botBullets) {
         const rw = bl.kind === 'rocket' ? 16 : (bl.kind === 'cannon' ? 18 : 11);
         const rh = bl.kind === 'rocket' ? 20 : (bl.kind === 'cannon' ? 22 : 16);
