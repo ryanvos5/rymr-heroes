@@ -472,6 +472,14 @@ const Sprites = {
       this.px(ctx, '#d8b24e', x - 1, y - 4, 5, 6); this.px(ctx, '#d8b24e', x + w - 4, y - 4, 5, 6);
       return;
     }
+    if (style === 'sand') {
+      this.px(ctx, '#f0dca0', x, y - 1, w, 2);    // licht zand bovenop
+      this.px(ctx, '#e3c882', x, y + 1, w, 3);    // zand-top
+      this.px(ctx, '#caa860', x, y + 4, w, 9);    // zand-body
+      this.px(ctx, '#9a7e44', x, y + 11, w, 4);   // schaduw
+      this.px(ctx, '#b89a52', x + 4, y + 5, 2, 2); this.px(ctx, '#b89a52', x + w - 8, y + 6, 2, 2); // korrels
+      return;
+    }
     if (style === 'stone') {
       this.px(ctx, '#7a756e', x, y - 1, w, 2);   // stenen rand bovenop (geen gras)
       this.px(ctx, '#5e5a54', x, y + 1, w, 3);   // steen-topvlak

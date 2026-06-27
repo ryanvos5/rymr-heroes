@@ -1180,6 +1180,11 @@ const Game = {
     this.vulcanSmoke = []; this.vulcanBg = [];
     // Pirate: zeemonster-tentakel
     this.tentacle = map.pirate ? { state: 'idle', nextAt: this.time + PIRATE_TENT_EVERY, x: 360, mode: 'flat', hitP: false, hitB: false } : null;
+    // Beach: getij + strandbal
+    this.tide = map.beach ? { state: 'idle', nextAt: this.time + BEACH_TIDE_EVERY, level: 0, dir: 1, _sloshAt: 0 } : null;
+    this.beachFx = [];
+    this.ball = null;
+    this.player.beachball = 0;
     this.player.cannon = 0; this.player.shieldHp = 0; this.player.gunAmmo = 0; this.player.giant = false; this.player._baseMaxHp = this.player.maxHp; this.player._caged = false; this.player.heli = false; this.player.heliMinigun = 0; this.player.heliRockets = 0;
     // Jungle: lianen + gorilla in de kooi + papegaaien
     this.vsVines = map.vines || null;
@@ -1225,7 +1230,7 @@ const Game = {
       b.x = rb.x; b.y = rb.y; b.dir = this.vs.botSpawn.dir; b.onGround = true;
       b._think = 0; b._jumpCd = 0; b._shootCd = 0; b._blockUntil = 0; b._rangedId = botRanged;
       b.baseMelee = botMelee; b.fireballs = 0; b.smashRockets = 0; b._weaponUntil = 0; b._fireCd = 0;
-      b.cannon = 0; b.shieldHp = 0; b.gunAmmo = 0; b.giant = false; b._baseMaxHp = b.maxHp; b._caged = false; b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
+      b.cannon = 0; b.shieldHp = 0; b.gunAmmo = 0; b.giant = false; b._baseMaxHp = b.maxHp; b._caged = false; b.heli = false; b.heliMinigun = 0; b.heliRockets = 0; b.beachball = 0;
       this.bot = b;
       this.vs.remote.charId = botChar;
     } else if (window.Net) {
@@ -1233,6 +1238,8 @@ const Game = {
         onState: (s) => this.onVersusState(s),
         onHit: (p) => this.onVersusHit(p),
         onParry: (p) => this.onVersusParry(p),
+        onTide: (p) => this.onVersusTide(p),
+        onBall: (p) => this.onVersusBall(p),
         onFell: () => this.onVersusFell(),
         onBurn: () => this.onVersusBurn(),
         onShot: (p) => this.onVersusShot(p),
@@ -1314,6 +1321,8 @@ const Game = {
       if (this.vsMap && this.vsMap.cave) this.updateCave(dt);   // knoppen/muur + sfeer
       if (this.vsMap && this.vsMap.vulcan) this.updateVulcan(dt);   // lavastraal + sfeer
       if (this.vsMap && this.vsMap.pirate) this.updatePirate(dt);   // zeemonster-tentakel
+      if (this.vsMap && this.vsMap.beach) this.updateTide(dt);      // strand: getij/vloed
+      if (this.ball) this.updateBall(dt);                           // strandbal
       if (this.vsMap && this.vsMap.jungle2) this.updateGorilla(dt); // kooi-gorilla
       if (this.vsMap && this.vsMap.jungle2) this.updateMonkey(dt);  // helper-aapje
       if (this.vsMap && this.vsMap.jungle2) this.confineCage(this.player);   // opgesloten tot de gorilla dood is
@@ -1474,6 +1483,8 @@ const Game = {
           p.gunAmmo--; p._fireCd = this.time + 150; this.spawnVersusGun(p);
           if (p.gunAmmo <= 0) { p.rangedId = null; p.weaponId = p.meleeId || 'bat'; }
         }
+      } else if (p.beachball > 0 && !this.ball) {           // strandbal afschieten (1 actieve bal tegelijk)
+        if (this.time >= (p._fireCd || 0)) { p.beachball--; p._fireCd = this.time + 500; this.spawnBall(p, 'me'); }
       } else if (p.fireballs > 0 || p.smashRockets > 0) {  // vuurwapen opgepakt -> vuren
         if (this.time >= (p._fireCd || 0)) {
           if (p.fireballs > 0) { p.fireballs--; p._fireCd = this.time + 420; this.spawnVersusProjectile(p, 'fire'); }
@@ -1590,6 +1601,134 @@ const Game = {
     P('#2a2a2a', cx + f * 12, by + 9, f * 6, 2);
   },
 
+  // ===== BEACH: getij (vloed) =====
+  beachWaterY() {
+    const v = this.tide; if (!v) return 9999;
+    return 158 - v.level * 42;   // waterhoogte stijgt met het niveau (strand op y150)
+  },
+  _tidePhase(s) {
+    const v = this.tide; v.state = s;
+    if (s === 'rising') v.nextAt = this.time + BEACH_RISE;
+    else if (s === 'flood') { v.nextAt = this.time + BEACH_FLOOD; v._sloshAt = this.time + BEACH_SLOSH; }
+    else if (s === 'recede') v.nextAt = this.time + BEACH_RECEDE;
+    else v.nextAt = this.time + BEACH_TIDE_EVERY;
+  },
+  onVersusTide(p) { if (!this.tide || !p) return; if (p.dir != null) this.tide.dir = p.dir; if (p.ph) this._tidePhase(p.ph); },
+  updateTide(dt) {
+    const v = this.tide; if (!v) return;
+    if (this.vsBot || this.vs.role === 'host') {
+      const adv = (cur, nx) => { if (v.state === cur && this.time >= v.nextAt) { this._tidePhase(nx); if (window.Net && !this.vsBot) Net.versusSend('tide', { ph: nx, dir: v.dir }); return true; } return false; };
+      adv('idle', 'rising') || adv('rising', 'flood') || adv('flood', 'recede') || adv('recede', 'idle');
+      if (v.state === 'flood' && this.time >= v._sloshAt) { v.dir = -v.dir; v._sloshAt = this.time + BEACH_SLOSH; if (window.Net && !this.vsBot) Net.versusSend('tide', { ph: 'flood', dir: v.dir }); }
+    } else if ((v.state === 'rising' || v.state === 'flood' || v.state === 'recede') && this.time >= v.nextAt + 900) {
+      this._tidePhase(v.state === 'recede' ? 'idle' : (v.state === 'flood' ? 'recede' : 'flood'));   // gast-vangnet
+    }
+    // niveau animeren naar het doel van de fase
+    const target = (v.state === 'rising' || v.state === 'flood') ? 1 : 0;
+    const rate = (v.state === 'rising') ? (dt / BEACH_RISE) : (v.state === 'recede') ? (dt / BEACH_RECEDE) : (dt / 500);
+    v.level += (target - v.level) * Math.min(1, rate * 3.2);
+    v.level = Math.max(0, Math.min(1, v.level));
+    // golven nemen je mee als je in het water staat
+    const surf = this.beachWaterY();
+    const carry = (e) => {
+      if (!e || e.dead) return;
+      if (e.y >= surf - 2 && v.level > 0.25) {
+        e.x += v.dir * BEACH_CARRY * this.dtScale;
+        if (this.time >= (e._splashAt || 0)) { e._splashAt = this.time + 220; this.beachFx.push({ x: e.x + (Math.random() - 0.5) * 10, y: surf, life: 360 }); }
+      }
+    };
+    carry(this.player); if (this.vsBot) carry(this.bot);
+    for (const s of this.beachFx) s.life -= dt; this.beachFx = this.beachFx.filter((s) => s.life > 0);
+  },
+
+  // ===== BEACH: strandbal =====
+  spawnBall(shooter, owner) {
+    const dir = shooter.dir;
+    this.ball = { mine: owner === 'me', owner, x: shooter.x + dir * 14, y: shooter.y - 16, vx: dir * 5.5, vy: -3, born: this.time, _cd: 0, _net: 0, grace: this.time + 250 };
+    if (owner === 'me' && window.Net && !this.vsBot) Net.versusSend('ball', { x: Math.round(this.ball.x), y: Math.round(this.ball.y), vx: +this.ball.vx.toFixed(2), vy: +this.ball.vy.toFixed(2) });
+  },
+  onVersusBall(p) {
+    if (!p) return;
+    if (!this.ball) this.ball = { mine: false, owner: 'foe', born: this.time, grace: this.time };
+    this.ball.mine = false; this.ball.x = p.x; this.ball.y = p.y; this.ball.vx = p.vx; this.ball.vy = p.vy;
+  },
+  explodeBall() {
+    const b = this.ball; if (!b) return;
+    for (let i = 0; i < 16; i++) this.particles.push(new Particle(b.x, b.y, (Math.random() - 0.5) * 4.5, (Math.random() - 0.5) * 4.5, (i % 2 ? '#ff5a3a' : '#ffd24a'), 420, 3));
+    this.shake = Math.max(this.shake, 6);
+    this.ball = null;
+  },
+  updateBall(dt) {
+    const b = this.ball; if (!b) return;
+    if (this.time - b.born > BALL_LIFE) { this.explodeBall(); return; }   // 15s -> ontploft
+    const sim = b.mine || this.vsBot;                                     // online: alleen de eigenaar simuleert
+    if (!sim) return;
+    const sc = this.dtScale;
+    b.vy += 0.4 * sc; b.x += b.vx * sc; b.y += b.vy * sc;
+    if (b.x < 10) { b.x = 10; b.vx = Math.abs(b.vx) * 0.92; }
+    if (b.x > this.vsMapW - 10) { b.x = this.vsMapW - 10; b.vx = -Math.abs(b.vx) * 0.92; }
+    for (const pf of this.platforms) {
+      if (pf.mast) continue;
+      if (b.x > pf.x - pf.w / 2 - 6 && b.x < pf.x + pf.w / 2 + 6 && b.y > pf.y - 9 && b.y < pf.y + 7 && b.vy > 0) {
+        b.y = pf.y - 9; b.vy = -Math.abs(b.vy) * 0.8; if (Math.abs(b.vy) < 2.2) b.vy = -4.5; b.vx *= 0.99;
+      }
+    }
+    if (b.y > CONFIG.GROUND_Y - 2 && b.vy > 0) { b.y = CONFIG.GROUND_Y - 2; b.vy = -Math.abs(b.vy) * 0.8; }
+    // treffers (na grace): beide spelers kunnen geraakt worden -> harde knockback
+    if (this.time >= b.grace && this.time >= (b._cd || 0)) {
+      const tryHit = (e, isMe) => {
+        if (!e || e.dead || (isMe && e.respawnInvuln > 0)) return false;
+        if (Math.abs(b.x - e.x) < 16 && Math.abs(b.y - (e.y - 14)) < 20) {
+          const kd = b.x >= e.x ? 1 : -1;
+          if (isMe) this.onVersusHit({ dir: kd, power: BALL_KNOCK, vy: -7, dmg: 6 });
+          else if (this.vsBot) this.applyHitToBot(kd, BALL_KNOCK, -7, 6);
+          else if (window.Net) Net.versusSend('hit', { dir: kd, power: BALL_KNOCK, vy: -7, dmg: 6 });
+          b.vx = kd * Math.max(4.5, Math.abs(b.vx)); b.vy = -5; b._cd = this.time + 400;
+          this.shake = Math.max(this.shake, 5);
+          return true;
+        }
+        return false;
+      };
+      tryHit(this.player, true);
+      tryHit(this.vsBot ? this.bot : this.vs.remote, false);
+    }
+    if (b.mine && !this.vsBot && window.Net) { b._net = (b._net || 0) + dt; if (b._net >= 70) { b._net = 0; Net.versusSend('ball', { x: Math.round(b.x), y: Math.round(b.y), vx: +b.vx.toFixed(2), vy: +b.vy.toFixed(2) }); } }
+  },
+  drawBall(ctx) {
+    const b = this.ball; if (!b) return;
+    const x = Math.round(b.x), y = Math.round(b.y), spin = Math.floor(this.time / 90) % 2;
+    Sprites.px(ctx, '#ffffff', x - 5, y - 5, 10, 10);
+    Sprites.px(ctx, '#e8483b', x - 5, y - 5, 10, 3);
+    Sprites.px(ctx, '#3aa0e0', x - 5, y + 2, 10, 3);
+    Sprites.px(ctx, '#f2c94c', x + (spin ? -2 : 0), y - 5, 2, 10);
+    Sprites.px(ctx, '#2a8a3a', x + (spin ? 1 : 3), y - 5, 2, 10);
+  },
+  drawTideWater(ctx) {
+    const v = this.tide; if (!v || v.level < 0.02) return;
+    const W = this.vsMapW, surf = this.beachWaterY(), t = this.time;
+    ctx.globalAlpha = 0.42; ctx.fillStyle = '#2f86c0';
+    ctx.fillRect(0, surf, W, CONFIG.GROUND_Y + 60 - surf);
+    ctx.globalAlpha = 0.6;
+    for (let x = 0; x < W; x += 8) { const wob = Math.round(Math.sin(t / 180 + x * 0.12) * 2); Sprites.px(ctx, '#bfe6f5', x, surf - 1 + wob, 6, 2); }
+    ctx.globalAlpha = 1;
+    for (const s of this.beachFx) { ctx.globalAlpha = Math.max(0, s.life / 360); Sprites.px(ctx, '#eaffff', Math.round(s.x) - 2, Math.round(s.y) - 4, 4, 4); }
+    ctx.globalAlpha = 1;
+  },
+  drawBeachBg(ctx) {
+    const W = this.vsMapW, gy = CONFIG.GROUND_Y, t = this.time;
+    // zee op de achtergrond (boven het strand)
+    ctx.fillStyle = '#3f9fd0'; ctx.fillRect(0, gy - 34, W, 22);
+    ctx.fillStyle = '#5fb6e0'; ctx.fillRect(0, gy - 34, W, 8);
+    // golflijnen die bewegen
+    for (let r = 0; r < 3; r++) {
+      ctx.globalAlpha = 0.5 - r * 0.12;
+      for (let x = -8; x < W + 8; x += 14) { const wob = Math.round(Math.sin(t / 300 + x * 0.08 + r) * 2); Sprites.px(ctx, '#cdeaf7', x + ((t * (0.2 + r * 0.1)) % 14), gy - 30 + r * 5 + wob, 7, 2); }
+    }
+    ctx.globalAlpha = 1;
+    // zon
+    ctx.fillStyle = '#ffe79a'; ctx.beginPath(); ctx.arc(W - 50, 36, 16, 0, Math.PI * 2); ctx.fill();
+  },
+
   updateSmash(dt) {
     const p = this.player;
     if (p._weaponUntil && this.time > p._weaponUntil) { p.meleeId = p.baseMelee || 'bat'; p.weaponId = p.rangedId || p.meleeId; p._weaponUntil = 0; p.swingWeapon = null; }
@@ -1609,7 +1748,7 @@ const Game = {
     // bot pakt op + wapen-timer
     if (this.vsBot && this.bot && !this.bot.dead) {
       for (const d of this.drops) {
-        if (d.taken || d.kind === 'giant' || d.kind === 'heli') continue;   // bot pakt geen Giant/Heli
+        if (d.taken || d.kind === 'giant' || d.kind === 'heli' || d.kind === 'beachball') continue;   // bot pakt geen Giant/Heli/strandbal
         if (Math.abs(this.bot.x - d.x) < 16 && Math.abs((this.bot.y - 12) - d.y) < 22) { d.taken = true; this.applyDrop(this.bot, d); }
       }
       if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot.weaponId = this.bot.rangedId || this.bot.meleeId; this.bot._weaponUntil = 0; this.bot.swingWeapon = null; }
@@ -2056,6 +2195,7 @@ const Game = {
     if (mid === 'pirate') pool.push({ kind: 'cannon', w: 9 });                      // kanonskogel alleen op Pirate Ship
     if (mid === 'pirate' || mid === 'sky') pool.push({ kind: 'shield', w: 9 });     // shield op Pirate + Sky
     if (mid === 'sky' || mid === 'lava') pool.push({ kind: 'heli', w: 6 });          // gevechtsheli op Sky + Volcano
+    if (mid === 'beach') pool.push({ kind: 'beachball', w: 10 });                     // strandbal op Beach
     if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); }  // Giant + AK47 op Jungle
     if (mid === 'dohyo') {                                                          // Dohyo: ALLE power-ups
       pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'rock', w: 8 }); pool.push({ kind: 'cannon', w: 9 });
@@ -2109,6 +2249,7 @@ const Game = {
         if (window.Net && !this.vsBot) Net.versusSend('rocks', { xs });
       } else { const xs = this.rockTargetXs(this.player.x); this.castRocks(xs); }   // bot pakte de steen
     }
+    else if (d.kind === 'beachball') { pl.beachball = 1; }                          // strandbal (1 schot)
     else if (d.kind === 'cannon') { pl.cannon = (pl.cannon || 0) + 1; }            // 1 kanonskogel
     else if (d.kind === 'shield') { pl.shieldHp = SMASH_SHIELD; }                  // +50 hp schild
     else if (d.kind === 'heli') {                                                  // gevechtsheli: instappen
@@ -2138,6 +2279,8 @@ const Game = {
     this.caveWall = null; this.caveArmed = -1; this._caveArmAt = this.time + CAVE_ARM_MS;
     if (this.vulcan) { this.vulcan.state = 'idle'; this.vulcan.nextAt = this.time + VULCAN_EVERY; }
     if (this.tentacle) { this.tentacle.state = 'idle'; this.tentacle.nextAt = this.time + PIRATE_TENT_EVERY; }
+    if (this.tide) { this.tide.state = 'idle'; this.tide.level = 0; this.tide.nextAt = this.time + BEACH_TIDE_EVERY; }
+    this.ball = null;
     this.shake = Math.max(this.shake, 7);
   },
 
@@ -2323,7 +2466,7 @@ const Game = {
     b.guard = GUARD_MAX; b._guardBroken = false; b._blockStart = 0;
     if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
     b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; }
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; b.beachball = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -2517,7 +2660,7 @@ const Game = {
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
       this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
-      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0;
+      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0; this.player.beachball = 0;
     }
   },
 
@@ -2601,6 +2744,11 @@ const Game = {
       if (won) Storage.data.mpWins = (Storage.data.mpWins || 0) + 1;
       else Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
       Storage.save();
+    } else if (won && this.botLevel === 10) {           // win van de zwaarste bot -> kleine beloning
+      gained = 30; coinsEarned = 50;
+      Storage.data.xp = (Storage.data.xp || 0) + gained;
+      Storage.data.coins = (Storage.data.coins || 0) + coinsEarned;
+      Storage.save();
     }
     const myScore = this.vs ? this.vs.myScore : 0, oppScore = this.vs ? this.vs.oppScore : 0;
     if (peerLeft) { UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft); return; }
@@ -2673,6 +2821,7 @@ const Game = {
     if (map.pirate) this.drawPirateBg(ctx);             // piratenschip-achtergrond + water
     if (map.jungle2) this.drawJungleBg(ctx);            // oerwoud-achtergrond + papegaaien
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
+    if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
 
     // afgrond onderin (map-thema), camera-bewust
     ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, W + 8, H + Math.abs(camY) + 320);
@@ -2681,7 +2830,7 @@ const Game = {
     if (map.pirate) this.drawPirateHull(ctx);           // scheepsromp onder het dek
 
     // platforms (bewegende krijgen een pijltjes-hint; zachte wolken pluizig; Vulcan = steen/schuin; Pirate = hout/masten)
-    const platStyle = map.wood ? 'wood' : (map.stone ? 'stone' : (map.dohyo ? 'dohyo' : null));
+    const platStyle = map.wood ? 'wood' : (map.stone ? 'stone' : (map.dohyo ? 'dohyo' : (map.sand ? 'sand' : null)));
     for (const pf of this.platforms) {
       if (pf.soft) { this.drawSoftCloud(ctx, pf); continue; }
       if (pf.mast) { this.drawMast(ctx, pf); continue; }
@@ -2771,6 +2920,8 @@ const Game = {
     if (map.pirate && this.tentacle) this.drawTentacle(ctx); // zeemonster-tentakel
     if (map.jungle2 && this.monkey) this.drawMonkey(ctx);    // helper-aapje
     if (map.jungle2 && this.jungleCage) this.drawCage(ctx);  // kooi-tralies vóór de spelers
+    if (this.ball) this.drawBall(ctx);                       // strandbal
+    if (map.beach && this.tide) this.drawTideWater(ctx);     // vloed-water over de spelers
     ctx.restore();
 
     // draken (drakenei-powerup) — scherm-ruimte, over de wereld heen
@@ -2857,6 +3008,13 @@ const Game = {
       Sprites.px(ctx, '#3a2f22', x - 2, y + 1, 3, 4);   // magazijn (gebogen)
       Sprites.px(ctx, '#1a1a1e', x - 1, y + 4, 3, 2);
       Sprites.px(ctx, '#888', x - 6, y - 2, 3, 1);
+    }
+    else if (d.kind === 'beachball') {
+      // strandbal-icoon (gekleurde partjes)
+      Sprites.px(ctx, '#ffffff', x - 5, y - 5, 10, 10);
+      Sprites.px(ctx, '#e8483b', x - 5, y - 5, 10, 3);
+      Sprites.px(ctx, '#3aa0e0', x - 5, y + 2, 10, 3);
+      Sprites.px(ctx, '#f2c94c', x - 1, y - 5, 2, 10);
     }
     else if (d.kind === 'heli') {
       // gevechtsheli-icoon

@@ -780,6 +780,8 @@ const UI = {
     if (p.heli) { this._drawTbtnIcon('tbtn-melee-ic', 'rocket'); this._drawTbtnIcon('tbtn-fire-ic', 'ak47'); return; }   // heli: raket / minigun
     const meleeId = (p.swingWeapon && Game.time < (p.swingUntil || 0)) ? p.swingWeapon : (p.meleeId || 'bat');
     let fire;
+    if (p.beachball > 0) fire = 'beachball';
+    else
     if (p.giant) fire = 'fist';                                     // reus kan niet vuren
     else if (p.fireballs > 0) fire = 'fireball';
     else if (p.smashRockets > 0) fire = 'rocket';
@@ -798,6 +800,7 @@ const UI = {
     if (kind === 'fireball') { P('#ff7a2a', 9, 7, 14, 16); P('#ffd24a', 13, 12, 6, 9); return; }
     if (kind === 'cannon') { P('#0e0e0e', 8, 9, 16, 15); P('#3a3a3a', 8, 9, 16, 3); P('#777', 14, 14, 3, 3); P('#6a4a2a', 15, 4, 2, 3); P('#ff8a3a', 15, 1, 2, 3); return; }
     if (kind === 'fist') { P('#3a7a4a', 9, 9, 14, 13); P('#2f5e38', 9, 9, 14, 3); P('#7affa0', 12, 12, 3, 3); return; }
+    if (kind === 'beachball') { P('#ffffff', 8, 8, 16, 16); P('#e8483b', 8, 8, 16, 5); P('#3aa0e0', 8, 19, 16, 5); P('#f2c94c', 14, 8, 4, 16); return; }
     const wid = (typeof WEAPONS !== 'undefined' && WEAPONS[kind]) ? kind : 'bat';
     ctx.save(); const s = 0.6; ctx.translate(15 - 25 * s, 16 - 23.5 * s); Sprites.drawWeaponIcon(ctx, wid, s); ctx.restore();
   },
@@ -860,7 +863,10 @@ const UI = {
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = myScore + ' – ' + oppScore;
     const xpEl = document.getElementById('vs-result-xp');
-    if (isBot) {
+    if (isBot && (xpGained > 0 || coinsEarned > 0)) {
+      xpEl.classList.remove('hidden');
+      xpEl.innerHTML = '🤖 Bot Lvl 10 verslagen!<br>+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
+    } else if (isBot) {
       xpEl.classList.remove('hidden');
       xpEl.textContent = '🤖 Oefenpotje tegen de bot — geen XP';
     } else {

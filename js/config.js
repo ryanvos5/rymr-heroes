@@ -143,7 +143,7 @@ const CHARACTERS = {
     desc: 'Gebalanceerd. Snelste loper.'
   },
   tygo: {
-    id: 'tygo', name: 'Tygo', cost: 700,
+    id: 'tygo', name: 'Tygo', cost: 700, lvl: 10,
     maxHp: 110, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural',
     dblJumpMul: 1.22,                          // iets hogere/langere dubbel-jump
     palette: {
@@ -156,7 +156,7 @@ const CHARACTERS = {
     desc: 'Lang & taai (+10 HP). Hogere dubbel-jump. Gebruikt elk melee-wapen.'
   },
   just: {
-    id: 'just', name: 'Just', cost: 800,
+    id: 'just', name: 'Just', cost: 800, lvl: 12,
     maxHp: 130, speedMul: 0.8, meleeMul: 1.2, build: 'stocky', hair: 'bald',
     groundPound: true,
     palette: {
@@ -169,7 +169,7 @@ const CHARACTERS = {
     desc: 'Dik & klein, traag maar sterk (+30 HP, +20% melee). Stamp bij de landing schade in de buurt.'
   },
   timo: {
-    id: 'timo', name: 'Timo', cost: 900, lvl: 6,
+    id: 'timo', name: 'Timo', cost: 900, lvl: 4,
     maxHp: 90, speedMul: 1.05, meleeMul: 1.0, build: 'small', hair: 'natural',
     extraJump: true,
     palette: {
@@ -182,7 +182,7 @@ const CHARACTERS = {
     desc: 'Klein & wendbaar (kleine hitbox). Heeft een extra (kleinere) dubbel-jump.'
   },
   vince: {
-    id: 'vince', name: 'Vince', cost: 850,
+    id: 'vince', name: 'Vince', cost: 850, lvl: 8,
     maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'spiky',
     fireAura: true,
     palette: {
@@ -195,7 +195,7 @@ const CHARACTERS = {
     desc: 'Gebalanceerd. Elke 30s een vuuraura (5s): wie je dan aanraakt brandt 3s.'
   },
   jenze: {
-    id: 'jenze', name: 'Jenze', cost: 450,
+    id: 'jenze', name: 'Jenze', cost: 450, lvl: 2,
     maxHp: 140, speedMul: 0.9, meleeMul: 1.3, build: 'bulky', hair: 'curly',
     palette: {
       hair: '#6b4426', hairDark: '#4a2e18',  // bruine krullen
@@ -207,7 +207,7 @@ const CHARACTERS = {
     desc: 'Fors & taai: +40 HP, +30% melee, iets trager.'
   },
   ricky: {
-    id: 'ricky', name: 'Ricky', cost: 700, lvl: 4,
+    id: 'ricky', name: 'Ricky', cost: 700, lvl: 6,
     maxHp: 85, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'natural',
     autoRage: true, rageEvery: 15000,
     palette: {
@@ -217,10 +217,10 @@ const CHARACTERS = {
       shirt: '#3a7a4a', shirtDark: '#245030',
       pants: '#24303a', shoe: '#101418',
     },
-    desc: 'Elke 15s 3s RAGE (2× schade). 85 HP. Pas vanaf level 4.'
+    desc: 'Elke 15s 3s RAGE (2× schade). 85 HP.'
   },
   yarno: {
-    id: 'yarno', name: 'Yarno', cost: 600,
+    id: 'yarno', name: 'Yarno', cost: 600, lvl: 13,
     maxHp: 100, speedMul: 1.08, meleeMul: 1.0, build: 'normal', hair: 'back', startMelee: 'dagger',
     palette: {
       hair: '#161616', hairDark: '#000000',     // zwart, naar achteren
@@ -431,6 +431,15 @@ const SMASH_ROCK_SPREAD = 55;        // spreiding rond de tegenstander
 const HELI_MINIGUN = 100;            // gevechtsheli: minigun-kogels (vuurknop)
 const HELI_ROCKETS = 3;              // gevechtsheli: raketten (meleeknop)
 const HELI_SPEED = 2.8;              // vlieg-snelheid (links/rechts/omhoog/omlaag)
+// Beach: getij (vloed) + strandbal
+const BEACH_TIDE_EVERY = 9000;       // ms tussen vloeden
+const BEACH_RISE = 1600;             // opkomen
+const BEACH_FLOOD = 3200;            // hoog water (golven nemen je mee)
+const BEACH_RECEDE = 1800;           // terugtrekken
+const BEACH_CARRY = 1.5;             // hoe hard de golf je meeneemt
+const BEACH_SLOSH = 850;             // ms per golf-richting
+const BALL_LIFE = 15000;             // strandbal leeft 15s, dan ontploft
+const BALL_KNOCK = 34;               // harde knockback bij een treffer
 
 // bukken/blokken: parry (perfecte timing) + sterker maar breekbaar blok
 const PARRY_WINDOW = 220;            // ms na blok-start = perfecte parry (100% blok + counter)
@@ -609,6 +618,17 @@ const VERSUS_MAPS = [
     ],
     buttons: [
       { at: 'mid', x: 360, y: 98 },                              // 1 knop in het midden -> straal sweept de map
+    ],
+  },
+  {
+    // Beach: strand met zee + golven op de achtergrond. Af en toe vloed: water stijgt over de map
+    // en de golven nemen je mee. Powerup: strandbal (stuitert, harde knockback, ontploft na 15s).
+    id: 'beach', name: 'Beach', sky: ['#8ad0f0', '#cde7f7'], void: '#1c4a5e', plat: 'sand', sand: true, beach: true, w: 360,
+    spawnL: { x: 110, y: 150 }, spawnR: { x: 250, y: 150 },
+    platforms: [
+      { x: 180, y: 150, w: 360 },                  // het strand (hele ondergrond)
+      { x: 66, y: 110, w: 60 }, { x: 294, y: 110, w: 60 },   // houten vlonders links/rechts
+      { x: 180, y: 74, w: 78 },                    // hoog plankier
     ],
   },
 ];
