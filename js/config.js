@@ -265,6 +265,15 @@ const CHARACTERS = {
     },
     desc: 'Gorillakoning: enorme kracht + rage. Versla hem in Journey om te unlocken.'
   },
+  // ---- vijand-mensapen (alleen als bot in Journey, niet in de shop / niet in CHARACTER_ORDER) ----
+  aapje: {
+    id: 'aapje', name: 'Aapje', maxHp: 70, speedMul: 1.1, meleeMul: 0.9, build: 'small', hair: 'natural',
+    palette: { hair: '#4a3320', hairDark: '#2e2012', skin: '#8a5e38', skinDark: '#5e3f22', eye: '#2a1a0e', shirt: '#6b5030', shirtDark: '#43321c', pants: '#2a1c12', shoe: '#140d08' },
+  },
+  baviaan: {
+    id: 'baviaan', name: 'Baviaan', maxHp: 105, speedMul: 1.0, meleeMul: 1.1, build: 'normal', hair: 'natural',
+    palette: { hair: '#5a4030', hairDark: '#3a281c', skin: '#9a6a3a', skinDark: '#6e4824', eye: '#c83838', shirt: '#7a3a2a', shirtDark: '#4a1f14', pants: '#33240f', shoe: '#160d06' },
+  },
 };
 const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'bonzo', 'koba', 'kong'];
 const SHIELD_BLOCK_CD = 3000;   // ms cooldown nadat Tygo's schild een treffer blokt
@@ -474,6 +483,14 @@ const BEACH_CARRY = 1.5;             // hoe hard de golf je meeneemt
 const BEACH_SLOSH = 850;             // ms per golf-richting
 const BALL_LIFE = 15000;             // strandbal leeft 15s, dan ontploft
 const BALL_KNOCK = 34;               // harde knockback bij een treffer
+// Journey-eiland-powerups (NIEUW, niet in gewone smash)
+const COCO_AMMO = 2;                 // kokosbom: lobt in een boog, ontploft (AoE)
+const COCO_KNOCK = 28;
+const BOOM_AMMO = 2;                 // boemerang: vliegt uit en keert terug, raakt beide kanten
+const BOOM_KNOCK = 16;
+const DART_AMMO = 5;                 // gifdart: snel + recht, korte verdoving bij treffer
+const DART_KNOCK = 8;
+const DART_STUN = 700;
 
 // bukken/blokken: parry (perfecte timing) + sterker maar breekbaar blok
 const PARRY_WINDOW = 220;            // ms na blok-start = perfecte parry (100% blok + counter)
@@ -515,27 +532,45 @@ const HAT_ORDER = ['none', 'cap', 'beanie', 'party', 'fedora', 'cowboy', 'chef',
 // JOURNEY — singleplayer tegen bots. Elk level = 1v1 Power Smash.
 // Wereld 1: Onbewoond Eiland (mensapen). 15 levels, oplopend, eindbaas = Gorilla King.
 // ============================================================
+// 15 unieke beach-geïnspireerde layouts (allemaal strand+zee+getij), met val-randen
+const BEACH_LAYOUTS = [
+  [{ x: 180, y: 150, w: 240 }, { x: 80, y: 112, w: 50 }, { x: 280, y: 112, w: 50 }],
+  [{ x: 180, y: 150, w: 200 }, { x: 180, y: 104, w: 72 }],
+  [{ x: 110, y: 150, w: 120 }, { x: 250, y: 150, w: 120 }, { x: 180, y: 108, w: 60 }],
+  [{ x: 180, y: 150, w: 220 }, { x: 74, y: 116, w: 48 }, { x: 286, y: 116, w: 48 }, { x: 180, y: 78, w: 70 }],
+  [{ x: 180, y: 150, w: 180 }, { x: 70, y: 120, w: 46 }, { x: 290, y: 120, w: 46 }, { x: 130, y: 88, w: 44 }, { x: 230, y: 88, w: 44 }],
+  [{ x: 180, y: 150, w: 240 }, { x: 96, y: 110, w: 50 }, { x: 264, y: 110, w: 50 }],
+  [{ x: 90, y: 150, w: 120 }, { x: 270, y: 150, w: 120 }, { x: 180, y: 118, w: 80 }, { x: 180, y: 78, w: 48 }],
+  [{ x: 180, y: 150, w: 200 }, { x: 74, y: 114, w: 44 }, { x: 286, y: 114, w: 44 }, { x: 180, y: 84, w: 64 }],
+  [{ x: 180, y: 150, w: 160 }, { x: 80, y: 124, w: 44 }, { x: 280, y: 124, w: 44 }, { x: 180, y: 96, w: 60 }, { x: 180, y: 58, w: 40 }],
+  [{ x: 120, y: 150, w: 120 }, { x: 240, y: 150, w: 120 }, { x: 60, y: 112, w: 44 }, { x: 300, y: 112, w: 44 }, { x: 180, y: 96, w: 70 }],
+  [{ x: 180, y: 150, w: 230 }, { x: 110, y: 110, w: 50 }, { x: 250, y: 110, w: 50 }, { x: 180, y: 74, w: 60 }],
+  [{ x: 180, y: 150, w: 180 }, { x: 80, y: 118, w: 48 }, { x: 280, y: 118, w: 48 }, { x: 130, y: 86, w: 44 }, { x: 230, y: 86, w: 44 }],
+  [{ x: 96, y: 150, w: 110 }, { x: 264, y: 150, w: 110 }, { x: 180, y: 124, w: 70 }, { x: 180, y: 88, w: 50 }, { x: 180, y: 52, w: 36 }],
+  [{ x: 180, y: 150, w: 210 }, { x: 70, y: 116, w: 46 }, { x: 290, y: 116, w: 46 }, { x: 120, y: 84, w: 44 }, { x: 240, y: 84, w: 44 }],
+  [{ x: 180, y: 150, w: 300 }, { x: 78, y: 112, w: 64 }, { x: 282, y: 112, w: 64 }, { x: 180, y: 80, w: 92 }],   // baas-arena
+];
 const JOURNEY = {
   1: {
     name: 'Onbewoond Eiland',
+    // elk level: eigen beach-variant (layout-index), mensaap-bot, oplopende diff, NIEUWE eiland-powerups
     levels: [
-      { name: 'Aangespoeld',     map: 'beach',  diff: 1,  drops: [] },
-      { name: 'Strandwacht',     map: 'beach',  diff: 2,  drops: ['beachball'] },
-      { name: 'Het oerwoud in',  map: 'jungle', diff: 2,  drops: ['beachball'] },
-      { name: 'Apenstreken',     map: 'jungle', diff: 3,  drops: ['beachball', 'ak47'] },
-      { name: 'Vloedlijn',       map: 'beach',  diff: 4,  drops: ['beachball', 'shield'] },
-      { name: 'Lianenwoud',      map: 'jungle', diff: 4,  drops: ['ak47', 'shield', 'beachball'] },
-      { name: 'Verloren strand', map: 'beach',  diff: 5,  drops: ['beachball', 'shield', 'giant'] },
-      { name: 'Kooivallei',      map: 'jungle', diff: 6,  drops: ['ak47', 'giant', 'shield'] },
-      { name: 'Springvloed',     map: 'beach',  diff: 6,  drops: ['beachball', 'giant', 'shield'] },
-      { name: 'Apentempel',      map: 'jungle', diff: 7,  drops: ['ak47', 'giant', 'shield', 'dragon'] },
-      { name: 'Kokospaleis',     map: 'beach',  diff: 7,  drops: ['beachball', 'giant', 'shield', 'dragon'] },
-      { name: 'Diepe jungle',    map: 'jungle', diff: 8,  drops: ['ak47', 'giant', 'shield', 'dragon'] },
-      { name: 'Stormvloed',      map: 'beach',  diff: 9,  drops: ['beachball', 'giant', 'shield', 'dragon'] },
-      { name: 'Troon-jungle',    map: 'jungle', diff: 9,  drops: ['ak47', 'giant', 'shield', 'dragon'] },
-      { name: 'GORILLA KING',    map: 'jungle', diff: 10, drops: ['giant', 'shield', 'dragon'], boss: true },
+      { name: 'Aangespoeld',    diff: 1,  bot: 'aapje',   drops: ['dart'] },
+      { name: 'Brekers',        diff: 2,  bot: 'aapje',   drops: ['dart'] },
+      { name: 'Palmenrif',      diff: 2,  bot: 'aapje',   drops: ['dart', 'coco'] },
+      { name: 'Apenstreken',    diff: 3,  bot: 'aapje',   drops: ['dart', 'coco'] },
+      { name: 'Vloedlijn',      diff: 4,  bot: 'baviaan', drops: ['dart', 'coco'] },
+      { name: 'Lagune',         diff: 4,  bot: 'baviaan', drops: ['dart', 'coco', 'boom'] },
+      { name: 'Kliftoppen',     diff: 5,  bot: 'baviaan', drops: ['coco', 'boom'] },
+      { name: 'Zandbank',       diff: 6,  bot: 'baviaan', drops: ['dart', 'coco', 'boom'] },
+      { name: 'Verboden strand',diff: 6,  bot: 'baviaan', drops: ['coco', 'boom'] },
+      { name: 'Krabbenbaai',    diff: 7,  bot: 'koba',    drops: ['dart', 'coco', 'boom'] },
+      { name: 'Kokospaleis',    diff: 7,  bot: 'koba',    drops: ['coco', 'boom'] },
+      { name: 'Stormkaap',      diff: 8,  bot: 'koba',    drops: ['dart', 'coco', 'boom'] },
+      { name: 'Springvloed',    diff: 9,  bot: 'koba',    drops: ['coco', 'boom', 'dart'] },
+      { name: 'Aapheuvel',      diff: 9,  bot: 'koba',    drops: ['coco', 'boom', 'dart'] },
+      { name: 'GORILLA KING',   diff: 10, bot: 'kong',    drops: ['coco', 'boom', 'dart'], boss: true },
     ],
-    // beloningen bij het halen van een level
     unlocks: { 3: { hat: 'leafcrown' }, 5: { char: 'bonzo' }, 8: { hat: 'tikimask' }, 10: { char: 'koba' }, 12: { hat: 'bananahat' }, 15: { char: 'kong' } },
   },
 };

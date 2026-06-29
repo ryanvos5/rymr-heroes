@@ -36,7 +36,7 @@ const UI = {
     $('btn-win-shop').onclick = () => this.openShop();
     document.querySelectorAll('.shop-tab').forEach((b) => { b.onclick = () => { this._shopTab = b.dataset.tab; this.renderShop(); }; });
     $('btn-journey').onclick = () => this.openJourney();
-    $('btn-journey-story-go').onclick = () => this.startJourneyFromStory();
+    $('btn-journey-skip').onclick = () => Game.skipStory();
     const aa = $('btn-arena-again'); if (aa) aa.onclick = () => this.show('menu');   // oude arena-knop (mode is weg)
     $('btn-next').onclick = () => Game.nextLevel();
     $('btn-retry').onclick = () => Game.retryLevel();
@@ -216,21 +216,19 @@ const UI = {
     });
   },
   pickJourneyLevel(n) {
-    // verhaal-intro alleen vóór het allereerste potje (level 1, nog niks gehaald)
+    // animatie-verhaal alleen vóór het allereerste potje (level 1, nog niks gehaald)
     if (n === 1 && (Storage.data.journey1 || 0) === 0) {
-      this._pendingJourney = 1;
-      const txt = document.getElementById('journey-story-text');
-      if (txt) txt.textContent = 'Je schip is vergaan… en je spoelt aan op een onbewoond eiland. ' +
-        'Net als je bijkomt, grijpen wilde MENSAPEN je vast en sleuren je het oerwoud in. ' +
-        'Vecht je een weg door 15 levels — versla hun krijgers en uiteindelijk de GORILLA KING — en ontsnap van het eiland!';
-      document.getElementById('journey-story').classList.remove('hidden');
+      this.playStory();
       return;
     }
     this.startJourneyLevel(n);
   },
-  startJourneyFromStory() {
-    document.getElementById('journey-story').classList.add('hidden');
-    this.startJourneyLevel(this._pendingJourney || 1);
+  // verhaal-cutscene op het canvas afspelen, daarna level 1
+  playStory() {
+    ['menu', 'level', 'shop', 'journey', 'arena', 'win', 'lose', 'versus', 'leaderboard', 'chat'].forEach((s) => this.el[s].classList.add('hidden'));
+    document.body.classList.add('in-game');
+    this.el.hud.classList.add('hidden'); this.el.touch.classList.add('hidden'); this.el.pause.classList.add('hidden');
+    Game.playJourneyIntro(() => this.startJourneyLevel(1));
   },
   startJourneyLevel(n) {
     document.getElementById('versus-result').classList.add('hidden');
@@ -857,6 +855,9 @@ const UI = {
     const meleeId = (p.swingWeapon && Game.time < (p.swingUntil || 0)) ? p.swingWeapon : (p.meleeId || 'bat');
     let fire;
     if (p.beachball > 0) fire = 'beachball';
+    else if (p.coco > 0) fire = 'coco';
+    else if (p.boomerang > 0) fire = 'boom';
+    else if (p.dart > 0) fire = 'dart';
     else
     if (p.giant) fire = 'fist';                                     // reus kan niet vuren
     else if (p.fireballs > 0) fire = 'fireball';
@@ -877,6 +878,9 @@ const UI = {
     if (kind === 'cannon') { P('#0e0e0e', 8, 9, 16, 15); P('#3a3a3a', 8, 9, 16, 3); P('#777', 14, 14, 3, 3); P('#6a4a2a', 15, 4, 2, 3); P('#ff8a3a', 15, 1, 2, 3); return; }
     if (kind === 'fist') { P('#3a7a4a', 9, 9, 14, 13); P('#2f5e38', 9, 9, 14, 3); P('#7affa0', 12, 12, 3, 3); return; }
     if (kind === 'beachball') { P('#ffffff', 8, 8, 16, 16); P('#e8483b', 8, 8, 16, 5); P('#3aa0e0', 8, 19, 16, 5); P('#f2c94c', 14, 8, 4, 16); return; }
+    if (kind === 'coco') { P('#5e3f22', 8, 8, 16, 16); P('#8a5e36', 8, 8, 16, 5); P('#3a2614', 12, 14, 3, 3); P('#3a2614', 18, 18, 3, 3); return; }
+    if (kind === 'boom') { P('#a8824a', 7, 14, 12, 4); P('#a8824a', 14, 7, 4, 12); P('#7a5e30', 7, 14, 4, 4); P('#7a5e30', 14, 7, 4, 4); return; }
+    if (kind === 'dart') { P('#2f7a3a', 6, 14, 14, 3); P('#cfd6df', 19, 14, 5, 3); P('#6b4a2a', 5, 14, 3, 3); return; }
     const wid = (typeof WEAPONS !== 'undefined' && WEAPONS[kind]) ? kind : 'bat';
     ctx.save(); const s = 0.6; ctx.translate(15 - 25 * s, 16 - 23.5 * s); Sprites.drawWeaponIcon(ctx, wid, s); ctx.restore();
   },

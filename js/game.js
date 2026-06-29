@@ -1144,13 +1144,68 @@ const Game = {
   },
 
   // ============ 1 vs 1 VERSUS ============
-  // Journey-level starten (singleplayer tegen een bot, Power Smash)
+  // Journey-level starten (singleplayer tegen een mensaap-bot, Power Smash)
   startJourney(idx) {
     const world = JOURNEY[1]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
+    // elk level z'n eigen beach-variant
+    const layout = BEACH_LAYOUTS[(idx - 1) % BEACH_LAYOUTS.length];
+    const mapObj = {
+      id: 'beach', name: lv.name, sky: ['#8ad0f0', '#cde7f7'], void: '#1c4a5e', plat: 'sand', sand: true, beach: true,
+      w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
+    };
     this.journey = { world: 1, idx, lv };
-    this.startVersus('host', { mapId: lv.map, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss });
+    this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot });
     this.journey = { world: 1, idx, lv };   // startVersus reset 'm; opnieuw zetten
+  },
+
+  // ===== Journey: verhaal-cutscene (speelt op het canvas) =====
+  playJourneyIntro(onDone) {
+    this._storyDone = onDone; this._storyElapsed = 0;
+    this._storyChar = CHARACTERS[Storage.data.equippedCharacter] || CHARACTERS.ryan;
+    this.state = 'story';
+    const el = document.getElementById('journey-story'); if (el) el.classList.remove('hidden');
+    if (window.Sfx) Sfx.music('beach');
+  },
+  skipStory() { this.finishStory(); },
+  finishStory() {
+    if (this.state !== 'story') return;
+    this.state = 'menu';
+    const el = document.getElementById('journey-story'); if (el) el.classList.add('hidden');
+    const cb = this._storyDone; this._storyDone = null;
+    if (cb) cb();
+  },
+  _storyApe(ctx, x, fy, dir, ph) {
+    Sprites.drawCharacter(ctx, Math.round(x), Math.round(fy), dir, CHARACTERS.aapje.palette, { walkPhase: ph, airborne: false, weapon: null, build: 'small', hair: 'natural' });
+  },
+  renderStory() {
+    const ctx = this.ctx, W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, t = this._storyElapsed || 0, gy = CONFIG.GROUND_Y;
+    const ch = this._storyChar || CHARACTERS.ryan, pose0 = { build: ch.build, hair: ch.hair };
+    // achtergrond: lucht + zee + strand
+    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#8ad0f0'); sky.addColorStop(1, '#cde7f7'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#3f9fd0'; ctx.fillRect(0, gy - 30, W, 30); ctx.fillStyle = '#56b0dd'; ctx.fillRect(0, gy - 30, W, 5);
+    for (let x = 0; x < W; x += 14) { const wob = Math.round(Math.sin(t / 300 + x * 0.1) * 2); Sprites.px(ctx, '#cdeaf7', x + ((t * 0.03) % 14), gy - 22 + wob, 7, 2); }
+    ctx.fillStyle = '#e3c882'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#caa860'; ctx.fillRect(0, gy + 6, W, H - gy - 6);
+    ctx.fillStyle = '#ffe79a'; ctx.beginPath(); ctx.arc(W - 46, 30, 14, 0, 6.2832); ctx.fill();
+    const cap = document.getElementById('journey-cap');
+    if (t < 2600) {                                   // op een vlot komt de speler aandrijven
+      const prog = Math.min(1, t / 2400), px = 36 + prog * (W * 0.5 - 36), py = gy - 6 + Math.sin(t / 200) * 1.5;
+      Sprites.px(ctx, '#6b4a2a', px - 13, py + 4, 26, 4); Sprites.px(ctx, '#8a5e36', px - 13, py + 4, 26, 1);
+      Sprites.drawCharacter(ctx, Math.round(px), Math.round(py), 1, ch.palette, Object.assign({ ducking: true, weapon: null }, pose0));
+      if (cap) cap.textContent = 'Je schip is vergaan… je drijft af op open zee.';
+    } else if (t < 5200) {                            // speler ligt op het strand; 2 apen rennen aan
+      const px = W * 0.5;
+      Sprites.drawCharacter(ctx, Math.round(px), Math.round(gy - 2), 1, ch.palette, Object.assign({ ducking: true, weapon: null }, pose0));
+      const ap = Math.min(1, (t - 2600) / 2300), ax = W + 24 - ap * (W * 0.5 - 26 + 24);
+      this._storyApe(ctx, ax, gy - 2, -1, t / 70); this._storyApe(ctx, ax + 24, gy - 2, -1, t / 70 + 2);
+      if (cap) cap.textContent = 'Je spoelt aan op een onbewoond eiland… maar je bent niet alleen.';
+    } else if (t < 8000) {                            // apen slepen de speler weg
+      const drag = Math.min(1, (t - 5200) / 2600), px = W * 0.5 + drag * (W * 0.5 + 30);
+      Sprites.drawCharacter(ctx, Math.round(px), Math.round(gy - 2), -1, ch.palette, Object.assign({ airborne: true, weapon: null }, pose0));
+      this._storyApe(ctx, px + 16, gy - 2, -1, t / 60); this._storyApe(ctx, px + 36, gy - 2, -1, t / 60 + 2);
+      for (let i = 0; i < 3; i++) Sprites.px(ctx, '#d8c9a0', px - 12 - i * 7, gy - 2 - (i % 2) * 2, 3, 3);
+      if (cap) cap.textContent = 'Wilde MENSAPEN grijpen je en sleuren je het oerwoud in!';
+    } else { this.finishStory(); }
   },
 
   startVersus(role, opts) {
@@ -1159,7 +1214,7 @@ const Game = {
     this._bossBot = !!opts.boss;                        // Journey-eindbaas (Gorilla King)
     if (!opts.journey) this.journey = null;            // alleen Journey-context houden bij een Journey-potje
     if (window.Net && Net.lobby) Net.lobbyLeave();   // niet meer "online in de lobby" tijdens een potje
-    const map = VERSUS_MAPS.find((m) => m.id === opts.mapId) || VERSUS_MAPS[0];
+    const map = opts.mapObj || VERSUS_MAPS.find((m) => m.id === opts.mapId) || VERSUS_MAPS[0];
     const mode = (opts.mode === 'both') ? 'both' : (opts.mode === 'smash') ? 'smash' : 'melee';
     this.vsMap = map; this.vsMode = mode;
     this.vsMapW = map.w || CONFIG.VIEW_W;
@@ -1198,7 +1253,7 @@ const Game = {
     this.tide = map.beach ? { state: 'idle', nextAt: this.time + BEACH_TIDE_EVERY, level: 0, dir: 1, _sloshAt: 0 } : null;
     this.beachFx = [];
     this.ball = null;
-    this.player.beachball = 0;
+    this.player.beachball = 0; this.player.coco = 0; this.player.boomerang = 0; this.player.dart = 0;
     this.player.cannon = 0; this.player.shieldHp = 0; this.player.gunAmmo = 0; this.player.giant = false; this.player._baseMaxHp = this.player.maxHp; this.player._caged = false; this.player.heli = false; this.player.heliMinigun = 0; this.player.heliRockets = 0;
     // Jungle: lianen + gorilla in de kooi + papegaaien
     this.vsVines = map.vines || null;
@@ -1234,7 +1289,7 @@ const Game = {
     this.botCfg = BOT_PROFILES[lvl - 1];
     if (this.vsBot) {
       const ids = CHARACTER_ORDER.filter((id) => !CHARACTERS[id].journeyOnly);   // bot pakt geen Journey-only karakters
-      const botChar = opts.boss ? 'kong' : (ids[Math.floor(Math.random() * ids.length)] || 'ryan');
+      const botChar = opts.botChar || (opts.boss ? 'kong' : (ids[Math.floor(Math.random() * ids.length)] || 'ryan'));
       const melees = ['bat', 'machete', 'sword', 'axe', 'mace', 'katana'];
       const botMelee = mode === 'smash' ? ((CHARACTERS[botChar] && CHARACTERS[botChar].startMelee) || 'bat') : melees[Math.floor(Math.random() * melees.length)];
       const guns = ['pistol', 'uzi', 'ak47'];
@@ -1245,6 +1300,7 @@ const Game = {
       b._think = 0; b._jumpCd = 0; b._shootCd = 0; b._blockUntil = 0; b._rangedId = botRanged;
       b.baseMelee = botMelee; b.fireballs = 0; b.smashRockets = 0; b._weaponUntil = 0; b._fireCd = 0;
       b.cannon = 0; b.shieldHp = 0; b.gunAmmo = 0; b.giant = false; b._baseMaxHp = b.maxHp; b._caged = false; b.heli = false; b.heliMinigun = 0; b.heliRockets = 0; b.beachball = 0;
+      b.beachball = 0; b.coco = 0; b.boomerang = 0; b.dart = 0;
       if (opts.boss) { b.maxHp = 220; b.hp = 220; b._baseMaxHp = 220; }   // Gorilla King: extra taai
       this.bot = b;
       this.vs.remote.charId = botChar;
@@ -1431,6 +1487,14 @@ const Game = {
       } else if ((b.kind === 'fire' || b.kind === 'rocket') && r.alive && r.heli && Math.sign(r.x - b.x) === Math.sign(b.vx)) {
         this._homeBullet(b, r.x, r.y - 12, b.kind === 'rocket' ? 6 : 7.5);   // gericht op een heli -> raakt altijd
         b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale; b.life += dt; if (b.life > 2500) b.alive = false;
+      } else if (b.kind === 'coco') {                     // kokosbom: boog + ontploft op de grond
+        b.vy = (b.vy || 0) + 0.4 * this.dtScale; b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale; b.life += dt;
+        let land = b.y > CONFIG.GROUND_Y - 2;
+        if (!land && b.vy > 0) for (const pf of this.platforms) { if (!pf.mast && b.x > pf.x - pf.w / 2 && b.x < pf.x + pf.w / 2 && b.y > pf.y - 4 && b.y < pf.y + 10) { land = true; break; } }
+        if (land || b.life > 2600) this.explodeCoco(b);
+      } else if (b.kind === 'boom') {                     // boemerang: vliegt uit en keert terug
+        if (!b._ret && b.life > 420) { b.vx = -b.vx; b._ret = true; }
+        b.x += b.vx * this.dtScale; b.life += dt; if (b.life > 1500) b.alive = false;
       } else {
         if ((b.kind === 'fire' || b.kind === 'rocket') && r.alive) this._softAim(b, r);  // klein beetje hulp dichtbij
         b.update(dt, this);
@@ -1439,14 +1503,18 @@ const Game = {
     for (const b of this.bullets) {
       const rw = b.kind === 'rocket' ? 16 : (b.kind === 'cannon' ? 18 : 11);
       const rh = b.kind === 'rocket' ? 20 : (b.kind === 'cannon' ? 22 : 16);
+      if (b.alive && b.kind === 'coco' && r.alive && Math.abs(b.x - r.x) < 22 && Math.abs(b.y - (r.y - 14)) < 24) {
+        this.explodeCoco(b); continue;                   // kokosbom raakt -> AoE-explosie
+      }
       if (b.alive && r.alive && Math.abs(b.x - r.x) < rw && Math.abs(b.y - (r.y - 16)) < rh) {
         b.alive = false;
         const dmg = (b.hitDmg != null) ? b.hitDmg : Math.round((b.damage || 20) * 0.4);
         const power = (b.power != null) ? b.power : 9;
         const vy = b.kind === 'cannon' ? -8 : -3.5;
         const kd = Math.sign(b.vx) || 1;
-        if (this.vsBot) this.applyHitToBot(kd, power, vy, dmg);
-        else if (window.Net) Net.versusSend('hit', { dir: kd, power: power, vy: vy, dmg: dmg });
+        const stun = b._stun || 0;
+        if (this.vsBot) { this.applyHitToBot(kd, power, vy, dmg); if (stun && this.bot) this.bot.stunUntil = Math.max(this.bot.stunUntil || 0, this.time + stun); }
+        else if (window.Net) Net.versusSend('hit', { dir: kd, power: power, vy: vy, dmg: dmg, stun: stun });
         this.spawnBlood(b.x, b.y);
         if (b.kind === 'cannon') this.shake = Math.max(this.shake, 8);
         if (b.kind) for (let i = 0; i < 8; i++) this.particles.push(new Particle(b.x, b.y, (Math.random() - 0.5) * 3, -Math.random() * 2, b.kind === 'rocket' ? '#ffd24a' : (b.kind === 'cannon' ? '#888' : '#ff7a2a'), 320, 2));
@@ -1501,6 +1569,12 @@ const Game = {
         }
       } else if (p.beachball > 0 && !this.ball) {           // strandbal afschieten (1 actieve bal tegelijk)
         if (this.time >= (p._fireCd || 0)) { p.beachball--; p._fireCd = this.time + 500; this.spawnBall(p, 'me'); }
+      } else if (p.coco > 0) {                               // kokosbom (lobt + ontploft)
+        if (this.time >= (p._fireCd || 0)) { p.coco--; p._fireCd = this.time + 650; this.spawnCoco(p); }
+      } else if (p.boomerang > 0) {                          // boemerang (keert terug)
+        if (this.time >= (p._fireCd || 0)) { p.boomerang--; p._fireCd = this.time + 700; this.spawnBoomerang(p); }
+      } else if (p.dart > 0) {                               // gifdart (snel + verdoving)
+        if (this.time >= (p._fireCd || 0)) { p.dart--; p._fireCd = this.time + 280; this.spawnDart(p); }
       } else if (p.fireballs > 0 || p.smashRockets > 0) {  // vuurwapen opgepakt -> vuren
         if (this.time >= (p._fireCd || 0)) {
           if (p.fireballs > 0) { p.fireballs--; p._fireCd = this.time + 420; this.spawnVersusProjectile(p, 'fire'); }
@@ -1543,6 +1617,42 @@ const Game = {
     this.bullets.push(bl);
     this.spawnMuzzleFlash(shooter.x + dir * 14, shooter.y - 16, dir);
     if (window.Sfx && shooter === this.player) Sfx.play(kind === 'rocket' ? 'rocket' : 'fireball');
+  },
+
+  // ===== Journey-eiland-powerups =====
+  spawnCoco(p) {                                   // kokosbom: lobt in een boog
+    const dir = p.dir, bl = new Bullet(p.x + dir * 12, p.y - 18, dir * 4.6, 0, 0);
+    bl.kind = 'coco'; bl.hitDmg = 8; bl.power = COCO_KNOCK; bl.vy = -5.2; bl.life = 0; bl._grav = true; bl._aoe = true;
+    this.bullets.push(bl); this.spawnMuzzleFlash(p.x + dir * 12, p.y - 16, dir);
+    if (window.Sfx && p === this.player) Sfx.play('shoot');
+  },
+  spawnBoomerang(p) {                              // boemerang: vliegt uit en keert terug
+    const dir = p.dir, bl = new Bullet(p.x + dir * 12, p.y - 16, dir * 7, 0, 0);
+    bl.kind = 'boom'; bl.hitDmg = 7; bl.power = BOOM_KNOCK; bl.vy = 0; bl.life = 0; bl._ret = false;
+    this.bullets.push(bl); this.spawnMuzzleFlash(p.x + dir * 12, p.y - 16, dir);
+    if (window.Sfx && p === this.player) Sfx.play('boing');
+  },
+  spawnDart(p) {                                   // gifdart: snel + recht + korte verdoving
+    const dir = p.dir, bl = new Bullet(p.x + dir * 14, p.y - 14, dir * 12, 0, 0);
+    bl.kind = 'dart'; bl.hitDmg = 6; bl.power = DART_KNOCK; bl.vy = 0; bl.life = 0; bl._stun = DART_STUN;
+    this.bullets.push(bl); this.spawnMuzzleFlash(p.x + dir * 14, p.y - 14, dir);
+    if (window.Sfx && p === this.player) Sfx.play('gun');
+  },
+  explodeCoco(b) {
+    for (let i = 0; i < 14; i++) this.particles.push(new Particle(b.x, b.y, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, (i % 2 ? '#caa860' : '#8a5e36'), 380, 3));
+    this.shake = Math.max(this.shake, 5); if (window.Sfx) Sfx.play('explos');
+    // AoE knockback op spelers binnen straal (firing-client autoritair: speler lokaal, tegenstander via hit)
+    const hitR = (e, isMe) => {
+      if (!e || e.dead || (isMe && e.respawnInvuln > 0)) return;
+      if (Math.abs(e.x - b.x) < 34 && Math.abs((e.y - 12) - b.y) < 34) {
+        const kd = e.x >= b.x ? 1 : -1;
+        if (isMe) this.onVersusHit({ dir: kd, power: COCO_KNOCK, vy: -7, dmg: 8 });
+        else if (this.vsBot) this.applyHitToBot(kd, COCO_KNOCK, -7, 8);
+        else if (window.Net) Net.versusSend('hit', { dir: kd, power: COCO_KNOCK, vy: -7, dmg: 8 });
+      }
+    };
+    hitR(this.player, true); hitR(this.vsBot ? this.bot : this.vs.remote, false);
+    b.alive = false;
   },
 
   // ===== GEVECHTSHELI =====
@@ -1785,7 +1895,7 @@ const Game = {
     // bot pakt op + wapen-timer
     if (this.vsBot && this.bot && !this.bot.dead) {
       for (const d of this.drops) {
-        if (d.taken || d.kind === 'giant' || d.kind === 'heli' || d.kind === 'beachball') continue;   // bot pakt geen Giant/Heli/strandbal
+        if (d.taken || d.kind === 'giant' || d.kind === 'heli' || d.kind === 'beachball' || d.kind === 'coco' || d.kind === 'boom' || d.kind === 'dart') continue;   // bot gebruikt deze niet
         if (Math.abs(this.bot.x - d.x) < 16 && Math.abs((this.bot.y - 12) - d.y) < 22) { d.taken = true; this.applyDrop(this.bot, d); }
       }
       if (this.bot._weaponUntil && this.time > this.bot._weaponUntil) { this.bot.meleeId = this.bot.baseMelee || 'bat'; this.bot.weaponId = this.bot.rangedId || this.bot.meleeId; this.bot._weaponUntil = 0; this.bot.swingWeapon = null; }
@@ -2230,11 +2340,12 @@ const Game = {
   },
 
   spawnDrop() {
-    const pool = SMASH_DROPS.slice();
+    let pool = SMASH_DROPS.slice();
     const mid = this.vsMap && this.vsMap.id;
     if (this.journeyDrops) {
-      // Journey: de powerups van dit level (groeit per level)
-      for (const k of this.journeyDrops) pool.push({ kind: k, w: 9 });
+      // Journey: eigen basis (geen smash-projectielen) + de NIEUWE eiland-powerups van dit level
+      pool = [{ kind: 'weapon', w: 30 }, { kind: 'health', w: 20 }, { kind: 'rage', w: 8 }, { kind: 'speed', w: 8 }];
+      for (const k of this.journeyDrops) pool.push({ kind: k, w: 11 });
     } else {
       if (mid === 'cave' || mid === 'sky') pool.push({ kind: 'lightning', w: 8 });   // bliksem op Cave + Sky
       if (mid === 'cave') pool.push({ kind: 'rock', w: 8 });                          // steen alleen op Cave
@@ -2298,6 +2409,9 @@ const Game = {
       } else { const xs = this.rockTargetXs(this.player.x); this.castRocks(xs); }   // bot pakte de steen
     }
     else if (d.kind === 'beachball') { pl.beachball = 1; }                          // strandbal (1 schot)
+    else if (d.kind === 'coco') { pl.coco = COCO_AMMO; }                            // kokosbom
+    else if (d.kind === 'boom') { pl.boomerang = BOOM_AMMO; }                       // boemerang
+    else if (d.kind === 'dart') { pl.dart = DART_AMMO; }                            // gifdart
     else if (d.kind === 'cannon') { pl.cannon = (pl.cannon || 0) + 1; }            // 1 kanonskogel
     else if (d.kind === 'shield') { pl.shieldHp = SMASH_SHIELD; }                  // +50 hp schild
     else if (d.kind === 'heli') {                                                  // gevechtsheli: instappen
@@ -2516,7 +2630,7 @@ const Game = {
     b.guard = GUARD_MAX; b._guardBroken = false; b._blockStart = 0;
     if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
     b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; b.beachball = 0; }
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; b.beachball = 0; b.coco = 0; b.boomerang = 0; b.dart = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -2669,6 +2783,7 @@ const Game = {
     p.knockVx = (payload.dir || 1) * (payload.power || 15) * (blocking ? 0.10 : 1);
     if (!blocking) { p.vy = payload.vy || -5.5; p.onGround = false; }
     if (payload.dmg) p.takeDamage(Math.round(payload.dmg * (blocking ? 0.25 : 1)));
+    if (payload.stun && !blocking) p.stunUntil = Math.max(p.stunUntil || 0, this.time + payload.stun);   // gifdart
     if (blocking) {
       this.spawnArmorSpark(p.x + p.dir * 10, p.y - 12);
       p.guard -= GUARD_HIT_COST;
@@ -2711,7 +2826,7 @@ const Game = {
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
       this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
-      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0; this.player.beachball = 0;
+      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0; this.player.beachball = 0; this.player.coco = 0; this.player.boomerang = 0; this.player.dart = 0;
     }
   },
 
@@ -2925,6 +3040,9 @@ const Game = {
       if (b.kind === 'fire') { Sprites.px(ctx, '#ff7a2a', b.x - 2, b.y - 2, 5, 5); Sprites.px(ctx, '#ffd24a', b.x - 1, b.y - 1, 3, 3); }
       else if (b.kind === 'rocket') { Sprites.px(ctx, '#cfd6df', b.x - 3, b.y - 1, 6, 3); Sprites.px(ctx, '#ffd24a', b.x - (Math.sign(b.vx) || 1) * 3, b.y - 1, 2, 3); }
       else if (b.kind === 'cannon') { Sprites.px(ctx, '#0e0e0e', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#3a3a3a', b.x - 4, b.y - 4, 8, 2); Sprites.px(ctx, '#666', b.x - 2, b.y - 3, 2, 2); }
+      else if (b.kind === 'coco') { Sprites.px(ctx, '#5e3f22', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#8a5e36', b.x - 4, b.y - 4, 8, 3); Sprites.px(ctx, '#3a2614', b.x - 1, b.y - 1, 2, 2); }
+      else if (b.kind === 'boom') { const a = Math.floor(this.time / 40) % 2; Sprites.px(ctx, '#a8824a', b.x - 4, b.y - 1, 8, 2); Sprites.px(ctx, '#a8824a', b.x - 1, b.y - 4, 2, 8); if (a) { Sprites.px(ctx, '#caa860', b.x - 4, b.y - 4, 3, 3); Sprites.px(ctx, '#caa860', b.x + 1, b.y + 1, 3, 3); } }
+      else if (b.kind === 'dart') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#2f7a3a', b.x - d * 4, b.y - 1, 8, 2); Sprites.px(ctx, '#cfd6df', b.x + d * 3, b.y - 1, 2, 2); }
       else Sprites.px(ctx, '#ffe27a', b.x - 1, b.y - 1, 3, 2);
     };
     if (this.bullets) for (const b of this.bullets) drawBullet(b);
@@ -3084,6 +3202,19 @@ const Game = {
       Sprites.px(ctx, '#e8483b', x - 5, y - 5, 10, 3);
       Sprites.px(ctx, '#3aa0e0', x - 5, y + 2, 10, 3);
       Sprites.px(ctx, '#f2c94c', x - 1, y - 5, 2, 10);
+    }
+    else if (d.kind === 'coco') {                      // kokosbom
+      Sprites.px(ctx, '#5e3f22', x - 5, y - 5, 10, 10); Sprites.px(ctx, '#8a5e36', x - 5, y - 5, 10, 3);
+      Sprites.px(ctx, '#3a2614', x - 2, y - 1, 2, 2); Sprites.px(ctx, '#3a2614', x + 1, y + 1, 2, 2);
+      Sprites.px(ctx, '#3a8a4a', x - 1, y - 8, 2, 3);   // steeltje
+    }
+    else if (d.kind === 'boom') {                      // boemerang
+      Sprites.px(ctx, '#a8824a', x - 5, y - 1, 7, 2); Sprites.px(ctx, '#a8824a', x - 1, y - 5, 2, 7);
+      Sprites.px(ctx, '#7a5e30', x - 5, y - 1, 2, 2); Sprites.px(ctx, '#7a5e30', x - 1, y - 5, 2, 2);
+    }
+    else if (d.kind === 'dart') {                      // gifdart
+      Sprites.px(ctx, '#2f7a3a', x - 5, y - 1, 8, 2); Sprites.px(ctx, '#cfd6df', x + 3, y - 1, 3, 2);
+      Sprites.px(ctx, '#6b4a2a', x - 6, y - 1, 2, 2);
     }
     else if (d.kind === 'heli') {
       // gevechtsheli-icoon
@@ -3510,6 +3641,7 @@ const Game = {
     if (this.state === 'playing') this.update(dt);
     if (['playing', 'paused'].includes(this.state)) this.render();
     if (this.state === 'versus') { this.updateVersus(dt); this.renderVersus(); }
+    if (this.state === 'story') { this._storyElapsed = (this._storyElapsed || 0) + dt; this.renderStory(); }
 
     Input.endFrame();
     requestAnimationFrame((t) => this.loop(t));

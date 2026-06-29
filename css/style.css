@@ -898,6 +898,24 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 @keyframes splashPop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #splash img { animation: none; } }
 
+/* ====== Journey: verhaal-cutscene (caption + skip over het canvas) ====== */
+#journey-story { position: absolute; inset: 0; z-index: 60; pointer-events: none; }
+#journey-story.hidden { display: none; }
+.journey-cap {
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+  width: min(86%, 560px); text-align: center;
+  font-family: var(--pixel-font); font-weight: bold; font-size: clamp(13px, 2.4vw, 20px);
+  color: #fff; text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0,0,0,.7);
+  background: rgba(8,6,10,0.5); border-radius: 8px; padding: 8px 12px; line-height: 1.35;
+}
+.journey-skip {
+  position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top));
+  pointer-events: auto; cursor: pointer;
+  font-family: var(--pixel-font); font-weight: bold; font-size: 13px; color: #f0d8b8;
+  background: linear-gradient(180deg, #3a2018, #221009); border: 2px solid #7a4a30; border-bottom: 3px solid #120804;
+  border-radius: 7px; padding: 7px 14px;
+}
+
 /* ====== Win-celebratie (kort, vóór het uitslagscherm) ====== */
 .vs-win {
   position: absolute; inset: 0; z-index: 55;
