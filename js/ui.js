@@ -222,14 +222,12 @@ const UI = {
     this.startJourneyLevel(n);
   },
   // welk verhaaltje hoort bij dit level? (intro vóór lvl 1, confrontatie bij elke nieuwe aap)
-  // speelt alleen de eerste keer: niet als je het level al gehaald hebt, en niet 2x per sessie
+  // speelt nu elke keer dat je het level start — ook bij herhalen (te skippen met "Overslaan")
   _journeyStoryFor(n) {
-    Game._seenStory = Game._seenStory || {};
-    if (Game._seenStory[n]) return null;
-    if (n === 1 && (Storage.data.journey1 || 0) === 0) return 'intro';
-    if (n === 5 && !Storage.journeyCleared(5)) return 'baviaan';   // eerste Baviaan
-    if (n === 10 && !Storage.journeyCleared(10)) return 'koba';    // eerste Koba
-    if (n === 15 && !Storage.journeyCleared(15)) return 'kong';    // Gorilla King (eindbaas)
+    if (n === 1) return 'intro';
+    if (n === 5) return 'baviaan';   // Baviaan
+    if (n === 10) return 'koba';     // Koba
+    if (n === 15) return 'kong';     // Gorilla King (eindbaas)
     return null;
   },
   // verhaal-cutscene op het canvas afspelen, daarna het level starten
@@ -237,7 +235,6 @@ const UI = {
     ['menu', 'level', 'shop', 'journey', 'arena', 'win', 'lose', 'versus', 'leaderboard', 'chat'].forEach((s) => this.el[s].classList.add('hidden'));
     document.body.classList.add('in-game');
     this.el.hud.classList.add('hidden'); this.el.touch.classList.add('hidden'); this.el.pause.classList.add('hidden');
-    Game._seenStory = Game._seenStory || {}; Game._seenStory[n] = true;
     Game.playJourneyIntro(script, () => this.startJourneyLevel(n));
   },
   startJourneyLevel(n) {
@@ -266,8 +263,8 @@ const UI = {
     rbtn.textContent = won ? (hasNext ? '▶ VOLGENDE LEVEL' : '✓ KLAAR') : '↻ OPNIEUW';
     rbtn.onclick = () => {
       document.getElementById('versus-result').classList.add('hidden');
-      if (won && hasNext) this.startJourneyLevel(idx + 1);
-      else if (!won) this.startJourneyLevel(idx);
+      if (won && hasNext) this.pickJourneyLevel(idx + 1);   // via story-check: verhaal speelt ook hier
+      else if (!won) this.pickJourneyLevel(idx);
       else { Game.journey = null; this.openJourney(); }
     };
     const again = document.getElementById('btn-vs-again');
