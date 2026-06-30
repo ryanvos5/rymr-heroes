@@ -2971,17 +2971,21 @@ const Game = {
     // ----- JOURNEY: eigen afhandeling (level halen, unlocks, eigen uitslag) -----
     if (this.journey) {
       const jr = this.journey, idx = jr.idx;
-      let unlocks = [];
+      let unlocks = [], rewards = [];
       if (won) {
         const first = !Storage.journeyCleared(idx);
         unlocks = Storage.clearJourneyLevel(idx);
         const coins = (jr.lv && jr.lv.boss) ? 150 : 40, xp = (jr.lv && jr.lv.boss) ? 60 : 20;
-        if (first) { Storage.data.coins = (Storage.data.coins || 0) + coins; Storage.data.xp = (Storage.data.xp || 0) + xp; Storage.save(); }
+        if (first) {
+          Storage.data.coins = (Storage.data.coins || 0) + coins; Storage.data.xp = (Storage.data.xp || 0) + xp; Storage.save();
+          rewards.push({ type: 'earn', coins, xp });
+        }
+        for (const u of unlocks) rewards.push({ type: u.type, id: u.id, name: u.name });   // unlock-kaartjes
       }
       if (window.Sfx) Sfx.play(won ? 'win' : 'lose');
       const self = this, name = won ? 'JIJ' : ((jr.lv && jr.lv.boss) ? 'GORILLA KING' : 'BOT');
       UI.showWinCelebration(name, won);
-      setTimeout(function () { if (self.state === 'versusOver') UI.showJourneyResult(won, idx, unlocks); }, 2600);
+      setTimeout(function () { if (self.state === 'versusOver') UI.showJourneyResult(won, idx, unlocks, rewards); }, 2600);
       return;
     }
     // betrouwbaar de uitslag naar de tegenstander sturen (paar keer tegen pakketverlies)

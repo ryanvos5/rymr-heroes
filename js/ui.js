@@ -244,7 +244,7 @@ const UI = {
     this.showVersus();                  // juiste HUD/touch-setup, alle schermen weg
     Game.startJourney(n);
   },
-  showJourneyResult(won, idx, unlocks) {
+  showJourneyResult(won, idx, unlocks, rewards) {
     const levels = JOURNEY[1].levels, total = levels.length, hasNext = won && idx < total;
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');   // win-celebratie weg
     const rb = document.getElementById('vs-round-banner'); if (rb) rb.classList.add('hidden');
@@ -256,9 +256,7 @@ const UI = {
     document.getElementById('vs-result-score').textContent = (levels[idx - 1] ? levels[idx - 1].name : ('Level ' + idx));
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
-    let msg = won ? 'Level ' + idx + ' gehaald!' : 'Probeer het opnieuw.';
-    if (unlocks && unlocks.length) msg += '<br>🎉 Vrijgespeeld: ' + unlocks.map((u) => u.name).join(', ');
-    xpEl.innerHTML = msg;
+    xpEl.innerHTML = won ? 'Level ' + idx + ' gehaald!' : 'Probeer het opnieuw.';
     const voteBox = document.getElementById('vs-result-vote'); if (voteBox) voteBox.classList.add('hidden');
     const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = '';
     const rbtn = document.getElementById('btn-vs-rematch');
@@ -276,6 +274,85 @@ const UI = {
     document.getElementById('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); Game.journey = null; this.show('menu'); };
     document.getElementById('versus-result').classList.remove('hidden');
     document.getElementById('versus-screen').classList.add('hidden');
+    if (rewards && rewards.length) this.showRewards(rewards);   // beloning-popups bovenop de uitslag
+  },
+
+  // ===== Beloning-popups met wachtrij: munten/xp + unlock-kaartjes (OK = volgende) =====
+  showRewards(list, onDone) {
+    this._rewardQueue = (list || []).filter(Boolean);
+    this._rewardDone = onDone || null;
+    this._rewardTotal = this._rewardQueue.length;
+    this._rewardShown = 0;
+    if (!this._rewardQueue.length) { if (onDone) onDone(); return; }
+    const ok = document.getElementById('btn-reward-ok');
+    if (ok) ok.onclick = () => { if (window.Sfx) Sfx.play('click'); this._nextReward(); };
+    this._nextReward();
+  },
+  _nextReward() {
+    const pop = document.getElementById('reward-pop'); if (!pop) return;
+    const r = this._rewardQueue.shift();
+    if (!r) { pop.classList.add('hidden'); const cb = this._rewardDone; this._rewardDone = null; if (cb) cb(); return; }
+    this._rewardShown++;
+    this._drawReward(r);
+    const cnt = document.getElementById('reward-count');
+    if (cnt) cnt.textContent = this._rewardTotal > 1 ? (this._rewardShown + ' / ' + this._rewardTotal) : '';
+    pop.classList.remove('hidden');
+    const card = pop.querySelector('.reward-card');         // pop-animatie opnieuw afspelen
+    if (card) { card.style.animation = 'none'; void card.offsetWidth; card.style.animation = ''; }
+    if (window.Sfx) Sfx.play(r.type === 'earn' ? 'coin' : 'win');
+  },
+  _drawReward(r) {
+    const title = document.getElementById('reward-title');
+    const nameEl = document.getElementById('reward-name');
+    const cv = document.getElementById('reward-canvas'), ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, cv.width, cv.height);
+    if (r.type === 'char') {
+      title.textContent = '🎉 VRIJGESPEELD!';
+      const c = CHARACTERS[r.id] || CHARACTERS.ryan;
+      ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
+      Sprites.drawCharacter(ctx, 0, 42, 1, c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: 'none' });
+      ctx.restore();
+      nameEl.textContent = 'Nieuw character: ' + (r.name || c.name);
+    } else if (r.type === 'hat') {
+      title.textContent = '🎉 VRIJGESPEELD!';
+      const cc = CHARACTERS[Storage.data.equippedCharacter] || CHARACTERS.ryan;
+      ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
+      Sprites.drawCharacter(ctx, 0, 42, 1, cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: r.id });
+      ctx.restore();
+      nameEl.textContent = 'Nieuwe hoed: ' + (r.name || (HATS[r.id] && HATS[r.id].name) || '');
+    } else { // 'earn' — munten + xp
+      title.textContent = '🏆 BELONING';
+      this._drawCoinXp(ctx, cv, r.coins || 0, r.xp || 0);
+      const parts = [];
+      if (r.xp) parts.push('+' + r.xp + ' XP');
+      if (r.coins) parts.push('+' + r.coins + ' munten');
+      nameEl.textContent = parts.join('   ·   ');
+    }
+  },
+  _drawCoinXp(ctx, cv, coins, xp) {
+    const cx = cv.width / 2, cy = 54;
+    const both = coins && xp;
+    const coinX = both ? cx - 38 : cx, xpX = both ? cx + 38 : cx;
+    if (coins) {                                            // gouden munt met ●
+      ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.arc(coinX, cy, 26, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(coinX, cy, 22, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(coinX - 6, cy - 6, 6, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#a9760a'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('●', coinX, cy + 1);
+    }
+    if (xp) {                                               // blauwe ster
+      ctx.fillStyle = '#1e7fc0'; this._star(ctx, xpX, cy, 26, 5);
+      ctx.fillStyle = '#46c0ff'; this._star(ctx, xpX, cy, 21, 5);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('XP', xpX, cy + 1);
+    }
+  },
+  _star(ctx, cx, cy, r, pts) {
+    ctx.beginPath();
+    for (let i = 0; i < pts * 2; i++) {
+      const rad = (i % 2 === 0) ? r : r * 0.46, a = (Math.PI / pts) * i - Math.PI / 2;
+      const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.fill();
   },
 
   showArenaOver(stats) {
@@ -997,6 +1074,8 @@ const UI = {
     document.getElementById('versus-result').classList.remove('hidden');
     this.refreshAuthUI();
     document.getElementById('versus-screen').classList.add('hidden');
+    // gewonnen met beloning -> munten/xp-popup bovenop de uitslag
+    if (won && (xpGained > 0 || coinsEarned > 0)) this.showRewards([{ type: 'earn', coins: coinsEarned, xp: xpGained }]);
   },
 
   // ---- REMATCH ----

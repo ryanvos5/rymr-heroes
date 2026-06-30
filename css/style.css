@@ -940,6 +940,44 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 @keyframes winPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes winGlow { from { text-shadow: 0 0 10px rgba(255,120,40,.6), 3px 3px 0 #000; } to { text-shadow: 0 0 22px rgba(255,170,60,1), 3px 3px 0 #000; } }
 @media (prefers-reduced-motion: reduce) { .vs-win-inner, .vs-win-name { animation: none !important; } }
+
+/* ===== Beloning-popup (unlocks / munten / xp) ===== */
+#reward-pop {
+  position: absolute; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 45%, rgba(20,60,40,0.55), rgba(6,8,10,0.86));
+}
+#reward-pop.hidden { display: none; }
+.reward-card {
+  text-align: center; width: min(320px, 86vw);
+  padding: 18px 18px 16px; border-radius: 16px;
+  background: linear-gradient(180deg, #2a3550, #1b2236);
+  border: 3px solid #ffd86b; box-shadow: 0 0 26px rgba(255,200,80,.55), 0 10px 30px rgba(0,0,0,.6);
+  animation: rewardPop 0.42s cubic-bezier(.2,1.5,.4,1) both;
+}
+.reward-title {
+  font-family: var(--pixel-font); font-weight: 900; letter-spacing: 2px;
+  font-size: clamp(15px, 3.6vw, 22px); color: #ffe27a;
+  text-shadow: 0 0 12px rgba(255,170,50,.85), 2px 2px 0 #000;
+}
+#reward-canvas {
+  image-rendering: pixelated; width: 170px; height: 120px; margin: 6px auto 2px; display: block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
+}
+.reward-name {
+  font-family: var(--pixel-font); font-weight: 800;
+  font-size: clamp(13px, 3vw, 17px); color: #fff; text-shadow: 2px 2px 0 #000; margin-top: 2px;
+}
+.reward-count { font-size: 12px; color: #bcd0e8; margin-top: 6px; min-height: 14px; }
+.reward-ok {
+  margin-top: 12px; padding: 10px 30px; cursor: pointer;
+  font-family: var(--pixel-font); font-weight: 900; letter-spacing: 2px; font-size: 16px;
+  color: #1b2236; background: linear-gradient(180deg, #ffe27a, #ffc23a);
+  border: 0; border-radius: 10px; box-shadow: 0 4px 0 #b8860b; transition: transform .08s;
+}
+.reward-ok:active { transform: translateY(3px); box-shadow: 0 1px 0 #b8860b; }
+@keyframes rewardPop { from { transform: scale(.55) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .reward-card { animation: none !important; } }
 .shop-card.locked { opacity: 0.6; }
 
 /* ====== Level grid ====== */
