@@ -1331,7 +1331,7 @@ const Game = {
     this.vsMapW = map.w || CONFIG.VIEW_W;
     if (window.Sfx) Sfx.music(map.id);                 // map-thema-muziek
     this.vsFallY = map.fallY || FALL_DEATH_Y;
-    this.vsCamX = 0; this.vsCamY = 0;
+    this.vsCamX = 0; this.vsCamY = 0; this.vsCamZoom = 1;
     this.worldId = -1;
     this.level = { versus: true, parkour: true, mode: 'versus', length: this.vsMapW, isBoss: false };
     // Power Smash: iedereen start met de knuppel (of het start-wapen van je character); anders je eigen uitrusting
@@ -1539,8 +1539,10 @@ const Game = {
       if (!this.player.dead && (this.player.y > this.vsFallY || this.player.hp <= 0)) this.localFell();
     }
 
-    // camera volgt de eigen speler (binnen de map-grenzen)
+    // camera framet beide spelers; daarna ze binnen dat (gezoomde) beeld houden
     this.updateVersusCamera();
+    this.clampToVersusView(this.player);
+    if (this.vsBot) this.clampToVersusView(this.bot);
 
     // ghost-kogels van de tegenstander (alleen visueel)
     if (this.ghostBullets && this.ghostBullets.length) {
@@ -1653,21 +1655,49 @@ const Game = {
     if (window.Sfx) { const k = p.k; Sfx.play(k === 'cannon' ? 'cannon' : k === 'rocket' ? 'rocket' : k === 'fire' ? 'fireball' : 'gun'); }   // tegenstander hoort je 'm afvuren
   },
 
-  // ---- camera (volgt de eigen speler binnen de map-grenzen) ----
+  // ---- camera (framet ALTIJD jou én de tegenstander; ver = uitzoomen, dichtbij = inzoomen) ----
   updateVersusCamera() {
-    const map = this.vsMap || VERSUS_MAPS[0];
-    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H;
+    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, GY = CONFIG.GROUND_Y;
     const mapW = this.vsMapW || W;
+    const p = this.player;
+    const opp = this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
+    const oppLive = !!(opp && (this.vsBot ? !opp.dead : opp.alive));
+
+    // middelpunt + spanwijdte tussen de twee spelers
+    let cx, cy, spanX, spanY;
+    if (oppLive && !p.dead) {
+      cx = (p.x + opp.x) / 2; cy = (p.y + opp.y) / 2;
+      spanX = Math.abs(p.x - opp.x); spanY = Math.abs(p.y - opp.y);
+    } else {                                   // iemand weg/dood -> volg de levende
+      const f = (p.dead && oppLive) ? opp : p;
+      cx = f.x; cy = f.y - 22; spanX = 0; spanY = 0;
+    }
+
+    // doel-zoom: net genoeg uitzoomen om beiden + marge te tonen
+    const MX = 66, MY = 70, ZMIN = 0.52, ZMAX = 1.45;
+    let z = Math.min(W / (spanX + MX * 2), H / (spanY + MY * 2));
+    z = Math.max(ZMIN, Math.min(ZMAX, z));
+    this.vsCamZoom += (z - this.vsCamZoom) * 0.12;   // soepel zoomen
+    const zz = this.vsCamZoom, visW = W / zz, visH = H / zz;
+
+    // doel-camera = wereldcoördinaat linksboven in beeld
     let tx;
-    if (mapW <= W) tx = (mapW - W) / 2;                     // map smaller dan het scherm -> gecentreerd
-    else { tx = this.player.x - W / 2; tx = Math.max(0, Math.min(mapW - W, tx)); }
-    let ty = this.player.y - H * 0.62;
-    // verticaal meebewegen: standaard mag de camera royaal omhoog (ook op maps zonder camTop),
-    // zodat je jezelf blijft zien bij hoge sprongen of een smash-knockback de lucht in.
-    const top = (map.camTop != null) ? Math.min(map.camTop, -220) : -220;
-    ty = Math.max(top, Math.min(map.camBottom || 0, ty));
-    this.vsCamX += (tx - this.vsCamX) * 0.18;
-    this.vsCamY += (ty - this.vsCamY) * 0.26;   // iets sneller verticaal -> je plakt niet tegen de bovenrand
+    if (mapW <= visW) tx = (mapW - visW) / 2;                       // map smaller dan beeld -> gecentreerd
+    else tx = Math.max(0, Math.min(mapW - visW, cx - visW / 2));
+    let ty = cy - visH / 2;
+    ty = Math.min(ty, (GY + 28) - visH);          // grond laag in beeld houden (niet te veel afgrond)
+    ty = Math.max(ty, -200);                       // niet eindeloos de lucht in
+    this.vsCamX += (tx - this.vsCamX) * 0.16;
+    this.vsCamY += (ty - this.vsCamY) * 0.18;
+  },
+
+  // beide spelers binnen het zichtbare (gezoomde) beeld houden, zodat je elkaar altijd ziet
+  clampToVersusView(e) {
+    if (!e || e.dead) return;
+    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, zz = this.vsCamZoom || 1;
+    const visW = W / zz, visH = H / zz;
+    e.x = Math.max(this.vsCamX + 12, Math.min(this.vsCamX + visW - 12, e.x));
+    if (e.y < this.vsCamY + 12) { e.y = this.vsCamY + 12; if (e.vy < 0) e.vy = 0; }   // niet boven beeld uit
   },
 
   // ---- POWER SMASH: vuurknop, drops, pickups ----
@@ -1786,10 +1816,10 @@ const Game = {
     if (dx) { if (!this.heliHits(p.x + dx, p.y)) p.x += dx; p.dir = dx > 0 ? 1 : -1; }
     if (dy) { if (!this.heliHits(p.x, p.y + dy)) p.y += dy; }
     p.vy = 0; p.knockVx = 0; p.onGround = false; p.walkPhase = 0;
-    // niet uit beeld vliegen: binnen het zichtbare scherm (camera) én de map houden
-    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H;
-    p.x = Math.max(Math.max(14, this.vsCamX + 16), Math.min(Math.min(this.vsMapW - 14, this.vsCamX + W - 16), p.x));
-    p.y = Math.max(this.vsCamY + 14, Math.min(Math.min(CONFIG.GROUND_Y - 2, this.vsCamY + H - 12), p.y));
+    // niet uit beeld vliegen: binnen het zichtbare (gezoomde) scherm én de map houden
+    const zz = this.vsCamZoom || 1, vW = CONFIG.VIEW_W / zz, vH = CONFIG.VIEW_H / zz;
+    p.x = Math.max(Math.max(14, this.vsCamX + 16), Math.min(Math.min(this.vsMapW - 14, this.vsCamX + vW - 16), p.x));
+    p.y = Math.max(this.vsCamY + 14, Math.min(Math.min(CONFIG.GROUND_Y - 2, this.vsCamY + vH - 12), p.y));
     // minigun (vuurknop, ingedrukt houden = doorvuren)
     if (!frozen && Input.state.attack && p.heliMinigun > 0 && this.time >= (p._heliFireCd || 0)) {
       p._heliFireCd = this.time + 80; p.heliMinigun--; this.spawnHeliBullet(p);
@@ -3121,8 +3151,9 @@ const Game = {
 
     const shx = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
     const shy = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
-    const camX = Math.round(this.vsCamX), camY = Math.round(this.vsCamY);
-    ctx.save(); ctx.translate(-camX + shx, -camY + shy);
+    const z = this.vsCamZoom || 1;
+    const camX = this.vsCamX, camY = this.vsCamY, visW = W / z, visH = H / z;
+    ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
 
     if (map.cave) this.drawCaveBg(ctx);                 // diepe grotten / vleermuizen / druppels
     if (map.vulcan) this.drawVulcanBg(ctx);             // verre uitbarstingen + rook
@@ -3131,9 +3162,9 @@ const Game = {
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
     if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
 
-    // afgrond onderin (map-thema), camera-bewust
-    ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, W + 8, H + Math.abs(camY) + 320);
-    ctx.globalAlpha = 0.5; ctx.fillStyle = '#04060a'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y + 18, W + 8, H + Math.abs(camY) + 320); ctx.globalAlpha = 1;
+    // afgrond onderin (map-thema), camera-bewust (volle zichtbare breedte bij uitzoomen)
+    ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, visW + 8, visH + Math.abs(camY) + 320);
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#04060a'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y + 18, visW + 8, visH + Math.abs(camY) + 320); ctx.globalAlpha = 1;
 
     if (map.pirate) this.drawPirateHull(ctx);           // scheepsromp onder het dek
 
@@ -3354,11 +3385,11 @@ const Game = {
   // draken tekenen (scherm-ruimte): de draak vliegt bovenin en spuugt vuur naar het doel
   renderDragons(ctx) {
     if (!this.dragons || !this.dragons.length) return;
-    const camX = Math.round(this.vsCamX), camY = Math.round(this.vsCamY);
+    const camX = this.vsCamX, camY = this.vsCamY, z = this.vsCamZoom || 1;
     for (const d of this.dragons) {
       const dx = Math.round(d.x), dy = 18;
       if (d.beam) {
-        const tx = Math.round(d.beam.wx - camX), ty = Math.round(d.beam.wy - camY - 8);
+        const tx = Math.round((d.beam.wx - camX) * z), ty = Math.round((d.beam.wy - camY) * z - 8);
         this.drawFireBeam(ctx, dx + d.dir * 8, dy + 4, tx, ty);
       }
       Sprites.drawDragon(ctx, dx, dy, d.dir, this.time);
@@ -3704,8 +3735,8 @@ const Game = {
   renderLightning(ctx) {
     if (!this.lightningFx) return;
     if (this.time > this.lightningFx.until) { this.lightningFx = null; return; }
-    const camX = Math.round(this.vsCamX), camY = Math.round(this.vsCamY);
-    const tx = Math.round(this.lightningFx.wx - camX), ty = Math.round(this.lightningFx.wy - camY - 8);
+    const camX = this.vsCamX, camY = this.vsCamY, z = this.vsCamZoom || 1;
+    const tx = Math.round((this.lightningFx.wx - camX) * z), ty = Math.round((this.lightningFx.wy - camY) * z - 8);
     ctx.save(); ctx.lineCap = 'round';
     const zig = () => { ctx.beginPath(); ctx.moveTo(tx, 0); const segs = 6; for (let i = 1; i <= segs; i++) { const cy = ty * i / segs; const cx = tx + (i < segs ? (Math.random() - 0.5) * 24 : 0); ctx.lineTo(cx, cy); } ctx.stroke(); };
     ctx.globalAlpha = 0.4; ctx.strokeStyle = '#bfe6ff'; ctx.lineWidth = 6; zig();

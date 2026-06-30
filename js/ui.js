@@ -241,7 +241,8 @@ const UI = {
     document.getElementById('versus-result').classList.add('hidden');
     this.showVersus();                  // juiste HUD/touch-setup, alle schermen weg
     Game.startJourney(n);
-    this.el.pause.classList.remove('hidden');   // Journey heeft een pauzeknop (singleplayer)
+    this.el.pause.classList.remove('hidden');                       // Journey heeft een pauzeknop (singleplayer)
+    document.getElementById('btn-vs-quit').classList.add('hidden'); // ✕ weg: pauzeknop vervangt 'm (geen overlap)
   },
   showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore) {
     const levels = JOURNEY[1].levels, total = levels.length, hasNext = won && idx < total;
@@ -935,6 +936,7 @@ const UI = {
     this.el.banner.classList.add('hidden');
     this.el.touch.classList.toggle('hidden', !Input.isTouch());
     document.getElementById('versus-hud').classList.remove('hidden');
+    document.getElementById('btn-vs-quit').classList.remove('hidden');   // ✕ tonen (online); Journey verbergt 'm
   },
 
   // touch-knoppen tonen het pixel-icoon van het actieve wapen/powerup (i.p.v. emoji)
