@@ -1662,9 +1662,12 @@ const Game = {
     if (mapW <= W) tx = (mapW - W) / 2;                     // map smaller dan het scherm -> gecentreerd
     else { tx = this.player.x - W / 2; tx = Math.max(0, Math.min(mapW - W, tx)); }
     let ty = this.player.y - H * 0.62;
-    ty = Math.max(map.camTop || 0, Math.min(map.camBottom || 0, ty));
+    // verticaal meebewegen: standaard mag de camera royaal omhoog (ook op maps zonder camTop),
+    // zodat je jezelf blijft zien bij hoge sprongen of een smash-knockback de lucht in.
+    const top = (map.camTop != null) ? Math.min(map.camTop, -220) : -220;
+    ty = Math.max(top, Math.min(map.camBottom || 0, ty));
     this.vsCamX += (tx - this.vsCamX) * 0.18;
-    this.vsCamY += (ty - this.vsCamY) * 0.18;
+    this.vsCamY += (ty - this.vsCamY) * 0.26;   // iets sneller verticaal -> je plakt niet tegen de bovenrand
   },
 
   // ---- POWER SMASH: vuurknop, drops, pickups ----
