@@ -550,6 +550,15 @@ const BEACH_LAYOUTS = [
   [{ x: 180, y: 150, w: 210 }, { x: 70, y: 116, w: 46 }, { x: 290, y: 116, w: 46 }, { x: 120, y: 84, w: 44 }, { x: 240, y: 84, w: 44 }],
   [{ x: 180, y: 150, w: 300 }, { x: 78, y: 112, w: 64 }, { x: 282, y: 112, w: 64 }, { x: 180, y: 80, w: 92 }],   // baas-arena
 ];
+// jungle-varianten (vanaf level 10, dieper het oerwoud in); laatste = troonzaal-eindbaas
+const JUNGLE_LAYOUTS = [
+  [{ x: 180, y: 150, w: 210 }, { x: 80, y: 112, w: 52 }, { x: 280, y: 112, w: 52 }],
+  [{ x: 110, y: 150, w: 120 }, { x: 250, y: 150, w: 120 }, { x: 180, y: 110, w: 64 }],
+  [{ x: 180, y: 150, w: 190 }, { x: 70, y: 118, w: 46 }, { x: 290, y: 118, w: 46 }, { x: 180, y: 84, w: 66 }],
+  [{ x: 90, y: 150, w: 120 }, { x: 270, y: 150, w: 120 }, { x: 180, y: 120, w: 78 }, { x: 180, y: 82, w: 50 }],
+  [{ x: 180, y: 150, w: 170 }, { x: 78, y: 122, w: 46 }, { x: 282, y: 122, w: 46 }, { x: 130, y: 88, w: 44 }, { x: 230, y: 88, w: 44 }],
+  [{ x: 180, y: 150, w: 300 }, { x: 80, y: 114, w: 60 }, { x: 280, y: 114, w: 60 }, { x: 180, y: 82, w: 84 }],   // troonzaal-eindbaas
+];
 const JOURNEY = {
   1: {
     name: 'Onbewoond Eiland',

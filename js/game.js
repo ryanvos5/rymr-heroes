@@ -1163,12 +1163,21 @@ const Game = {
   startJourney(idx) {
     const world = JOURNEY[1]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
-    // elk level z'n eigen beach-variant
-    const layout = BEACH_LAYOUTS[(idx - 1) % BEACH_LAYOUTS.length];
-    const mapObj = {
-      id: 'beach', name: lv.name, sky: ['#8ad0f0', '#cde7f7'], void: '#1c4a5e', plat: 'sand', sand: true, beach: true,
-      w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
-    };
+    // vanaf level 10 gaat het het oerwoud in -> jungle-maps (baas op level 15 met troonzaal)
+    let mapObj;
+    if (idx >= 10) {
+      const layout = JUNGLE_LAYOUTS[(idx - 10) % JUNGLE_LAYOUTS.length];
+      mapObj = {
+        id: 'jungleJ', name: lv.name, sky: ['#2f6e3a', '#7fc06a'], void: '#0c2416', plat: 'wood', wood: true, jbg: true, throne: !!lv.boss,
+        w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
+      };
+    } else {
+      const layout = BEACH_LAYOUTS[(idx - 1) % BEACH_LAYOUTS.length];
+      mapObj = {
+        id: 'beach', name: lv.name, sky: ['#8ad0f0', '#cde7f7'], void: '#1c4a5e', plat: 'sand', sand: true, beach: true,
+        w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
+      };
+    }
     this.journey = { world: 1, idx, lv };
     this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot });
     this.journey = { world: 1, idx, lv };   // startVersus reset 'm; opnieuw zetten
@@ -1188,7 +1197,7 @@ const Game = {
         'KOBA, de bruut die de horde leidt, wacht je op.',
         'Versla hem om door te dringen tot de top.'] },
       kong: { theme: 'jungle', foe: 'kong', scale: 1.5, caps: [
-        'Op de top torent de troon van de GORILLA KING.',
+        'In het hart van de jungle rijst de troonzaal van de GORILLA KING op.',
         'De koning van het eiland brult — de grond trilt.',
         'Dit is het laatste gevecht. Versla de GORILLA KING!'] },
     };
@@ -2830,8 +2839,18 @@ const Game = {
     const face = () => { if (aDx > 8) b.dir = dx > 0 ? 1 : -1; };
     const inRange = aDx < 32 && Math.abs(p.y - b.y) < 24;
     if (inRange) { if (!b._inRangeSince) b._inRangeSince = now; } else b._inRangeSince = 0;
-    const canMelee = () => inRange && now >= (b._meleeCd || 0) && b._inRangeSince && (now - b._inRangeSince) >= cfg.react;
-    const doMelee = () => { inp.melee = true; b._meleeCd = now + cfg.meleeCd; face(); };
+    // speler aan het blokken (bukken op de grond)? -> niet blind in het schild rammen
+    const pBlock = p.ducking && p.onGround && !p._guardBroken;
+    if (pBlock) { if (!b._sawBlockAt) b._sawBlockAt = now; } else b._sawBlockAt = 0;
+    const canMelee = () => {
+      if (!inRange || now < (b._meleeCd || 0)) return false;
+      if (!b._inRangeSince || (now - b._inRangeSince) < cfg.react) return false;
+      // schild op: wacht tot 't zakt en straf dan meteen af; bij lang turtelen af en toe doorzetten (guard-druk)
+      if (pBlock) return (now - b._sawBlockAt) > 700 && Math.random() < (0.02 + cfg.aggro * 0.04);
+      return true;
+    };
+    // onregelmatige mep-timing -> je kunt niet op ritme perfect blocken
+    const doMelee = () => { inp.melee = true; b._meleeCd = now + cfg.meleeCd * (0.75 + Math.random() * 0.55); face(); };
 
     // in een zachte wolk? -> omhoog drijven en richting de speler (zo steek je de Sky-kloof over)
     let botCloud = null;
@@ -3158,6 +3177,7 @@ const Game = {
     if (map.vulcan) this.drawVulcanBg(ctx);             // verre uitbarstingen + rook
     if (map.pirate) this.drawPirateBg(ctx);             // piratenschip-achtergrond + water
     if (map.jungle2) this.drawJungleBg(ctx);            // oerwoud-achtergrond + papegaaien
+    if (map.jbg) this.drawJungleBg(ctx);                // Journey-jungle: zelfde oerwoud-achtergrond (zonder kooi-gimmick)
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
     if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
 
@@ -3178,6 +3198,7 @@ const Game = {
     }
 
     if (map.pirate) this.drawPirateMast(ctx);           // middenmast loopt door het dek heen
+    if (map.throne) this.drawThrone(ctx);               // troonzaal-eindbaas: troon achter de spelers
     if (map.jungle2) { this.drawVines(ctx); this.drawGorilla(ctx); }   // lianen + gorilla (achter de spelers)
     if (map.cave) this.drawCaveButtons(ctx);            // knoppen op de platforms
 
@@ -3564,6 +3585,31 @@ const Game = {
       Sprites.px(ctx, '#ffd24a', Math.round(px + 3), Math.round(py), 2, 2);    // snavel
       Sprites.px(ctx, '#1c4a2c', Math.round(px - 8), Math.round(py + 1), 4, 1);// staart
     }
+  },
+  // troonzaal-eindbaas: grote stenen/mos-troon met lianen en een schedel (achter de spelers)
+  drawThrone(ctx) {
+    const cx = 180, by = 150;                                  // op het hoofdplatform
+    // lianen die van het bladerdak naar beneden hangen, achter de troon
+    ctx.globalAlpha = 0.8;
+    for (let i = 0; i < 5; i++) { const lx = cx - 60 + i * 30; Sprites.px(ctx, '#2e7a3f', lx, -20, 2, by - 40 + ((i * 13) % 20)); Sprites.px(ctx, '#3a8a4a', lx - 2, 40 + ((i * 17) % 30), 5, 4); }
+    ctx.globalAlpha = 1;
+    // stenen sokkel / treden
+    Sprites.px(ctx, '#3a4a2e', cx - 40, by - 5, 80, 7);
+    Sprites.px(ctx, '#4a5a3a', cx - 32, by - 11, 64, 7);
+    // rugleuning (hoog, mos-steen) + hoorns bovenaan
+    Sprites.px(ctx, '#4a3c28', cx - 26, by - 58, 52, 48);
+    Sprites.px(ctx, '#5f4e34', cx - 21, by - 54, 42, 42);
+    Sprites.px(ctx, '#3a2f1e', cx - 30, by - 66, 12, 16); Sprites.px(ctx, '#3a2f1e', cx + 18, by - 66, 12, 16);   // hoorns/punten
+    // zitting + armleuningen
+    Sprites.px(ctx, '#3a2f1e', cx - 26, by - 22, 52, 12);
+    Sprites.px(ctx, '#4a3c28', cx - 34, by - 30, 10, 20); Sprites.px(ctx, '#4a3c28', cx + 24, by - 30, 10, 20);
+    // gouden banden + schedel-embleem
+    Sprites.px(ctx, '#caa12e', cx - 21, by - 40, 42, 3);
+    Sprites.px(ctx, '#e8e0cf', cx - 8, by - 50, 16, 13);      // schedel
+    Sprites.px(ctx, '#1a1a1a', cx - 5, by - 46, 4, 4); Sprites.px(ctx, '#1a1a1a', cx + 1, by - 46, 4, 4);
+    Sprites.px(ctx, '#1a1a1a', cx - 2, by - 41, 4, 3);
+    // mos op de armleuningen
+    Sprites.px(ctx, '#3a8a4a', cx - 34, by - 30, 10, 3); Sprites.px(ctx, '#3a8a4a', cx + 24, by - 30, 10, 3);
   },
   // Dohyo-achtergrond: Japanse dojo met shoji-wand, rijzende zon en een hangend dak (tsuriyane) met 4 kwasten
   drawDohyoBg(ctx) {
