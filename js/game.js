@@ -1519,6 +1519,7 @@ const Game = {
       v.roundMsg = '';
       this.respawnLocal();
       if (this.vsBot) this.respawnBot(); else v.remote.alive = true;
+      v.countdown = 1600;                             // korte aftelling: camera zoomt weer in op jou
     }
 
     this.updateVersusPlatforms();
@@ -1527,6 +1528,7 @@ const Game = {
     else {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       if (!this.player.dead) this.player.abCharge = Math.min(1, this.player.abCharge + dt / ABILITY_CHARGE_MS);   // ability laadt langzaam op
+      if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / ABILITY_CHARGE_MS);  // bot laadt óók op
       if (this._quakeUntil > this.time) this.updateEarthquake(dt);                                                // aardbeving-ability (bot)
       // online: de tegenstander gebruikte aardbeving op JOU -> jij wordt geschud
       if (this._selfQuakeUntil > this.time && !this.player.dead) {
@@ -2635,6 +2637,49 @@ const Game = {
     for (let i = 0; i < 16; i++) this.particles.push(new Particle(p.x, p.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, col, 420, 3));
     this.shake = Math.max(this.shake, 4);
   },
+  // de bot zet zijn eigen ability in (spiegel van useAbility, maar met de bot als bron en de speler als doelwit)
+  botUseAbility() {
+    const b = this.bot; if (!b || b.dead || !b.ability || b.abCharge < 1) return false;
+    if (this.vs && (this.vs.countdown > 0 || this.vs.roundFreezeUntil > this.time)) return false;
+    b.abCharge = 0; b._abCd = this.time + 1600;
+    const now = this.time;
+    switch (b.ability) {
+      case 'zapdash': this.botZapDash(); break;
+      case 'heal': b.hp = b.maxHp; this._abFx(b, '#5aff7a'); break;
+      case 'highjump': b.jumpMul = 1.4; this._abFx(b, '#8fd0ff'); break;
+      case 'fireaura10': b.fireAura = true; b.auraUntil = now + 10000; this._abFx(b, '#ff8a2a'); break;
+      case 'triplejump': b.maxJumps = Math.max(b.maxJumps, 2) + 1; b.jumps = b.maxJumps; this._abFx(b, '#8fd0ff'); break;
+      case 'rage10': b.buffs.rage = now + 10000; this._abFx(b, '#ff5a3a'); break;
+      case 'rage8': b.buffs.rage = now + 8000; this._abFx(b, '#ff5a3a'); break;
+      case 'ultrarage': b.buffs.rage = now + 5000; b._ultraUntil = now + 5000; this._abFx(b, '#ff2a2a'); break;
+      case 'earthquake': this.botEarthquake(); break;
+      case 'knife': b._bladeRounds = 2; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
+      default: break;
+    }
+    this.spawnAbilityFx(b.x, b.y, this._abilityColor(b.ability));
+    if (window.Sfx) Sfx.play('pickup');
+    return true;
+  },
+  // bot-versie van Ryans zap-dash: dasht naar de speler + bliksemboog
+  botZapDash() {
+    const b = this.bot, opp = this.player; if (!opp) return;
+    const dir = (opp.x >= b.x) ? 1 : -1; b.dir = dir;
+    const x0 = b.x;
+    const nx = Math.max(8, Math.min(this.vsMapW - 8, opp.x - dir * 22));
+    const n = 12;
+    for (let i = 0; i <= n; i++) { const tx = x0 + (nx - x0) * (i / n), ty = b.y - 14 + (Math.random() - 0.5) * 10; this.particles.push(new Particle(tx, ty, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, i % 2 ? '#bfe6ff' : '#ffffff', 240 + Math.random() * 120, 2)); }
+    for (let i = 0; i < 6; i++) this.particles.push(new Particle(nx, b.y - 14, (Math.random() - 0.5) * 4, -Math.random() * 3, i % 2 ? '#7fd4ff' : '#fff7c2', 320, 3));
+    this.zapFx = { x0, y0: b.y - 14, x1: nx, y1: b.y - 14, born: this.time, dur: 240 };
+    b.x = nx; b.knockVx = dir * 6;
+    if (window.Sfx) Sfx.play('zap');
+    this.shake = Math.max(this.shake, 6);
+    if (Math.abs(opp.x - b.x) < 40 && Math.abs((opp.y || b.y) - b.y) < 40) this.onVersusHit({ dir, power: 26, vy: -7, dmg: 22 });
+  },
+  // bot-versie van Just' aardbeving: de speler wordt weggeschud
+  botEarthquake() {
+    this._selfQuakeUntil = this.time + 5000;
+    if (window.Sfx) Sfx.play('stomp');
+  },
   // Ryan: zap-dash naar de tegenstander -> schade + knockback
   zapDash() {
     const p = this.player;
@@ -2893,6 +2938,7 @@ const Game = {
         const wd = (WEAPONS[b.meleeId] ? WEAPONS[b.meleeId].damage : 34) * (b.meleeMul || 1) * (b.hasBuff('rage', this.time) ? 1.6 : 1) * comboMul(b.combo);
         const kp = 15 + Math.max(0, b.combo - 1) * 8;                 // bot: vanaf x2 ook fors meer knockback
         this.onVersusHit({ dir: kd, power: kp, vy: -5.5 - Math.max(0, b.combo - 1) * 0.7, dmg: Math.round(wd * 0.45) });
+        if (b.ability) b.abCharge = Math.min(1, b.abCharge + 0.05 + 0.03 * Math.max(0, b.combo - 1));   // combo's laden de bot-ability sneller
         this.shake = Math.max(this.shake, 6);
       }
     }
@@ -2990,6 +3036,16 @@ const Game = {
     const dx = p.x - b.x;
     const aDx = Math.abs(dx);
     const face = () => { if (aDx > 8) b.dir = dx > 0 ? 1 : -1; };
+    // ABILITY: opgeladen? -> geregeld inzetten (slim: gevechts-abilities dichtbij, heal bij weinig leven)
+    if (b.ability && b.abCharge >= 1 && now >= (b._abCd || 0) && this.vs && this.vs.countdown <= 0 && this.vs.roundFreezeUntil <= now) {
+      let want;
+      if (b.ability === 'zapdash') want = aDx > 40 && aDx < 260;                    // op afstand: erin dashen
+      else if (b.ability === 'earthquake') want = aDx < 200;                         // vlakbij: schudden
+      else if (b.ability === 'heal') want = b.hp < b.maxHp * 0.55;                   // pas helen als het nodig is
+      else if (b.ability === 'fireaura10' || b.ability === 'knife') want = aDx < 90; // in de buurt om te raken
+      else want = true;                                                              // buffs (rage/jumps): meteen
+      if (want && Math.random() < 0.05) { this.botUseAbility(); return inp; }
+    }
     const inRange = aDx < 32 && Math.abs(p.y - b.y) < 32;    // ook lichte sprongen -> bot kan je in de lucht raken
     if (inRange) { if (!b._inRangeSince) b._inRangeSince = now; } else b._inRangeSince = 0;
     // speler aan het blokken (bukken op de grond)? -> niet blind in het schild rammen
