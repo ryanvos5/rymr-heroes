@@ -64,6 +64,7 @@ class Player {
     // ---- character-ability (oplaadbaar in een match) ----
     this.ability = ch.ability || null;
     this.abCharge = 0;          // 0..1 (vol = te gebruiken)
+    this.abChargeMul = ch.abChargeMul || 1;   // Timo/Tygo/Bonzo: 3× langere oplaadtijd
     this.jumpMul = 1;           // Tygo: hogere sprong (ability)
     this._ultraUntil = 0;       // Gorilla King: ultra rage (4× schade)
     this._bladeRounds = 0;      // Yarno: zap-mes nog X rondes

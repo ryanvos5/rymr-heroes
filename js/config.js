@@ -149,7 +149,7 @@ const CHARACTERS = {
   },
   tygo: {
     id: 'tygo', name: 'Tygo', cost: 1200, lvl: 8,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural', ability: 'highjump',
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural', ability: 'highjump', abChargeMul: 3,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',  // blond-bruin
       skin: '#dcb088', skinDark: '#b88f64',
@@ -173,7 +173,7 @@ const CHARACTERS = {
   },
   timo: {
     id: 'timo', name: 'Timo', cost: 4000, lvl: 16,
-    maxHp: 90, speedMul: 1.1, meleeMul: 1.0, build: 'small', hair: 'natural', ability: 'triplejump',
+    maxHp: 90, speedMul: 1.1, meleeMul: 1.0, build: 'small', hair: 'natural', ability: 'triplejump', abChargeMul: 3,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',     // blond-bruin, natural
       skin: '#d8a878', skinDark: '#b8895e',
@@ -234,7 +234,7 @@ const CHARACTERS = {
   // ---- Journey-only mensapen (alleen vrij te spelen in Journey, niet te koop) ----
   bonzo: {
     id: 'bonzo', name: 'Bonzo', cost: 0, journeyOnly: true,
-    maxHp: 80, speedMul: 1.12, meleeMul: 0.95, build: 'small', hair: 'natural', ability: 'triplejump',
+    maxHp: 80, speedMul: 1.12, meleeMul: 0.95, build: 'small', hair: 'natural', ability: 'triplejump', abChargeMul: 3,
     palette: {
       hair: '#3a2a1c', hairDark: '#241810',
       skin: '#8a5e38', skinDark: '#5e3f22',     // chimp-vacht

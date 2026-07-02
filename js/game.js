@@ -1527,8 +1527,8 @@ const Game = {
     if (v.countdown > 0) { v.countdown -= dt; }       // korte aftelling vóór de start
     else {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
-      if (!this.player.dead) this.player.abCharge = Math.min(1, this.player.abCharge + dt / ABILITY_CHARGE_MS);   // ability laadt langzaam op
-      if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / ABILITY_CHARGE_MS);  // bot laadt óók op
+      if (!this.player.dead) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op
+      if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op
       if (this._quakeUntil > this.time) this.updateEarthquake(dt);                                                // aardbeving-ability (bot)
       // online: de tegenstander gebruikte aardbeving op JOU -> jij wordt geschud
       if (this._selfQuakeUntil > this.time && !this.player.dead) {
@@ -2822,7 +2822,7 @@ const Game = {
         const kvy = -5.5 - Math.max(0, p.combo - 1) * 0.7;            // en iets meer omhoog
         if (this.vsBot) this.applyHitToBot(kdir, kp, kvy, dmg);       // bot wegslaan + schade
         else Net.versusSend('hit', { dir: p.dir, power: kp, vy: kvy, dmg: dmg });
-        p.abCharge = Math.min(1, p.abCharge + 0.05 + 0.03 * Math.max(0, p.combo - 1));   // ability laadt sneller op met combos
+        p.abCharge = Math.min(1, p.abCharge + (0.05 + 0.03 * Math.max(0, p.combo - 1)) / (p.abChargeMul || 1));   // ability laadt sneller op met combos
         // combo-XP (alleen online — geen XP-farmen tegen de bot)
         const cx = comboXp(p.combo);
         p._lastComboXp = this.vsBot ? 0 : cx;
@@ -2938,7 +2938,7 @@ const Game = {
         const wd = (WEAPONS[b.meleeId] ? WEAPONS[b.meleeId].damage : 34) * (b.meleeMul || 1) * (b.hasBuff('rage', this.time) ? 1.6 : 1) * comboMul(b.combo);
         const kp = 15 + Math.max(0, b.combo - 1) * 8;                 // bot: vanaf x2 ook fors meer knockback
         this.onVersusHit({ dir: kd, power: kp, vy: -5.5 - Math.max(0, b.combo - 1) * 0.7, dmg: Math.round(wd * 0.45) });
-        if (b.ability) b.abCharge = Math.min(1, b.abCharge + 0.05 + 0.03 * Math.max(0, b.combo - 1));   // combo's laden de bot-ability sneller
+        if (b.ability) b.abCharge = Math.min(1, b.abCharge + (0.05 + 0.03 * Math.max(0, b.combo - 1)) / (b.abChargeMul || 1));   // combo's laden de bot-ability sneller
         this.shake = Math.max(this.shake, 6);
       }
     }
