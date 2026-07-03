@@ -400,15 +400,15 @@ const Game = {
     this.tutorialMsg = '';
     this.tutorialUntil = 0;
     if (this.worldId === 1 && this.level.id === 1) {
-      this.tutorials.push({ x: 90, text: 'Versla ALLE zombies! Sla met de melee-knop 🏏 of schiet 🔫', shown: false });
+      this.tutorials.push({ x: 90, text: 'Versla ALLE zombies! Sla met de melee-knop of schiet', shown: false });
       const car = this.obstacles.find((o) => o.type === 'car');
-      if (car) this.tutorials.push({ x: car.x - 90, text: 'Een auto! Spring eroverheen ⤒ (je kunt op het dak staan)', shown: false });
+      if (car) this.tutorials.push({ x: car.x - 90, text: 'Een auto! Spring eroverheen (je kunt op het dak staan)', shown: false });
       const bar = this.obstacles.find((o) => o.type === 'lowbar');
-      if (bar) this.tutorials.push({ x: bar.x - 90, text: 'Een hek! Bukken ⤓ om eronderdoor te gaan', shown: false });
+      if (bar) this.tutorials.push({ x: bar.x - 90, text: 'Een hek! Bukken om eronderdoor te gaan', shown: false });
       const barrel = this.obstacles.find((o) => o.type === 'barrel');
-      if (barrel) this.tutorials.push({ x: barrel.x - 80, text: 'Explosief vat! Schiet of sla het kapot 💥', shown: false });
+      if (barrel) this.tutorials.push({ x: barrel.x - 80, text: 'Explosief vat! Schiet of sla het kapot', shown: false });
     } else if (this.worldId === 2 && this.level.id === 1) {
-      this.tutorials.push({ x: 70, text: 'DUBBEL-JUMP! Druk 2× op springen in de lucht ⤒⤒', shown: false });
+      this.tutorials.push({ x: 70, text: 'DUBBEL-JUMP! Druk 2x op springen in de lucht', shown: false });
       this.tutorials.push({ x: 240, text: 'Houd springen vast = hoger/verder. Val niet in het ravijn!', shown: false });
     }
   },
@@ -1479,7 +1479,7 @@ const Game = {
     }
     this.state = 'versus';
     const qb = document.getElementById('btn-vs-quit');     // online = LEAVE, bot = ✕
-    if (qb) { qb.textContent = this.vsBot ? '✕' : 'LEAVE'; qb.classList.toggle('leave', !this.vsBot); }
+    if (qb) { qb.innerHTML = this.vsBot ? '<svg class="ic"><use href="#ic-x"/></svg>' : 'LEAVE'; qb.classList.toggle('leave', !this.vsBot); }
     Input.clear();
     UI.showVersus();
   },

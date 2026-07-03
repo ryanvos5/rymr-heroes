@@ -171,7 +171,7 @@ const UI = {
         if (p && p.then) p.then(lock).catch(() => {}); else lock();
       } else {
         // iPhone Safari heeft geen fullscreen-API: tip de speler over 'Zet op beginscherm'
-        alert('Tip voor iPhone: draai je telefoon horizontaal, of voeg de pagina toe aan je beginscherm (deel-knop → "Zet op beginscherm") voor volledig scherm.');
+        alert('Tip voor iPhone: draai je telefoon horizontaal, of voeg de pagina toe aan je beginscherm (deel-knop -> "Zet op beginscherm") voor volledig scherm.');
       }
     } else {
       const exit = document.exitFullscreen || document.webkitExitFullscreen;
@@ -216,7 +216,7 @@ const UI = {
     if (!c) return;
     const total = (JOURNEY[1].levels || []).length;
     const done = Math.min(total, Storage.data.journey1 || 0);
-    c.textContent = done >= total ? 'Wereld 1 ✓' : ('Lvl ' + (done + 1) + '/' + total);
+    if (done >= total) c.innerHTML = 'Wereld 1 ' + this._ic('check'); else c.textContent = 'Lvl ' + (done + 1) + '/' + total;
   },
 
   // ---------- JOURNEY (singleplayer) ----------
@@ -232,7 +232,7 @@ const UI = {
       const open = Storage.journeyUnlocked(n);
       const cell = document.createElement('button');
       cell.className = 'level-cell' + (cleared ? ' cleared' : '') + (open ? '' : ' locked');
-      cell.innerHTML = '<span class="lvl-badge">' + (lv.boss ? 'BAAS' : ('Lvl ' + n)) + '</span><span class="num">' + (lv.boss ? '👑' : n) + '</span><span class="stars">' + (cleared ? '★' : (open ? '' : '🔒')) + '</span>';
+      cell.innerHTML = '<span class="lvl-badge">' + (lv.boss ? 'BAAS' : ('Lvl ' + n)) + '</span><span class="num">' + (lv.boss ? this._ic('crown') : n) + '</span><span class="stars">' + (cleared ? this._ic('star') : (open ? '' : this._ic('lock'))) + '</span>';
       if (open) cell.onclick = () => this.pickJourneyLevel(n);
       grid.appendChild(cell);
     });
@@ -275,7 +275,7 @@ const UI = {
     document.getElementById('ability-btn').classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    t.textContent = won ? (idx >= total ? 'EILAND VERSLAGEN! 🏆' : 'LEVEL GEHAALD!') : 'VERLOREN';
+    if (won && idx >= total) t.innerHTML = 'EILAND VERSLAGEN! ' + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : 'VERLOREN';
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = (myScore || 0) + ' – ' + (oppScore || 0);
     const xpEl = document.getElementById('vs-result-xp');
@@ -286,7 +286,7 @@ const UI = {
     const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = '';
     const rbtn = document.getElementById('btn-vs-rematch');
     rbtn.classList.remove('hidden'); rbtn.disabled = false;
-    rbtn.textContent = won ? (hasNext ? '▶ VOLGENDE LEVEL' : '✓ KLAAR') : '↻ OPNIEUW';
+    rbtn.innerHTML = won ? (hasNext ? this._ic('arrow-r') + ' VOLGENDE LEVEL' : this._ic('check') + ' KLAAR') : this._ic('refresh') + ' OPNIEUW';
     rbtn.onclick = () => {
       document.getElementById('versus-result').classList.add('hidden');
       if (won && hasNext) this.pickJourneyLevel(idx + 1);   // via story-check: verhaal speelt ook hier
@@ -294,7 +294,7 @@ const UI = {
       else { Game.journey = null; this.openJourney(); }
     };
     const again = document.getElementById('btn-vs-again');
-    again.textContent = '🗺 WERELDKAART';
+    again.textContent = 'WERELDKAART';
     again.onclick = () => { document.getElementById('versus-result').classList.add('hidden'); Game.journey = null; if (window.Net) Net.leaveVersus(); this.openJourney(); };
     document.getElementById('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); Game.journey = null; this.show('menu'); };
     document.getElementById('versus-result').classList.remove('hidden');
@@ -360,8 +360,8 @@ const UI = {
     const cv = document.getElementById('reward-canvas'), ctx = cv.getContext('2d');
     const title = document.getElementById('reward-title'), nameEl = document.getElementById('reward-name');
     const rn = (CHEST_TYPES[rarity] || {}).name || 'Kist';
-    const emoji = rarity === 'legendary' ? '🏆 ' : (rarity === 'epic' ? '💜 ' : (rarity === 'rare' ? '🔷 ' : '📦 '));
-    title.textContent = emoji + rn.toUpperCase() + ' KIST!';
+    const emoji = this._ic('chest') + ' ';
+    title.innerHTML = emoji + this._esc(rn.toUpperCase() + ' KIST!');
     nameEl.textContent = level ? ('Level ' + level + ' — bonuskist!') : 'Openen…';
     const t0 = (window.performance && performance.now) ? performance.now() : 0, DUR = 1900;
     if (window.Sfx) { try { Sfx.play('win'); } catch (e) {} }
@@ -399,39 +399,39 @@ const UI = {
     const cv = document.getElementById('reward-canvas'), ctx = cv.getContext('2d');
     ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, cv.width, cv.height);
     if (r.type === 'char') {
-      title.textContent = '🎉 VRIJGESPEELD!';
+      title.textContent = 'VRIJGESPEELD!';
       const c = CHARACTERS[r.id] || CHARACTERS.ryan;
       ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
       Sprites.drawCharacter(ctx, 0, 42, 1, c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: 'none' });
       ctx.restore();
       nameEl.textContent = 'Nieuw character: ' + (r.name || c.name);
     } else if (r.type === 'hat') {
-      title.textContent = '🎉 VRIJGESPEELD!';
+      title.textContent = 'VRIJGESPEELD!';
       const cc = CHARACTERS[Storage.data.equippedCharacter] || CHARACTERS.ryan;
       ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
       Sprites.drawCharacter(ctx, 0, 42, 1, cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: r.id });
       ctx.restore();
       nameEl.textContent = 'Nieuwe hoed: ' + (r.name || (HATS[r.id] && HATS[r.id].name) || '');
     } else if (r.type === 'pu') {   // power-up uit een kist
-      title.textContent = '🎁 POWER-UP';
+      title.innerHTML = this._ic('bolt') + ' POWER-UP';
       const pu = SHOP_POWERUPS[r.id] || {};
       ctx.save(); ctx.translate(cv.width / 2, cv.height / 2 - 6); ctx.scale(2.6, 2.6);
       if (Game && Game.drawDrop) Game.drawDrop(ctx, { kind: pu.kind, x: 0, y: 0, id: 0 });
       ctx.restore();
       nameEl.textContent = (pu.name || r.id) + (r.n > 1 ? '  x' + r.n : '');
     } else if (r.type === 'chest') {   // nieuwe kist uit een match
-      title.textContent = '📦 NIEUWE KIST!';
+      title.innerHTML = this._ic('chest') + ' NIEUWE KIST!';
       ctx.save(); ctx.translate(cv.width / 2, cv.height / 2 - 6); ctx.scale(2.8, 2.8);
       this._chestArt(ctx, r.rarity); ctx.restore();
       nameEl.textContent = (CHEST_TYPES[r.rarity] || {}).name + '-kist — open in het menu!';
     } else if (r.type === 'levelup') {   // level omhoog
-      title.textContent = '⭐ LEVEL UP!';
+      title.innerHTML = this._ic('star') + ' LEVEL UP!';
       ctx.fillStyle = '#ffd23a'; this._star(ctx, cv.width / 2, cv.height / 2 - 6, 30, 5);
       ctx.fillStyle = '#7a5600'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(r.level, cv.width / 2, cv.height / 2 - 4);
       nameEl.textContent = 'Level ' + r.level + '  ·  +' + r.coins + ' munten';
     } else { // 'earn' — munten + xp
-      title.textContent = '🏆 BELONING';
+      title.innerHTML = this._ic('trophy') + ' BELONING';
       this._drawCoinXp(ctx, cv, r.coins || 0, r.xp || 0);
       const parts = [];
       if (r.xp) parts.push('+' + r.xp + ' XP');
@@ -443,11 +443,12 @@ const UI = {
     const cx = cv.width / 2, cy = 54;
     const both = coins && xp;
     const coinX = both ? cx - 38 : cx, xpX = both ? cx + 38 : cx;
-    if (coins) {                                            // gouden munt met ●
+    if (coins) {                                            // gouden munt (zelf getekend, geen glyph)
       ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.arc(coinX, cy, 26, 0, 6.2832); ctx.fill();
       ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(coinX, cy, 22, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = '#a9760a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(coinX, cy, 13, 0, 6.2832); ctx.stroke();   // binnenring
+      ctx.fillStyle = '#a9760a'; ctx.fillRect(coinX - 2, cy - 8, 4, 16);                                                   // munt-teken "I"
       ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(coinX - 6, cy - 6, 6, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = '#a9760a'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('●', coinX, cy + 1);
     }
     if (xp) {                                               // blauwe ster
       ctx.fillStyle = '#1e7fc0'; this._star(ctx, xpX, cy, 26, 5);
@@ -482,7 +483,7 @@ const UI = {
   // ---- SPEL UPDATEN (verse versie laden) ----
   async forceUpdate() {
     const btn = document.getElementById('btn-update');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Updaten…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Updaten…'; }
     // eventuele caches legen (helpt bij hardnekkige browsers / PWA)
     try {
       if (window.caches && caches.keys) {
@@ -514,7 +515,7 @@ const UI = {
     const xpWrap = document.getElementById('xp-bar-wrap');
     const btnNick = document.getElementById('btn-nick');
     if (inLogged) {
-      status.textContent = '👤 ' + Net.nickname() + ' · Lvl ' + playerLevel(Storage.data.xp || 0);
+      status.innerHTML = this._ic('char') + ' ' + this._esc(Net.nickname()) + ' · Lvl ' + playerLevel(Storage.data.xp || 0);
       status.classList.remove('hidden');
       btnOut.classList.remove('hidden');
       btnAcc.classList.add('hidden');
@@ -592,20 +593,20 @@ const UI = {
       if (this.authMode === 'register') {
         const res = await Net.register(email, nick, pass);
         if (res.confirmed) {
-          msg.style.color = '#7ad06a'; msg.textContent = '✅ Account aangemaakt!';
+          msg.style.color = '#7ad06a'; msg.textContent = 'Account aangemaakt!';
           setTimeout(() => { document.getElementById('auth-screen').classList.add('hidden'); this.syncCoins(); }, 800);
         } else {
           msg.style.color = '#7ad06a';
-          msg.textContent = '✅ Bevestig je e-mail via de link die we stuurden, en log daarna in.';
+          msg.textContent = 'Bevestig je e-mail via de link die we stuurden, en log daarna in.';
         }
       } else {
         await Net.login(email, pass);
-        msg.style.color = '#7ad06a'; msg.textContent = '✅ Ingelogd!';
+        msg.style.color = '#7ad06a'; msg.textContent = 'Ingelogd!';
         setTimeout(() => { document.getElementById('auth-screen').classList.add('hidden'); this.syncCoins(); }, 700);
       }
     } catch (e) {
       msg.style.color = '#ff6a6a';
-      msg.textContent = '⚠ ' + (e && e.message ? e.message : 'Er ging iets mis.');
+      msg.textContent = '' + (e && e.message ? e.message : 'Er ging iets mis.');
     } finally {
       submitBtn.disabled = false;
     }
@@ -694,7 +695,7 @@ const UI = {
     emptyEl.textContent = 'Laden…';
     let ov;
     try { ov = await Net.friendsOverview(); }
-    catch (e) { emptyEl.textContent = '⚠ ' + (e.message || e); return; }
+    catch (e) { emptyEl.textContent = '' + (e.message || e); return; }
     this._friends = ov;
     this._reqCount = ov.filter((r) => r.kind === 'incoming').length;
     this.refreshChatBadge();
@@ -737,20 +738,20 @@ const UI = {
       '<span class="fr-name">' + this._esc(r.nickname) + '</span>' +
       '<span class="fr-lvl">Lvl ' + lvl + '</span>';
     const actions = document.createElement('span'); actions.className = 'fr-actions';
-    const mk = (cls, txt, title, fn, disabled) => {
-      const b = document.createElement('button'); b.className = 'fr-btn ' + cls; b.textContent = txt;
+    const mk = (cls, ico, title, fn, disabled) => {
+      const b = document.createElement('button'); b.className = 'fr-btn ' + cls; b.innerHTML = this._ic(ico);
       b.title = title; if (disabled) b.disabled = true; b.onclick = fn; return b;
     };
     if (kind === 'friend') {
-      actions.appendChild(mk('challenge', '⚔', online ? 'Uitdagen' : 'Offline', () => this.inviteFromChat(r.other_id, r.nickname), !online));
-      actions.appendChild(mk('', '💬', 'Chatten', () => this.openConvo(r.other_id, r.nickname)));
-      actions.appendChild(mk('danger', '✕', 'Vriend verwijderen', () => this.removeFriend(r.other_id, r.nickname)));
+      actions.appendChild(mk('challenge', 'swords', online ? 'Uitdagen' : 'Offline', () => this.inviteFromChat(r.other_id, r.nickname), !online));
+      actions.appendChild(mk('', 'chat', 'Chatten', () => this.openConvo(r.other_id, r.nickname)));
+      actions.appendChild(mk('danger', 'x', 'Vriend verwijderen', () => this.removeFriend(r.other_id, r.nickname)));
     } else if (kind === 'incoming') {
-      actions.appendChild(mk('accept', '✓', 'Accepteren', () => this.acceptReq(r.other_id)));
-      actions.appendChild(mk('danger', '✕', 'Weigeren', () => this.removeFriend(r.other_id, r.nickname, true)));
+      actions.appendChild(mk('accept', 'check', 'Accepteren', () => this.acceptReq(r.other_id)));
+      actions.appendChild(mk('danger', 'x', 'Weigeren', () => this.removeFriend(r.other_id, r.nickname, true)));
     } else {
       const w = document.createElement('span'); w.className = 'fr-pending'; w.textContent = 'wacht…'; actions.appendChild(w);
-      actions.appendChild(mk('danger', '✕', 'Intrekken', () => this.removeFriend(r.other_id, r.nickname, true)));
+      actions.appendChild(mk('danger', 'x', 'Intrekken', () => this.removeFriend(r.other_id, r.nickname, true)));
     }
     row.appendChild(actions);
     return row;
@@ -765,11 +766,11 @@ const UI = {
     msg.textContent = 'Versturen…';
     let res;
     try { res = await Net.friendRequest(name); }
-    catch (e) { msg.textContent = '⚠ ' + (e.message || e); return; }
+    catch (e) { msg.textContent = '' + (e.message || e); return; }
     const texts = {
-      sent: '✅ Verzoek verstuurd naar ' + name + '.', now_friends: '🎉 Jullie zijn nu vrienden!',
+      sent: 'Verzoek verstuurd naar ' + name + '.', now_friends: 'Jullie zijn nu vrienden!',
       already_sent: 'Je hebt al een verzoek gestuurd.', already_friends: 'Jullie zijn al vrienden.',
-      not_found: '⚠ Geen speler met die gebruikersnaam.', self: 'Je kunt jezelf niet toevoegen.',
+      not_found: 'Geen speler met die gebruikersnaam.', self: 'Je kunt jezelf niet toevoegen.',
       not_logged_in: 'Log eerst in.',
     };
     msg.textContent = texts[res] || res;
@@ -793,15 +794,15 @@ const UI = {
     document.getElementById('convo-name').textContent = nick;
     const online = window.Net && Net.isOnline(id);
     const ch = document.getElementById('btn-convo-challenge');
-    ch.disabled = !online; ch.textContent = online ? '⚔ Uitdagen' : '⚔ Offline';
+    ch.disabled = !online; ch.innerHTML = this._ic('swords') + (online ? ' Uitdagen' : ' Offline');
     const box = document.getElementById('convo-messages'); box.innerHTML = '';
     document.getElementById('convo-msg').textContent = 'Laden…';
     let msgs;
     try { msgs = await Net.loadMessages(id); }
-    catch (e) { document.getElementById('convo-msg').textContent = '⚠ ' + (e.message || e); return; }
+    catch (e) { document.getElementById('convo-msg').textContent = '' + (e.message || e); return; }
     document.getElementById('convo-msg').textContent = '';
     const me = Net.user && Net.user.id;
-    if (!msgs.length) this.addConvoLine('Nog geen berichten. Zeg hallo 👋', null);
+    if (!msgs.length) this.addConvoLine('Nog geen berichten. Zeg hallo!', null);
     else msgs.forEach((m) => this.addConvoLine(m.body, m.sender === me));
     const inp = document.getElementById('convo-input'); if (inp) inp.focus();
   },
@@ -821,7 +822,7 @@ const UI = {
     inp.value = '';
     this.addConvoLine(text, true);                 // eigen bericht meteen tonen
     try { await Net.sendMessage(this._convo.id, text); }
-    catch (e) { document.getElementById('convo-msg').textContent = '⚠ ' + (e.message || e); }
+    catch (e) { document.getElementById('convo-msg').textContent = '' + (e.message || e); }
   },
 
   addConvoLine(text, me) {
@@ -878,7 +879,7 @@ const UI = {
     if (!window.Net || !Net.ready) { msg.textContent = 'Geen verbinding met de server.'; return; }
     let rows;
     try { rows = await Net.getLeaderboard(sortBy, 50); }
-    catch (e) { msg.textContent = '⚠ ' + (e.message || e); return; }
+    catch (e) { msg.textContent = '' + (e.message || e); return; }
     if (!rows.length) { msg.textContent = 'Nog geen spelers met een account. Log in en speel!'; return; }
     msg.textContent = '';
     const myNick = (window.Net && Net.isLoggedIn()) ? Net.nickname() : null;
@@ -901,7 +902,7 @@ const UI = {
     rows.forEach((r, i) => {
       const me = myNick && r.nickname === myNick;
       if (me) meShown = true;
-      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+      const medal = i < 3 ? this._ic('medal') : (i + 1) + '.';
       list.appendChild(makeRow(r, medal, me));
     });
     // sta je niet in de getoonde top? toon je eigen rij apart onderaan
@@ -919,6 +920,8 @@ const UI = {
   },
 
   _esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; },
+  // eigen pixel-icoon (vervangt standaard emoji) — als HTML-string voor innerHTML
+  _ic(name) { return '<svg class="ic"><use href="#ic-' + name + '"/></svg>'; },
 
   // ---- 1 VS 1 LOBBY / SPEL ----
   // ---- MATCHMAKING: 8s zoeken naar een online tegenstander, anders een sterke bot ----
@@ -970,11 +973,11 @@ const UI = {
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
     document.querySelector('.vs-wait-label').classList.add('hidden');
-    document.getElementById('vs-peer-status').textContent = '🤖 Geen online speler gevonden — Bot Lv ' + this._mmBotLevel;
+    document.getElementById('vs-peer-status').innerHTML = this._ic('bot') + ' Geen online speler gevonden — Bot Lv ' + this._mmBotLevel;
     document.getElementById('vs-lobby-opts').classList.remove('hidden');
     this.renderMapVote();
     document.getElementById('vs-bot-diff').classList.add('hidden');
-    const rb = document.getElementById('btn-vs-ready'); rb.textContent = '▶ START'; rb.classList.remove('on');
+    const rb = document.getElementById('btn-vs-ready'); rb.innerHTML = this._ic('arrow-r') + ' START'; rb.classList.remove('on');
     document.getElementById('vs-ready-status').textContent = 'Kies je map — de bot speelt op jouw map.';
     this.show('versus');
   },
@@ -1006,7 +1009,7 @@ const UI = {
       onPeerLeft: () => {
         if (Game.state === 'versus') { Game.endVersus(true, true); }   // tegenstander verliet = jij wint (forfeit)
         else if (Game.state === 'versusOver') {                   // op het uitslagscherm: rematch onmogelijk
-          const rb = document.getElementById('btn-vs-rematch'); if (rb) { rb.disabled = true; rb.textContent = '🔁 REMATCH'; }
+          const rb = document.getElementById('btn-vs-rematch'); if (rb) { rb.disabled = true; rb.innerHTML = this._ic('refresh') + ' REMATCH'; }
           const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = 'Tegenstander is weg — geen rematch mogelijk.';
           if (window.Net) Net.leaveVersus();
         } else { const ps = document.getElementById('vs-peer-status'); if (ps) ps.textContent = 'Tegenstander is weg…'; this._peer = null; document.getElementById('vs-lobby-opts').classList.add('hidden'); this.cancelCountdown(); }
@@ -1022,7 +1025,7 @@ const UI = {
       this._vsRole = 'host';
       const code = await Net.versusHost(this._versusCbs());
       this._enterRoom(code);
-    } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '⚠ ' + (e.message || e); }
+    } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '' + (e.message || e); }
   },
 
   async versusJoin() {
@@ -1035,7 +1038,7 @@ const UI = {
       this._vsRole = 'guest';
       const c = await Net.versusJoin(code, this._versusCbs());
       this._enterRoom(c);
-    } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '⚠ ' + (e.message || e); }
+    } catch (e) { msg.style.color = '#ff6a6a'; msg.textContent = '' + (e.message || e); }
   },
 
   // bot-setup: kies map + wapenmodus, dan START
@@ -1052,9 +1055,9 @@ const UI = {
     document.getElementById('vs-lobby-opts').classList.remove('hidden');
     this.renderMapVote();
     document.querySelectorAll('.vs-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'melee'));
-    document.getElementById('btn-vs-ready').textContent = '▶ START';
+    document.getElementById('btn-vs-ready').innerHTML = this._ic('arrow-r') + ' START';
     document.getElementById('btn-vs-ready').classList.remove('on');
-    document.getElementById('vs-ready-status').textContent = '🤖 Oefenpotje — geen XP';
+    document.getElementById('vs-ready-status').innerHTML = this._ic('bot') + ' Oefenpotje — geen XP';
     document.getElementById('vs-bot-diff').classList.remove('hidden');     // moeilijkheidsschuif tonen
     this.setBotDiff(this._botDiff || 5);
     this.show('versus');
@@ -1097,7 +1100,7 @@ const UI = {
     if (role === 'host' || role === 'guest') this._vsRole = role;   // echte rol van Net (belangrijk bij matchmaking)
     if (this._mmSearching) this._matchmakingConnected();   // via matchmaking: mm-scherm weg, lobby tonen
     if (window.Net && Net.lobby) Net.lobbyLeave();   // chat niet meer nodig tijdens het potje
-    document.getElementById('vs-peer-status').textContent = '✅ Tegenstander aanwezig!';
+    document.getElementById('vs-peer-status').textContent = 'Tegenstander aanwezig!';
     const bd = document.getElementById('vs-bot-diff'); if (bd) bd.classList.add('hidden');   // alleen bij bot
     document.getElementById('vs-lobby-opts').classList.remove('hidden');
     this.renderMapVote();
@@ -1160,7 +1163,7 @@ const UI = {
     document.querySelectorAll('.vs-map-btn').forEach((b) => b.classList.toggle('picked', b.dataset.map === this._myVote.map));
     document.querySelectorAll('.vs-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === this._myVote.mode));
     const ready = document.getElementById('btn-vs-ready');
-    if (ready) { ready.textContent = this._myReady ? '✔ READY (klik om te annuleren)' : 'READY'; ready.classList.toggle('on', this._myReady); }
+    if (ready) { ready.innerHTML = this._myReady ? this._ic('check') + ' READY (klik om te annuleren)' : 'READY'; ready.classList.toggle('on', this._myReady); }
     const st = document.getElementById('vs-ready-status');
     const peerReady = this._peer && this._peer.ready;
     if (st) st.textContent = 'Jij: ' + (this._myReady ? 'klaar' : 'kiezen…') + '   •   Tegenstander: ' + (this._peer ? (peerReady ? 'klaar' : 'kiezen…') : '—');
@@ -1320,7 +1323,7 @@ const UI = {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     // knop-bindingen herstellen (Journey kan ze hebben overschreven)
     document.getElementById('btn-vs-rematch').onclick = () => this.doRematch();
-    const ag = document.getElementById('btn-vs-again'); ag.textContent = '🏠 LOBBY'; ag.onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
+    const ag = document.getElementById('btn-vs-again'); ag.innerHTML = this._ic('home') + ' LOBBY'; ag.onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
     document.getElementById('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.leaveLobby(); this.show('menu'); };
     const rb = document.getElementById('vs-round-banner'); if (rb) rb.classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
@@ -1329,19 +1332,19 @@ const UI = {
     document.body.classList.remove('in-game');
     this.el.touch.classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    t.textContent = won ? 'GEWONNEN! 🏆' : 'VERLOREN';
+    if (won) t.innerHTML = 'GEWONNEN! ' + this._ic('trophy'); else t.textContent = 'VERLOREN';
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = myScore + ' – ' + oppScore;
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
     if (!isBot || mmBot) {                       // online OF matchmaking-bot -> echte beloning tonen
-      xpEl.innerHTML = (mmBot ? '🤖 Bot verslagen!<br>' : '') + '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten<br>' +
+      xpEl.innerHTML = (mmBot ? this._ic('bot') + ' Bot verslagen!<br>' : '') + '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten<br>' +
         'Level ' + playerLevel(Storage.data.xp || 0) +
         (window.Net && Net.isLoggedIn() ? '' : '  (log in om mee te tellen)');
     } else if (xpGained > 0 || coinsEarned > 0) {
-      xpEl.innerHTML = '🤖 Bot Lvl 10 verslagen!<br>+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
+      xpEl.innerHTML = this._ic('bot') + ' Bot Lvl 10 verslagen!<br>+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
     } else {
-      xpEl.textContent = '🤖 Oefenpotje tegen de bot — geen XP';
+      xpEl.innerHTML = this._ic('bot') + ' Oefenpotje tegen de bot — geen XP';
     }
     // rematch-knop voorbereiden
     this._rematchMine = false; this._rematchPeer = false; this._vsStarted = false; this._isBotResult = !!isBot;
@@ -1351,10 +1354,10 @@ const UI = {
     if (peerLeft) {
       // tegenstander heeft de match verlaten -> geen rematch mogelijk
       rbtn.disabled = true; rbtn.classList.add('hidden');
-      rs.textContent = '🏃 Tegenstander heeft de match verlaten.';
+      rs.textContent = 'Tegenstander heeft de match verlaten.';
       if (voteBox) voteBox.classList.add('hidden');
     } else {
-      rbtn.disabled = false; rbtn.textContent = '🔁 REMATCH'; rbtn.classList.remove('hidden');
+      rbtn.disabled = false; rbtn.innerHTML = this._ic('refresh') + ' REMATCH'; rbtn.classList.remove('hidden');
       rs.textContent = isBot ? '' : 'Beiden moeten op rematch drukken.';
       // map-stemmen voor de volgende pot: standaard de huidige map
       const curMap = (Game.vsMap && Game.vsMap.id) || VERSUS_MAPS[0].id;
@@ -1394,14 +1397,14 @@ const UI = {
     this.broadcastLobby();                 // mijn map-stem zeker meesturen
     Net.versusSend('rematch', {});
     const rb = document.getElementById('btn-vs-rematch');
-    rb.disabled = true; rb.textContent = '✔ Wacht op tegenstander…';
+    rb.disabled = true; rb.innerHTML = this._ic('check') + ' Wacht op tegenstander…';
     this.checkRematch();
   },
 
   onRematch() {
     this._rematchPeer = true;
     const rs = document.getElementById('vs-rematch-status');
-    if (rs && !this._rematchMine) rs.textContent = '🔁 Tegenstander wil een rematch! Druk ook op rematch.';
+    if (rs && !this._rematchMine) rs.innerHTML = this._ic('refresh') + ' Tegenstander wil een rematch! Druk ook op rematch.';
     this.checkRematch();
   },
 
@@ -1462,7 +1465,7 @@ const UI = {
       const open = this.worldUnlocked(w.id);
       const tab = document.createElement('button');
       tab.className = 'world-tab' + (w.id === this.viewWorld ? ' active' : '') + (open ? '' : ' locked');
-      tab.textContent = open ? ('Wereld ' + w.id) : ('Wereld ' + w.id + ' 🔒');
+      if (open) tab.textContent = 'Wereld ' + w.id; else tab.innerHTML = 'Wereld ' + w.id + ' ' + this._ic('lock');
       if (open) tab.onclick = () => { this.viewWorld = w.id; this.renderLevels(); };
       tabs.appendChild(tab);
     });
@@ -1482,7 +1485,7 @@ const UI = {
         : lv.mode === 'melee' ? '<div class="lvl-badge">MELEE</div>'
         : lv.mode === 'boss' ? '<div class="lvl-badge boss">BOSS</div>'
         : lv.parkour ? '<div class="lvl-badge">PARKOUR</div>' : '';
-      cell.innerHTML = `${badge}<div class="num">${lv.id}</div><div class="stars">${isCleared ? '★' : ''}</div>`;
+      cell.innerHTML = `${badge}<div class="num">${lv.id}</div><div class="stars">${isCleared ? this._ic('star') : ''}</div>`;
       if (unlocked) cell.onclick = () => Game.startLevel(world.id, lv.id);
       grid.appendChild(cell);
     });
@@ -1525,7 +1528,7 @@ const UI = {
         btn.textContent = 'KOOP — ' + pu.cost + ' ●';
         btn.onclick = () => { if (Storage.buyPowerup(id)) this.renderShop(); };
       } else {                              // inventaris: loadout-toggle
-        if (inLo) { btn.classList.add('equipped'); btn.textContent = count > 0 ? '✓ IN LOADOUT' : '✕ UIT LOADOUT'; card.classList.add('in-loadout'); if (count <= 0) card.classList.add('depleted'); btn.onclick = () => { Storage.toggleLoadout(id); this.renderInventory(); }; }
+        if (inLo) { btn.classList.add('equipped'); btn.innerHTML = count > 0 ? this._ic('check') + ' IN LOADOUT' : this._ic('x') + ' UIT LOADOUT'; card.classList.add('in-loadout'); if (count <= 0) card.classList.add('depleted'); btn.onclick = () => { Storage.toggleLoadout(id); this.renderInventory(); }; }
         else if (count <= 0) { card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = 'Koop in shop'; }
         else { btn.classList.add('equip'); btn.textContent = 'KIES'; btn.onclick = () => { if (!Storage.toggleLoadout(id)) this.flashLoadoutFull(); this.renderInventory(); }; }
       }
@@ -1845,8 +1848,8 @@ const UI = {
       const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${c.name}</div>
-        <div class="w-stats">❤ <b>${c.maxHp}</b> · melee ${mel} · ${spd}` +
-        (ab ? `<br>🔥 <b>${ab.name}</b>: ${ab.desc}` : '') + `</div>`;
+        <div class="w-stats">${this._ic('heart')} <b>${c.maxHp}</b> · melee ${mel} · ${spd}` +
+        (ab ? `<br>${this._ic('fire')} <b>${ab.name}</b>: ${ab.desc}` : '') + `</div>`;
 
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
@@ -1856,9 +1859,9 @@ const UI = {
         btn.classList.add('equip'); btn.textContent = 'UITRUSTEN';
         btn.onclick = () => { Storage.equipCharacter(cid); this.renderShop(); };
       } else if (c.journeyOnly) {
-        card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = '🔒 Journey';
+        card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Journey';
       } else if (myLvl < (c.lvl || 0)) {
-        card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = '🔒 Level ' + c.lvl;
+        card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Level ' + c.lvl;
       } else if (Storage.data.coins >= c.cost) {
         btn.classList.add('buy'); btn.textContent = `KOOP — ${c.cost} ●`;
         btn.onclick = () => { if (Storage.buyCharacter(cid)) { Storage.equipCharacter(cid); this.renderShop(); } };
@@ -1908,9 +1911,9 @@ const UI = {
         btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN';
         btn.onclick = () => { Storage.equipHat(hid); this.renderShop(); };
       } else if (h.journeyOnly) {
-        card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = '🔒 Journey';
+        card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Journey';
       } else if (myLvl < (h.lvl || 0)) {
-        card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = '🔒 Level ' + h.lvl;
+        card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Level ' + h.lvl;
       } else if (Storage.data.coins >= h.cost) {
         btn.classList.add('buy'); btn.textContent = `KOOP — ${h.cost} ●`;
         btn.onclick = () => { if (Storage.buyHat(hid)) { Storage.equipHat(hid); this.renderShop(); } };
@@ -1942,13 +1945,13 @@ const UI = {
     this.el.healthFill.style.width = (game.player.hp / game.player.maxHp * 100) + '%';
     this.el.coinCount.textContent = game.runCoins;
     // melee-wapen altijd tonen (is altijd beschikbaar)
-    this.el.weaponName.textContent = '🏏 ' + WEAPONS[game.player.meleeId].name;
+    this.el.weaponName.textContent = WEAPONS[game.player.meleeId].name;
     // vuurwapen + munitie alleen als er een gun is uitgerust
     if (game.player.rangedId) {
       const rw = WEAPONS[game.player.rangedId];
       this.el.ammoCount.classList.remove('hidden');
       if (rw.ammoType === 'rocket') {
-        this.el.ammoNum.textContent = rw.name + '  🚀' + game.rockets;
+        this.el.ammoNum.textContent = rw.name + '  x' + game.rockets;
         this.el.ammoCount.classList.toggle('low', game.rockets <= 0);
       } else {
         this.el.ammoNum.textContent = rw.name + ' ' + game.ammo;
@@ -1966,9 +1969,9 @@ const UI = {
     let main = '', sub = '', cls = '', bossFrac = -1;
     const lv = game.level;
     if (game.boss && game.boss.alive) {
-      main = lv.balloonBoss ? '🎈 BALLON ZOMBIE' : lv.apeBoss ? '🦍 MEGA ZOMBIE-AAP' : '☠ MEGA ZOMBIE';
+      main = lv.balloonBoss ? 'BALLON ZOMBIE' : lv.apeBoss ? 'MEGA ZOMBIE-AAP' : 'MEGA ZOMBIE';
       sub = lv.balloonBoss ? 'spring & schiet de ballon neer!'
-        : lv.apeBoss ? (game.boss.enraged ? '🔥 RAZEND! spring weg van de schokgolf!' : 'ontwijk de sprong + spring bij de landing!')
+        : lv.apeBoss ? (game.boss.enraged ? 'RAZEND! spring weg van de schokgolf!' : 'ontwijk de sprong + spring bij de landing!')
         : 'raak alleen het HOOFD — spring!';
       cls = 'danger';
       bossFrac = Math.max(0, game.boss.hp / game.boss.maxHp);
@@ -1983,11 +1986,11 @@ const UI = {
       const parts = [];
       if (lv.killAll) {
         const rem = game.zombiesRemaining();
-        main = rem > 0 ? ('ZOMBIES OVER: ' + rem) : '→ NAAR DE FINISH!';
+        main = rem > 0 ? ('ZOMBIES OVER: ' + rem) : 'NAAR DE FINISH!';
         cls = rem > 0 ? 'danger' : 'good';
       }
-      if (lv.midTime && !game.midReached) parts.push('⚑ checkpoint: ' + Math.ceil(game.midLeft / 1000) + 's');
-      if (lv.mode === 'melee') parts.push('⚠ alleen melee');
+      if (lv.midTime && !game.midReached) parts.push('checkpoint: ' + Math.ceil(game.midLeft / 1000) + 's');
+      if (lv.mode === 'melee') parts.push('alleen melee');
       sub = parts.join('   •   ');
     }
     if (main || sub) {
