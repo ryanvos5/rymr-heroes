@@ -1,0 +1,21 @@
+{
+  "name": "tiny-power-smashers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiny Power Smashers — pixel multiplayer smash game (iOS via Capacitor)",
+  "scripts": {
+    "build": "node scripts/build-www.mjs",
+    "sync": "npm run build && npx cap sync ios",
+    "add:ios": "npm run build && npx cap add ios",
+    "open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

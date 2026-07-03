@@ -2,3 +2,12 @@
 .vercel/
 node_modules/
 *.log
+
+# Capacitor build-artefact (wordt gegenereerd door npm run build)
+www/
+
+# iOS native build-output (de rest van ios/ wordt WEL gecommit)
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/App/DerivedData/

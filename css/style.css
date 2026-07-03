@@ -1,6 +1,9 @@
 /* ====== Topleven Adventures — styling ====== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* native (iOS-app): de "Update — verse versie"-knop is alleen voor de webversie */
+body.native #btn-update { display: none !important; }
+
 :root {
   --bg: #0d0f14;
   --panel: #1a1f2b;

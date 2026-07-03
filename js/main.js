@@ -2,6 +2,15 @@
    MAIN — start alles op.
    ============================================================ */
 window.addEventListener('DOMContentLoaded', () => {
+  // ---- native app (Capacitor / iOS-schil) herkennen ----
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (isNative) {
+    document.body.classList.add('native');                 // CSS verbergt o.a. de web-only "Update"-knop
+    const P = window.Capacitor.Plugins || {};
+    try { P.StatusBar && P.StatusBar.hide(); } catch (e) {}   // volledig scherm voor de game
+    try { P.SplashScreen && P.SplashScreen.hide(); } catch (e) {}
+  }
+
   Storage.load();
   // eenmalig voortgang herstellen via een ?restore=... link (ook handig op iOS)
   try { if (Storage.applyRestoreFromURL()) setTimeout(() => alert('✅ Voortgang hersteld!'), 300); } catch (e) {}

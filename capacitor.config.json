@@ -1,0 +1,19 @@
+{
+  "appId": "com.ryanvos.tinypowersmashers",
+  "appName": "Tiny Power Smashers",
+  "webDir": "www",
+  "backgroundColor": "#0d0f14",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0d0f14",
+    "scrollEnabled": false,
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#0d0f14",
+      "showSpinner": false
+    }
+  }
+}
