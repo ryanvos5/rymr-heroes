@@ -74,6 +74,150 @@ const Sprites = {
     ctx.restore();
   },
 
+  /* ---------- POWER-UP-ICOON (shop / inventaris) ----------
+     Vernieuwde 2.5D-iconen: elk figuur in code getekend met licht/schaduw-
+     shading en daarna de inkt-outline eromheen (net als characters). ----- */
+  drawPowerupIcon(ctx, kind, cx, cy) {
+    const self = this;
+    this.ink(ctx, cx, cy, (c) => self._powerupRaw(c, kind, cx, cy));
+  },
+  _powerupRaw(ctx, kind, cx, cy) {
+    const P = (col, x, y, w, h) => this.px(ctx, col, cx + x, cy + y, w, h);
+    const S = (hex, f) => this._shade(hex, f);
+    switch (kind) {
+      case 'health': {                                   // Medipack — witte doos + rood kruis
+        const b = '#eef3f7';
+        P(b, -7, -7, 14, 14);
+        P(S(b, 0.7), -7, -7, 14, 3);                     // top-highlight
+        P(S(b, -0.22), -7, 4, 14, 3);                    // onderrand-schaduw
+        P('#e23b3b', -2, -6, 4, 12); P('#e23b3b', -6, -2, 12, 4);   // kruis
+        P('#ff7676', -2, -6, 2, 12); P('#ff7676', -6, -2, 12, 1);   // kruis-highlight
+        P('#b81f1f', 0, 4, 2, 2); P('#b81f1f', 4, -2, 2, 4);        // kruis-schaduw
+        break;
+      }
+      case 'shield': {                                   // Schild — blauw met glans
+        const b = '#2f7ad0';
+        P(b, -6, -6, 12, 8); P(b, -5, 2, 10, 2); P(b, -3, 4, 6, 2); P(b, -1, 6, 2, 2);
+        P(S(b, 0.55), -6, -6, 12, 2);                    // top-highlight
+        P(S(b, -0.35), -6, -6, 2, 8);                    // linker donkere kant
+        P(S(b, -0.35), 3, 2, 2, 3);                      // rechter schaduw onder
+        P('#eaf6ff', -1, -3, 2, 6); P('#eaf6ff', -3, -1, 6, 2);     // embleem (kruis/glans)
+        break;
+      }
+      case 'speed': { this._boltRaw(P, S, '#35d2ff'); break; }        // Speed — cyaan bliksem
+      case 'lightning': {                                // Bliksem — gele schicht + gloed
+        P('#fff6b0', -1, -8, 3, 3); P('#fff6b0', -3, 4, 3, 3);       // gloed-vonkjes
+        this._boltRaw(P, S, '#ffd24a');
+        P('#ffffff', -1, -2, 2, 3);                      // witte kern
+        break;
+      }
+      case 'rage': {                                     // Rage — zwaard (meer klap-schade)
+        P('#d7dde3', -1, -8, 3, 9); P('#ffffff', -1, -8, 1, 9);     // kling + snede-highlight
+        P('#9aa3ad', 1, -8, 1, 9);                       // kling-schaduwkant
+        P('#c9962e', -3, 1, 7, 2); P('#e6b954', -3, 1, 7, 1);       // pareerstang
+        P('#6b4423', 0, 3, 2, 4);                        // handvat
+        P('#c9962e', -1, 7, 3, 2);                       // pommel
+        P('#ff5a3a', 3, -7, 2, 2); P('#ff9a3a', -4, -4, 2, 2);      // rage-vonken
+        break;
+      }
+      case 'fireball': {                                 // Vuurbal — oranje/gele vlam
+        P('#ff7a2a', -4, -3, 8, 8); P('#ff7a2a', -1, -7, 3, 4);
+        P('#ff9a3a', -4, -4, 8, 3);
+        P('#ffd24a', -2, -2, 4, 6); P('#fff0a0', -1, 0, 2, 3);
+        P('#d94a1a', -4, 4, 8, 2);                       // onderschaduw
+        break;
+      }
+      case 'giant': {                                    // Reus — grote groene vuist
+        const b = '#2f9a3a';
+        P(b, -5, -3, 11, 8); P(S(b, 0.4), -5, -4, 11, 3);
+        P(S(b, -0.3), -5, 3, 11, 2);
+        P(S(b, -0.3), -2, -4, 1, 4); P(S(b, -0.3), 1, -4, 1, 4);    // knokkel-groeven
+        P(b, 5, 0, 2, 4);                                // duim
+        P('#cfffe0', 3, -7, 2, 2);                       // sprankel
+        break;
+      }
+      case 'dragon': {                                   // Draak — paars ei met schubben
+        const b = '#7a4ac0';
+        P(b, -5, -7, 10, 13);
+        P(S(b, 0.4), -5, -7, 10, 5); P(S(b, -0.3), -5, 3, 10, 3);
+        P('#4f2a86', -5, -1, 10, 1); P('#4f2a86', -4, 2, 8, 1);     // schub-banden
+        P('#d9c0ff', -3, -6, 2, 3);                      // glans
+        P('#ffd24a', 3, -9, 2, 2);                       // zeldzaam-sprankel
+        break;
+      }
+      case 'ak47': {                                     // AK47
+        P('#2a2a2e', -7, -2, 12, 3); P('#54545c', -7, -2, 12, 1);   // loop + highlight
+        P('#6a4326', 3, -1, 4, 5); P('#8a5e36', 3, -1, 4, 1);       // kolf
+        P('#3a2f22', -3, 1, 3, 3); P('#2a2119', -2, 4, 3, 2);       // magazijn (gebogen)
+        P('#3a2f22', 0, 1, 2, 4);                        // greep
+        P('#2a2a2e', -5, -4, 2, 2);                      // vizier
+        break;
+      }
+      case 'rocket': {                                   // Raket (verticaal)
+        P('#e4e8ec', -2, -6, 4, 10); P('#ffffff', -2, -6, 1, 10);   // romp + highlight
+        P('#b6bcc2', 1, -6, 1, 10);                      // schaduwkant
+        P('#d94343', -2, -9, 4, 3); P('#e86a6a', -2, -9, 2, 2);     // neuskegel
+        P('#d94343', -4, 1, 2, 3); P('#d94343', 2, 1, 2, 3);        // vinnen
+        P('#ffd24a', -1, 4, 2, 2); P('#ff7a2a', -1, 6, 2, 2);       // vlam
+        break;
+      }
+      case 'cannon': {                                   // Kanonskogel
+        P('#141414', -5, -4, 10, 10);
+        P('#454545', -4, -4, 5, 3); P('#8a8a8a', -3, -3, 2, 2);     // sheen
+        P('#050505', -5, 4, 10, 2);                      // onderschaduw
+        P('#6a4a2a', 0, -7, 2, 3); P('#ff8a3a', 0, -9, 2, 2); P('#ffe08a', 1, -10, 1, 1);  // lont + vonk
+        break;
+      }
+      case 'beachball': {                                // Strandbal
+        P('#ffffff', -5, -5, 10, 10);
+        P('#e8483b', -5, -5, 10, 3); P('#3aa0e0', -5, 2, 10, 3); P('#f2c94c', -1, -5, 2, 10);
+        P('#ffffff', -3, -3, 3, 3);                      // glans
+        P('#c9ccd2', -5, 4, 10, 1);                      // onderrand
+        break;
+      }
+      case 'coco': {                                     // Kokosbom
+        const b = '#6e4423';
+        P(b, -5, -5, 10, 10); P(S(b, 0.4), -5, -5, 10, 3); P(S(b, -0.3), -5, 3, 10, 2);
+        P('#3a2614', -2, -1, 2, 2); P('#3a2614', 1, 1, 2, 2);       // "ogen"
+        P('#3a8a4a', -1, -8, 2, 3);                      // steeltje
+        break;
+      }
+      case 'boom': {                                     // Boemerang
+        const b = '#b8894a';
+        P(b, -6, -4, 3, 6); P(b, -5, 1, 6, 3);
+        P(S(b, 0.35), -6, -4, 3, 1); P(S(b, 0.35), -5, 1, 6, 1);    // highlight
+        P(S(b, -0.3), -6, 1, 2, 3);                      // hoek-schaduw
+        break;
+      }
+      case 'dart': {                                     // Gifdart
+        P('#2f7a3a', -6, -1, 8, 2); P('#49a457', -6, -1, 8, 1);     // schacht
+        P('#cfd6df', 2, -1, 4, 2); P('#ffffff', 5, -1, 1, 2);       // metalen punt
+        P('#1f5a28', -7, -2, 2, 4);                      // fletching
+        P('#7affa0', 3, 1, 2, 1);                        // gif-druppel
+        break;
+      }
+      case 'rock': {                                     // Rotsblok
+        const b = '#6a5e50';
+        P(b, -5, -4, 11, 9); P(S(b, 0.35), -5, -4, 11, 3); P(S(b, -0.35), -5, 4, 11, 2);
+        P(S(b, -0.2), -1, -1, 3, 3); P(S(b, 0.2), 2, -3, 2, 2);     // facetten
+        break;
+      }
+      default: {                                         // vangnet: gele ster
+        P('#ffd24a', -4, -4, 8, 8); P('#fff0a0', -4, -4, 8, 3);
+      }
+    }
+  },
+  // bliksem/pijl-vorm (gedeeld door speed + lightning)
+  _boltRaw(P, S, col) {
+    P(col, 0, -8, 3, 4);
+    P(col, -2, -5, 4, 3);
+    P(col, -1, -3, 3, 3);
+    P(col, -3, 0, 4, 3);
+    P(col, -1, 2, 3, 5);
+    P(S(col, 0.5), 0, -8, 1, 4); P(S(col, 0.5), -3, 0, 1, 3);       // highlight-randen
+    P(S(col, -0.3), 2, -1, 1, 3);                                   // schaduwkant
+  },
+
   /* ---------- CHARACTER (Ryan & later anderen) ----------
      cx = horizontale midden, footY = grond (voeten),
      dir = 1 (rechts) of -1 (links),

@@ -1639,7 +1639,7 @@ const UI = {
       const card = document.createElement('div');
       card.className = 'shop-card powerup-card' + (count > 0 ? ' owned' : '');
       const inLo = Storage.inLoadout(id);
-      const cv = document.createElement('canvas'); cv.width = 44; cv.height = 44; cv.className = 'pu-ico';
+      const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; cv.className = 'pu-ico';
       this._puIcon(cv, pu.kind);
       const info = document.createElement('div');
       info.innerHTML = '<div class="w-name">' + pu.name + (count > 0 ? ' <span class="pu-count">x' + count + '</span>' : '') + '</div><div class="w-stats">' + pu.desc + '</div>';
@@ -1663,13 +1663,14 @@ const UI = {
   flashLoadoutFull() {
     const c = document.getElementById('inv-loadout-count'); if (c) { c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 500); }
   },
-  // het echte drop-plaatje van een power-up op een klein canvas tekenen (hergebruikt Game.drawDrop)
+  // 2.5D power-up-icoon op een klein canvas tekenen (nieuwe look, met inkt-outline)
   _puIcon(canvas, kind) {
     const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const sc = canvas.width / 20;
-    ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2 + sc); ctx.scale(sc, sc);
-    if (typeof Game !== 'undefined' && Game.drawDrop) Game.drawDrop(ctx, { kind, x: 0, y: 0, id: 0 });
+    const sc = canvas.width / 22;
+    ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(sc, sc);
+    if (Sprites.drawPowerupIcon) Sprites.drawPowerupIcon(ctx, kind, 0, 0);
+    else if (typeof Game !== 'undefined' && Game.drawDrop) Game.drawDrop(ctx, { kind, x: 0, y: 0, id: 0 });
     ctx.restore();
   },
 
