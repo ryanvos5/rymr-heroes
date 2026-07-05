@@ -454,6 +454,14 @@ const THEMES = {
     ground: '#21341a', groundTop: '#3a5223',
     lamp: '#c6ec9a', weather: 'fog', jungle: true,
   },
+  beach: {
+    name: 'Strand',
+    sky: ['#5ab0e0', '#8fd0f0', '#cfeef8'],             // heldere eilandlucht
+    far: ['#2e6b4a', '#3a7a54', '#28604a'],             // verre palmen
+    near: ['#3a8a5c', '#46996a', '#348a58', '#2e7a50'], // dichtere palmen/struiken
+    ground: '#caa860', groundTop: '#e3c882',            // zand
+    lamp: '#ffe9a0', weather: null, jungle: true,        // zelfde palm-silhouetten als jungle
+  },
 };
 
 /* ---------- POWER-UPS ---------- */
@@ -579,27 +587,51 @@ const JUNGLE_LAYOUTS = [
   [{ x: 180, y: 150, w: 170 }, { x: 78, y: 122, w: 46 }, { x: 282, y: 122, w: 46 }, { x: 130, y: 88, w: 44 }, { x: 230, y: 88, w: 44 }],
   [{ x: 180, y: 150, w: 300 }, { x: 80, y: 114, w: 60 }, { x: 280, y: 114, w: 60 }, { x: 180, y: 82, w: 84 }],   // troonzaal-eindbaas
 ];
+/* ---------- JOURNEY: Mario-stijl eiland-levels ----------
+   Elk level is een side-scroller (adventure-engine): ren naar de finish, zombies
+   doen bij AANRAKING meteen de helft van je HP, halverwege een checkpoint-vlag
+   (respawn-punt), en kratten met power-ups die je kapot kunt smashen.
+   Levels 5/10/15: eerst het gewone level, bij de finish begint de BOSS FIGHT
+   (bestaande 1v1 smash-duels: Baviaan, Koba, Gorilla King). */
+function buildJourneyIsland() {
+  const names = ['Aangespoeld', 'Brekers', 'Palmenrif', 'Apenstreken', 'BAVIAAN',
+    'Lagune', 'Kliftoppen', 'Zandbank', 'Verboden strand', 'KOBA',
+    'Kokospaleis', 'Stormkaap', 'Springvloed', 'Aapheuvel', 'GORILLA KING'];
+  const bosses = { 5: { bot: 'baviaan', diff: 5, drops: ['dart', 'coco'] },
+                   10: { bot: 'koba', diff: 7, drops: ['dart', 'coco', 'boom'] },
+                   15: { bot: 'kong', diff: 10, drops: ['coco', 'boom', 'dart'], boss: true } };
+  const levels = [];
+  for (let n = 1; n <= 15; n++) {
+    const t = (n - 1) / 14;                              // 0..1 moeilijkheid
+    const bossInfo = bosses[n];
+    const lv = {
+      id: n, name: names[n - 1], mario: true,
+      theme: n <= 7 ? 'beach' : 'jungle',                 // strand -> dieper het oerwoud in
+      mode: 'reach', killAll: false,                      // Mario: haal de finish (doden mag, hoeft niet)
+      noObstacles: true, doorChance: 0,
+      length: bossInfo ? 1250 : Math.round(1500 + n * 130),        // boss-aanloop is korter
+      zombieCount: bossInfo ? 8 : Math.round(9 + n * 1.6),
+      spawnEvery: Math.round(1750 - t * 700),
+      zombieHp: Math.round(34 + t * 46),                  // 1-2 meppen per zombie
+      zombieSpeed: +(0.55 + t * 0.5).toFixed(2),
+      runnerChance: n >= 3 ? +(0.06 + t * 0.22).toFixed(2) : 0,
+      crawlerChance: n >= 6 ? +(0.05 + t * 0.15).toFixed(2) : 0,
+      bruteChance: n >= 9 ? +(0.05 + t * 0.12).toFixed(2) : 0,
+      maxAlive: Math.round(3 + t * 5),
+      midFlag: true,                                      // checkpoint-vlag halverwege (respawn)
+      crates: bossInfo ? 2 : (3 + Math.floor(n / 5)),     // smashbare power-up-kratten
+      reward: 0,                                          // journey heeft eigen beloningen
+    };
+    if (bossInfo) Object.assign(lv, bossInfo, { bossFight: true });
+    levels.push(lv);
+  }
+  return levels;
+}
+
 const JOURNEY = {
   1: {
     name: 'Onbewoond Eiland',
-    // elk level: eigen beach-variant (layout-index), mensaap-bot, oplopende diff, NIEUWE eiland-powerups
-    levels: [
-      { name: 'Aangespoeld',    diff: 1,  bot: 'aapje',   drops: ['dart'] },
-      { name: 'Brekers',        diff: 2,  bot: 'aapje',   drops: ['dart'] },
-      { name: 'Palmenrif',      diff: 2,  bot: 'aapje',   drops: ['dart', 'coco'] },
-      { name: 'Apenstreken',    diff: 3,  bot: 'aapje',   drops: ['dart', 'coco'] },
-      { name: 'Vloedlijn',      diff: 4,  bot: 'baviaan', drops: ['dart', 'coco'] },
-      { name: 'Lagune',         diff: 4,  bot: 'baviaan', drops: ['dart', 'coco', 'boom'] },
-      { name: 'Kliftoppen',     diff: 5,  bot: 'baviaan', drops: ['coco', 'boom'] },
-      { name: 'Zandbank',       diff: 6,  bot: 'baviaan', drops: ['dart', 'coco', 'boom'] },
-      { name: 'Verboden strand',diff: 6,  bot: 'baviaan', drops: ['coco', 'boom'] },
-      { name: 'Krabbenbaai',    diff: 7,  bot: 'koba',    drops: ['dart', 'coco', 'boom'] },
-      { name: 'Kokospaleis',    diff: 7,  bot: 'koba',    drops: ['coco', 'boom'] },
-      { name: 'Stormkaap',      diff: 8,  bot: 'koba',    drops: ['dart', 'coco', 'boom'] },
-      { name: 'Springvloed',    diff: 9,  bot: 'koba',    drops: ['coco', 'boom', 'dart'] },
-      { name: 'Aapheuvel',      diff: 9,  bot: 'koba',    drops: ['coco', 'boom', 'dart'] },
-      { name: 'GORILLA KING',   diff: 10, bot: 'kong',    drops: ['coco', 'boom', 'dart'], boss: true },
-    ],
+    levels: buildJourneyIsland(),
     unlocks: { 3: { hat: 'leafcrown' }, 5: { char: 'bonzo' }, 8: { hat: 'tikimask' }, 10: { char: 'koba' }, 12: { hat: 'bananahat' }, 15: { char: 'kong' } },
   },
 };

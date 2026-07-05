@@ -232,7 +232,8 @@ const UI = {
       const open = Storage.journeyUnlocked(n);
       const cell = document.createElement('button');
       cell.className = 'level-cell' + (cleared ? ' cleared' : '') + (open ? '' : ' locked');
-      cell.innerHTML = '<span class="lvl-badge">' + (lv.boss ? 'BAAS' : ('Lvl ' + n)) + '</span><span class="num">' + (lv.boss ? this._ic('crown') : n) + '</span><span class="stars">' + (cleared ? this._ic('star') : (open ? '' : this._ic('lock'))) + '</span>';
+      const isBoss = lv.bossFight || lv.boss;
+      cell.innerHTML = '<span class="lvl-badge">' + (isBoss ? 'BAAS' : ('Lvl ' + n)) + '</span><span class="num">' + (isBoss ? this._ic('crown') : n) + '</span><span class="stars">' + (cleared ? this._ic('star') : (open ? '' : this._ic('lock'))) + '</span>';
       if (open) cell.onclick = () => this.pickJourneyLevel(n);
       grid.appendChild(cell);
     });
@@ -260,10 +261,23 @@ const UI = {
   },
   startJourneyLevel(n) {
     document.getElementById('versus-result').classList.add('hidden');
+    const lv = JOURNEY[1].levels[n - 1];
+    if (lv && lv.mario) {                // NIEUW: Mario-stijl side-scroller-level (adventure-engine)
+      const vh = document.getElementById('versus-hud'); if (vh) vh.classList.add('hidden');
+      document.getElementById('loadout-bar').classList.add('hidden');
+      document.getElementById('ability-btn').classList.add('hidden');
+      Game.startJourneyStage(n);         // regelt zelf UI.show('game') + HUD/touch
+      return;
+    }
+    this.startJourneyBossFight(n);       // (vangnet: niet-mario levels = direct het duel)
+  },
+  // boss-fase (na de level-stage van 5/10/15): het bestaande 1v1-smash-duel
+  startJourneyBossFight(n) {
+    document.getElementById('versus-result').classList.add('hidden');
     this.showVersus();                  // juiste HUD/touch-setup, alle schermen weg
     Game.startJourney(n);
     this.el.pause.classList.remove('hidden');                       // Journey heeft een pauzeknop (singleplayer)
-    document.getElementById('btn-vs-quit').classList.add('hidden'); // ✕ weg: pauzeknop vervangt 'm (geen overlap)
+    document.getElementById('btn-vs-quit').classList.add('hidden'); // pauzeknop vervangt de kruis-knop
   },
   showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore) {
     const levels = JOURNEY[1].levels, total = levels.length, hasNext = won && idx < total;

@@ -48,11 +48,16 @@ const Game = {
   startLevel(worldId, levelId) {
     const world = WORLDS.find((w) => w.id === worldId);
     const level = world.levels.find((l) => l.id === levelId);
+    this._beginLevel(level, worldId);
+  },
+  // gedeelde level-start (werelden én Journey-stages)
+  _beginLevel(level, worldId) {
     this.worldId = worldId;
     this.level = level;
-    UI.viewWorld = worldId; // level-select toont daarna deze wereld
+    this.jStage = null;                                  // Journey-stage wordt erna gezet (startJourneyStage)
+    UI.viewWorld = worldId || 1; // level-select toont daarna deze wereld
     // al eerder voltooid? dan bij herhaling maar 15 munten (geen farmen)
-    this.levelWasCleared = Storage.highestCleared(worldId) >= levelId;
+    this.levelWasCleared = worldId ? (Storage.highestCleared(worldId) >= level.id) : false;
 
     this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter);
     // dubbel-jump vanaf wereld 2
@@ -107,6 +112,92 @@ const Game = {
     const pauseScreen = document.getElementById('pause-screen');
     if (pauseScreen) pauseScreen.classList.add('hidden');
     UI.show('game');
+  },
+
+  // ---------- JOURNEY: Mario-stijl level-stage (side-scroller) ----------
+  startJourneyStage(n) {
+    const lv = JOURNEY[1].levels[n - 1]; if (!lv) return;
+    this.journey = null;                                // versus-journey context pas bij de boss-fase
+    this._beginLevel(lv, 0);
+    this.jStage = { idx: n, lv };
+    this.levelWasCleared = Storage.journeyCleared(n);   // herhaling = geen kill-munten farmen
+    // Mario-regels
+    this.player._marioTouch = true;                     // aanraking = helft HP (zie Player.takeDamage)
+    this.player.maxJumps = 2; this.player.jumps = 2;    // dubbel-jump hoort bij het eiland
+    this.tutorials = []; this.tutorialMsg = ''; this.tutorialUntil = 0;   // stads-tutorials horen hier niet
+    // checkpoint-vlag halverwege (respawn-punt)
+    this.jFlagX = Math.round(lv.length * 0.5);
+    this.jFlagReached = false;
+    // smashbare power-up-kratten, verspreid over het level
+    this.crates = [];
+    const kinds = ['health', 'rage', 'speed', 'shield', 'fireball'];
+    const nC = lv.crates || 0;
+    for (let i = 0; i < nC; i++) {
+      let x = Math.round(lv.length * (0.16 + (i + 0.5) * (0.72 / Math.max(1, nC))));
+      if (Math.abs(x - this.jFlagX) < 70) x += 100;     // niet óp de vlag
+      this.crates.push({ x, y: CONFIG.GROUND_Y - 34 - ((i % 2) ? 12 : 0), kind: kinds[Math.floor(Math.random() * kinds.length)], broken: false });
+    }
+    if (window.Sfx) Sfx.music(lv.theme === 'beach' ? 'beach' : 'jungle');
+  },
+
+  // vlag gehaald + kratten kapot slaan + finish/boss-overgang
+  updateJourneyStage(dt) {
+    const lv = this.jStage.lv, p = this.player;
+    // checkpoint-vlag
+    if (lv.midFlag && !this.jFlagReached && p.x >= this.jFlagX) {
+      this.jFlagReached = true;
+      if (window.Sfx) Sfx.play('coin');
+      for (let i = 0; i < 12; i++) this.particles.push(new Particle(this.jFlagX, CONFIG.GROUND_Y - 30, (Math.random() - 0.5) * 2.5, -Math.random() * 2.5, '#5aff7a', 500, 2));
+    }
+    // kratten: kapot te smashen met een melee-klap
+    if (this.crates && this.time < p.attackAnimUntil) {
+      for (const c of this.crates) {
+        if (c.broken) continue;
+        if (Math.abs(c.x - p.x) < 34 && Math.abs((c.y - 8) - (p.y - 16)) < 34) {
+          c.broken = true;
+          if (c.kind === 'health') this.healthDrops.push(new HealthPickup(c.x));
+          else this.powerUps.push(new PowerUpPickup(c.x, c.kind));
+          for (let i = 0; i < 12; i++) this.particles.push(new Particle(c.x, c.y - 8, (Math.random() - 0.5) * 3.5, -Math.random() * 3, Math.random() < 0.5 ? '#b98a5a' : '#8a5e36', 420, 2));
+          this.shake = Math.max(this.shake, 4);
+          if (window.Sfx) Sfx.play('hit');
+        }
+      }
+    }
+  },
+
+  // dood na de vlag -> respawn bij de vlag (Mario-checkpoint)
+  journeyRespawn() {
+    const p = this.player;
+    p.hp = p.maxHp; p.x = this.jFlagX; p.y = CONFIG.GROUND_Y; p.vy = 0; p.onGround = true;
+    p.burnUntil = 0; p._touchInvUntil = this.time + 2200;      // even onkwetsbaar na de respawn
+    // zombies vlakbij de vlag wegduwen (geen respawn-kill)
+    for (const z of this.zombies) if (z.alive && Math.abs(z.x - this.jFlagX) < 120) z.x += (z.x < this.jFlagX ? -1 : 1) * 140;
+    for (let i = 0; i < 14; i++) this.particles.push(new Particle(p.x, p.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, '#5aff7a', 480, 2));
+    this.shake = Math.max(this.shake, 5);
+    if (window.Sfx) Sfx.play('roundlose');
+  },
+
+  // level-stage gehaald: door naar de boss (5/10/15) of belonen + resultaat
+  finishJourneyStage() {
+    const idx = this.jStage.idx, lv = this.jStage.lv;
+    this.jStage = null;
+    if (lv.bossFight) { UI.startJourneyBossFight(idx); return; }   // finish = de boss wacht
+    this.state = 'versusOver';
+    const first = !Storage.journeyCleared(idx);
+    const unlocks = Storage.clearJourneyLevel(idx);
+    const coins = first ? 40 + this.runCoins : 50;
+    const xp = first ? 20 : 0;
+    Storage.data.coins = (Storage.data.coins || 0) + coins;
+    if (xp) Storage.data.xp = (Storage.data.xp || 0) + xp;
+    Storage.save();
+    const rewards = [{ type: 'earn', coins, xp }];
+    for (const u of unlocks) rewards.push({ type: u.type, id: u.id, name: u.name });
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('touch-controls').classList.add('hidden');
+    if (window.Sfx) Sfx.play('win');
+    const self = this;
+    UI.showWinCelebration('JIJ', true);
+    setTimeout(function () { if (self.state === 'versusOver') UI.showJourneyResult(true, idx, unlocks, rewards, 1, 0); }, 2600);
   },
 
   // ---------- ZOMBIE KNOCK-OUT (arena) ----------
@@ -165,6 +256,12 @@ const Game = {
   },
   retryLevel() {
     const pauseScreen = document.getElementById('pause-screen');
+    if (this.jStage) {                                     // Journey-stage (Mario-level) opnieuw
+      const idx = this.jStage.idx; this.jStage = null;
+      if (pauseScreen) pauseScreen.classList.add('hidden');
+      UI.startJourneyLevel(idx);
+      return;
+    }
     if (this.journey) {                                    // Journey: zelfde level opnieuw
       const idx = this.journey.idx;
       this.vsPaused = false; if (pauseScreen) pauseScreen.classList.add('hidden');
@@ -194,6 +291,7 @@ const Game = {
     const pauseScreen = document.getElementById('pause-screen');
     if (pauseScreen) pauseScreen.classList.add('hidden');
     this.vsPaused = false;
+    this.jStage = null;                                   // Journey-stage netjes loslaten
     if (this.journey || this.state === 'versus') { this.quitVersus(); return; }   // Journey/versus netjes opruimen
     this.state = 'menu';
     Input.clear();
@@ -770,9 +868,13 @@ const Game = {
       return;
     }
 
+    // Journey-stage: checkpoint-vlag + smash-kratten
+    if (this.jStage) this.updateJourneyStage(dt);
+
     // win / verlies
     if (this.player.hp <= 0) {
-      this.lose();
+      if (this.jStage && this.jFlagReached) this.journeyRespawn();   // Mario-checkpoint: terug naar de vlag
+      else this.lose();
     } else if (this.level.isBoss) {
       if (this.boss && !this.boss.alive) this.win();      // baas verslagen
     } else if (this.level.mode === 'horde') {
@@ -787,6 +889,7 @@ const Game = {
 
   win() {
     if (this.state !== 'playing') return;
+    if (this.jStage) return this.finishJourneyStage();   // Journey: eigen beloningen/boss-overgang
     this.state = 'win';
     Storage.clearLevel(this.worldId, this.level.id);
     Storage.setAmmo(this.ammo);                  // kogel-eindstand blijft behouden
@@ -798,6 +901,15 @@ const Game = {
   },
   lose() {
     if (this.state !== 'playing') return;
+    if (this.jStage) {                                   // Journey: verloren vóór de vlag
+      const idx = this.jStage.idx; this.jStage = null;
+      this.state = 'versusOver';
+      document.getElementById('hud').classList.add('hidden');
+      document.getElementById('touch-controls').classList.add('hidden');
+      if (window.Sfx) Sfx.play('lose');
+      UI.showJourneyResult(false, idx, [], [], 0, 1);
+      return;
+    }
     this.state = 'lose';
     // GEEN munten en GEEN kogel-verlies bij een mislukte poging
     // (voorraad blijft zoals aan het begin van dit level)
@@ -1026,6 +1138,21 @@ const Game = {
 
     // checkpoint-vlag halverwege
     if (this.level.midTime) Sprites.drawCheckpoint(ctx, Math.round(this.level.length * 0.5), CONFIG.GROUND_Y, this.time, this.midReached);
+    else if (this.level.midFlag) Sprites.drawCheckpoint(ctx, this.jFlagX, CONFIG.GROUND_Y, this.time, this.jFlagReached);   // Journey: respawn-vlag
+    // Journey: smashbare power-up-kratten
+    if (this.jStage && this.crates) for (const c of this.crates) {
+      if (c.broken) continue;
+      const bobC = Math.round(Math.sin(this.time / 300 + c.x) * 2);
+      const cy = c.y + bobC;
+      Sprites.px(ctx, '#10131c', c.x - 10, cy - 18, 20, 20);          // inkt-rand
+      Sprites.px(ctx, '#a97844', c.x - 9, cy - 17, 18, 18);           // hout
+      Sprites.px(ctx, '#c99a66', c.x - 9, cy - 17, 18, 4);            // licht bovenop
+      Sprites.px(ctx, '#7c5228', c.x - 9, cy - 3, 18, 4);             // schaduw onder
+      Sprites.px(ctx, '#5f3d1c', c.x - 9, cy - 10, 18, 2);            // band
+      Sprites.px(ctx, '#ffd24a', c.x - 3, cy - 14, 6, 3);             // gouden bliksem (power-up!)
+      Sprites.px(ctx, '#ffd24a', c.x - 1, cy - 11, 3, 5);
+      Sprites.px(ctx, '#ffe27a', c.x - 2, cy - 13, 2, 2);
+    }
 
     // partikels (achter entiteiten)
     for (const p of this.particles) {
@@ -3411,8 +3538,8 @@ const Game = {
         const first = !Storage.journeyCleared(idx);
         unlocks = Storage.clearJourneyLevel(idx);
         // eerste keer: volledige beloning; opnieuw spelen: 50 munten (geen xp)
-        const coins = first ? ((jr.lv && jr.lv.boss) ? 150 : 40) : 50;
-        const xp = first ? ((jr.lv && jr.lv.boss) ? 60 : 20) : 0;
+        const coins = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 150 : 40) : 50;
+        const xp = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 60 : 20) : 0;
         Storage.data.coins = (Storage.data.coins || 0) + coins;
         if (xp) Storage.data.xp = (Storage.data.xp || 0) + xp;
         Storage.save();

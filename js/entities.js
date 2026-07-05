@@ -403,7 +403,14 @@ class Player {
     game.spawnMuzzleFlash(hx, hy, this.dir);
   }
 
-  takeDamage(n) {
+  takeDamage(n, src) {
+    // Journey (Mario-regel): een zombie AANRAKEN kost meteen de helft van je max-HP,
+    // daarna ben je heel even onkwetsbaar (anders word je in 1 tel leeggevreten)
+    if (src === 'touch' && this._marioTouch) {
+      if (this._now < (this._touchInvUntil || 0)) return;
+      n = Math.ceil(this.maxHp / 2);
+      this._touchInvUntil = this._now + 1400;
+    }
     if (this._shieldActive) return;          // schild-power-up blokkeert schade
     if (this._shieldUp) {                    // Tygo's schild blokt deze treffer -> 3s cooldown
       this._shieldUp = false;
@@ -611,7 +618,7 @@ class Zombie {
             game.spawnBlood(player.x, player.y - 16);
             player.takeDamage(9999);
           } else {
-            if (game.time - this.lastBite > t.biteCd) { this.lastBite = game.time; player.takeDamage(t.dmg); }
+            if (game.time - this.lastBite > t.biteCd) { this.lastBite = game.time; player.takeDamage(t.dmg, 'touch'); }
           }
         }
       }
@@ -645,9 +652,9 @@ class Zombie {
         const shockR = 86;
         for (let k = 0; k < 14; k++) game.spawnBlood(this.x + (Math.random() - 0.5) * shockR * 2, CONFIG.GROUND_Y);
         if (this.apeTouches(player)) {
-          player.takeDamage(t.dmg); this.lastBite = game.time;            // direct lijf-contact
+          player.takeDamage(t.dmg, 'touch'); this.lastBite = game.time;            // direct lijf-contact
         } else if (player.onGround && Math.abs(this.x - player.x) < shockR) {
-          player.takeDamage(Math.round(t.dmg * 0.6)); this.lastBite = game.time;  // grond-schokgolf
+          player.takeDamage(Math.round(t.dmg * 0.6), 'touch'); this.lastBite = game.time;  // grond-schokgolf
           game.knockPlayer(player.x < this.x ? -1 : 1, 9);
         }
         // razend: vrijwel meteen weer aanvallen (ketting-sprongen)
@@ -666,7 +673,7 @@ class Zombie {
       } else {
         this.apeCd -= dt;
         if (this.apeTouches(player) && game.time - this.lastBite > t.biteCd) {
-          player.takeDamage(t.dmg); this.lastBite = game.time;  // alleen bij echt contact
+          player.takeDamage(t.dmg, 'touch'); this.lastBite = game.time;  // alleen bij echt contact
         } else if (this.apeCd <= 0 && dist > 30) {
           this.crouchT = enraged ? 190 : 280;             // korter telegraaf bij razend
           this.apeCd = enraged ? 600 + Math.random() * 500 : 1400 + Math.random() * 900;
@@ -753,7 +760,7 @@ class Zombie {
   bite(game, player) {
     this.lastBite = game.time;
     if (!this.reachesVertically(player)) return;   // speler sprong eroverheen -> mis
-    player.takeDamage(this.type.dmg);
+    player.takeDamage(this.type.dmg, 'touch');
     // brutes slaan altijd terug, andere zombies met een kans
     const always = this.type.knockback;
     if (always || Math.random() < (this.type.knockChance || 0)) {
