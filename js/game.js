@@ -169,8 +169,10 @@ const Game = {
     while (x < end) {
       const nearFlag = Math.abs(x - flagX) < 130;
       // ---- RAVIJN-GAT: veel groter, alleen over via smallere/hogere stapstenen (val = respawn) ----
-      if (x > 340 && !nearFlag && rnd() < (0.52 + diff * 0.16)) {
-        const pitW = Math.round(150 + rnd() * 140 + diff * 130);          // ~150..420 (fors groter, groeit per level)
+      const pitW0 = Math.round(150 + rnd() * 140 + diff * 130);           // ~150..420
+      const gatOverVlag = (x < flagX + 90) && (x + pitW0 > flagX - 90);    // gat zou de vlag overlappen -> niet doen
+      if (x > 340 && !nearFlag && !gatOverVlag && rnd() < (0.52 + diff * 0.16)) {
+        const pitW = pitW0;
         const x0 = Math.round(x), x1 = Math.round(x + pitW);
         this.pits.push({ x0, x1 });
         const gapStep = 86 + diff * 20;                                    // stapsteen-afstand (moeilijker later)
@@ -208,6 +210,8 @@ const Game = {
       this.crates.push({ x: Math.round(cx2), y: GY - 34, kind: kinds[(n * 3 + crateN * 7) % kinds.length], broken: false });
       crateN++;
     }
+    // de midden-vlag mag niet dóór een platform staan -> platforms vlakbij de vlag weghalen
+    this.platforms = this.platforms.filter((pf) => Math.abs(pf.x - flagX) > pf.w / 2 + 24);
     // vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
     if (placeEnemies && n >= 6) {
       const birds = 1 + Math.floor((n - 6) / 3);
@@ -1076,7 +1080,8 @@ const Game = {
 
     // win / verlies
     if (this.player.hp <= 0) {
-      if (this.jStage) this.journeyRespawn();   // Mario-checkpoint: respawn bij de vlag (of start) — parkour blijf je proberen
+      if (this.jStage && this.coop) this.journeyRespawn();     // co-op: auto-respawn (partner speelt door)
+      else if (this.jStage) { this.state = 'jdead'; Input.clear(); if (window.UI) UI.showJourneyDeath(this.jFlagReached); }   // solo: dood-scherm (checkpoint of menu)
       else this.lose();
     } else if (this.level.isBoss) {
       if (this.boss && !this.boss.alive) this.win();      // baas verslagen

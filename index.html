@@ -11,9 +11,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0d0f14" />
   <title>Tiny Power Smashers</title>
-  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu80" />
-  <link rel="apple-touch-icon" href="icon.svg?v=menu80" />
-  <link rel="stylesheet" href="css/style.css?v=menu80" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu81" />
+  <link rel="apple-touch-icon" href="icon.svg?v=menu81" />
+  <link rel="stylesheet" href="css/style.css?v=menu81" />
 </head>
 <body>
   <div id="game-root">
@@ -67,7 +67,7 @@
     </div>
 
     <!-- ===== Splash bij opstarten (logo, fadet vanzelf weg) ===== -->
-    <div id="splash"><img src="logo.svg?v=menu80" alt="Tiny Power Smashers" /></div>
+    <div id="splash"><img src="logo.svg?v=menu81" alt="Tiny Power Smashers" /></div>
 
     <!-- ===== Canvas (de spelwereld) ===== -->
     <canvas id="game-canvas"></canvas>
@@ -129,7 +129,7 @@
     <div id="menu-screen" class="screen">
       <div class="menu-frame">
         <header class="menu-top">
-          <img class="menu-logo-img" src="logo.svg?v=menu80" alt="Tiny Power Smashers" />
+          <img class="menu-logo-img" src="logo.svg?v=menu81" alt="Tiny Power Smashers" />
           <div class="menu-hud">
             <span class="menu-coins-top">
               <svg class="px-icon" viewBox="0 0 8 8" width="16" height="16" shape-rendering="crispEdges"><rect x="2" y="1" width="4" height="6" fill="#caa12e"/><rect x="1" y="2" width="6" height="4" fill="#ffd24a"/><rect x="3" y="2" width="1" height="4" fill="#fff0a8"/></svg>
@@ -529,6 +529,18 @@
       </div>
     </div>
 
+    <!-- ===== Journey: dood-scherm (checkpoint of menu) ===== -->
+    <div id="jdeath-screen" class="overlay hidden">
+      <div class="overlay-box">
+        <h2 class="screen-title lose">AF!</h2>
+        <p class="screen-sub" id="jdeath-sub">Je bent verslagen.</p>
+        <div class="menu-buttons">
+          <button id="btn-jdeath-checkpoint" class="big-btn"><svg class="ic"><use href="#ic-flag"/></svg> Start vanaf checkpoint</button>
+          <button id="btn-jdeath-menu" class="big-btn secondary"><svg class="ic"><use href="#ic-home"/></svg> Terug naar menu</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== Draai-je-telefoon hint (portrait op touch) ===== -->
     <div id="rotate-hint">
       <div class="rotate-icon"><svg class="ic"><use href="#ic-phone"/></svg><svg class="ic"><use href="#ic-refresh"/></svg></div>
@@ -536,17 +548,17 @@
     </div>
   </div>
 
-  <script src="vendor/supabase.min.js?v=menu80"></script>
-  <script src="js/config.js?v=menu80"></script>
-  <script src="js/storage.js?v=menu80"></script>
-  <script src="js/audio.js?v=menu80"></script>
-  <script src="js/net.js?v=menu80"></script>
-  <script src="js/input.js?v=menu80"></script>
-  <script src="js/sprites.js?v=menu80"></script>
-  <script src="js/menubg.js?v=menu80"></script>
-  <script src="js/entities.js?v=menu80"></script>
-  <script src="js/ui.js?v=menu80"></script>
-  <script src="js/game.js?v=menu80"></script>
-  <script src="js/main.js?v=menu80"></script>
+  <script src="vendor/supabase.min.js?v=menu81"></script>
+  <script src="js/config.js?v=menu81"></script>
+  <script src="js/storage.js?v=menu81"></script>
+  <script src="js/audio.js?v=menu81"></script>
+  <script src="js/net.js?v=menu81"></script>
+  <script src="js/input.js?v=menu81"></script>
+  <script src="js/sprites.js?v=menu81"></script>
+  <script src="js/menubg.js?v=menu81"></script>
+  <script src="js/entities.js?v=menu81"></script>
+  <script src="js/ui.js?v=menu81"></script>
+  <script src="js/game.js?v=menu81"></script>
+  <script src="js/main.js?v=menu81"></script>
 </body>
 </html>

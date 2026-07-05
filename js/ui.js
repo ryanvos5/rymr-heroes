@@ -76,6 +76,9 @@ const UI = {
     $('btn-resume').onclick = () => Game.togglePause();
     $('btn-restart').onclick = () => Game.retryLevel();
     $('btn-quit').onclick = () => Game.quitToMenu();
+    // ---- Journey dood-scherm ----
+    $('btn-jdeath-checkpoint').onclick = () => this.journeyCheckpointRestart();
+    $('btn-jdeath-menu').onclick = () => { document.getElementById('jdeath-screen').classList.add('hidden'); Game.quitToMenu(); };
 
     // nieuw spel (wist alle voortgang)
     $('btn-newgame').onclick = () => {
@@ -362,6 +365,20 @@ const UI = {
     Game.startJourney(n);
     this.el.pause.classList.remove('hidden');                       // Journey heeft een pauzeknop (singleplayer)
     document.getElementById('btn-vs-quit').classList.add('hidden'); // pauzeknop vervangt de kruis-knop
+  },
+  // Journey-dood: kies checkpoint of menu
+  showJourneyDeath(flagReached) {
+    const sub = document.getElementById('jdeath-sub');
+    const btn = document.getElementById('btn-jdeath-checkpoint');
+    if (sub) sub.textContent = flagReached ? 'Je bent verslagen — je kunt vanaf de vlag verder.' : 'Je bent verslagen.';
+    if (btn) btn.innerHTML = this._ic('flag') + (flagReached ? ' Start vanaf checkpoint' : ' Opnieuw (vanaf begin)');
+    document.getElementById('jdeath-screen').classList.remove('hidden');
+  },
+  journeyCheckpointRestart() {
+    document.getElementById('jdeath-screen').classList.add('hidden');
+    if (typeof Game.journeyRespawn === 'function') Game.journeyRespawn();
+    Game.state = 'playing';
+    if (window.Input) Input.clear();
   },
   showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore) {
     const levels = JOURNEY[1].levels, total = levels.length, hasNext = won && idx < total;
