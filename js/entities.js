@@ -688,11 +688,12 @@ class Zombie {
     const dist = Math.abs(dx);
     this.dir = dx > 0 ? -1 : 1;
 
-    // ---- BOT-MENSAAP: op zijn kop springen brengt zijn HP omlaag (+ je stuitert) ----
+    // ---- BOT-MENSAAP: alleen ECHT op zijn kop springen (smalle band) telt als stomp ----
     if (this.brawler && player.vy > 1 && !player.dead) {
       const headTop = this.cy - this.halfH;
-      if (Math.abs(this.x - player.x) < this.halfW + player.w / 2 + 3 &&
-          player.y <= headTop + 14 && (player.y - player.vy * s) <= headTop + 14 &&
+      if (Math.abs(this.x - player.x) < this.halfW + player.w / 2 + 2 &&
+          player.y >= headTop - 6 && player.y <= headTop + 16 &&      // voeten in de kop-zone (niet ver erboven)
+          (player.y - player.vy * s) < headTop + 6 &&                 // kwam net van bovenaf naar beneden
           game.time - (this._stompCd || 0) > 260) {
         this._stompCd = game.time;
         this.takeDamage(Math.max(1, Math.round(this.maxHp * 0.22)), (this.x >= player.x ? 1 : -1), game, 0);   // ~5 stomps
