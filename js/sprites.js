@@ -10,6 +10,47 @@ const Sprites = {
     ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   },
 
+  // kleur lichter/donkerder maken (f > 0 = lichter, f < 0 = donkerder), voor 2.5D-shading
+  _shade(hex, f) {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = (v) => Math.max(0, Math.min(255, Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f))));
+    return '#' + ((ch(n >> 16) << 16) | (ch((n >> 8) & 255) << 8) | ch(n & 255)).toString(16).padStart(6, '0');
+  },
+
+  // ---- 2.5D "inkt-outline": teken een figuur in een offscreen, blit eerst het donkere
+  // silhouet op 4 offsets (de outline) en dan de figuur er bovenop. Geeft de cartoon-look. ----
+  _inkInit() {
+    if (this._ocA) return true;
+    try {
+      this._ocA = document.createElement('canvas'); this._ocA.width = 160; this._ocA.height = 160;
+      this._ocB = document.createElement('canvas'); this._ocB.width = 160; this._ocB.height = 160;
+      this._ocAx = this._ocA.getContext('2d'); this._ocBx = this._ocB.getContext('2d');
+      this._ocAx.imageSmoothingEnabled = false; this._ocBx.imageSmoothingEnabled = false;
+      return true;
+    } catch (e) { this._ocA = null; return false; }
+  },
+  // anchor (ax,ay) van de figuur wordt op (80,110) in de offscreen gelegd
+  ink(ctx, ax, ay, drawFn) {
+    if (!this._inkInit()) { drawFn(ctx); return; }        // vangnet: zonder offscreen gewoon plat tekenen
+    const A = this._ocAx, B = this._ocBx;
+    A.clearRect(0, 0, 160, 160);
+    A.save(); A.translate(80 - Math.round(ax), 110 - Math.round(ay));
+    drawFn(A);
+    A.restore();
+    // silhouet in outline-kleur
+    B.clearRect(0, 0, 160, 160);
+    B.drawImage(this._ocA, 0, 0);
+    B.globalCompositeOperation = 'source-in';
+    B.fillStyle = '#10131c'; B.fillRect(0, 0, 160, 160);
+    B.globalCompositeOperation = 'source-over';
+    const dx = Math.round(ax) - 80, dy = Math.round(ay) - 110;
+    const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this._ocB, dx - 1, dy); ctx.drawImage(this._ocB, dx + 1, dy);   // outline: 4 richtingen
+    ctx.drawImage(this._ocB, dx, dy - 1); ctx.drawImage(this._ocB, dx, dy + 1);
+    ctx.drawImage(this._ocA, dx, dy);                                             // figuur er bovenop
+    ctx.imageSmoothingEnabled = sm;
+  },
+
   // vliegende draak (drakenei-powerup) — gecentreerd op (cx,cy), klappert met de vleugel
   drawDragon(ctx, cx, cy, dir, t) {
     ctx.save();
@@ -39,6 +80,12 @@ const Sprites = {
      pose = { walkPhase, airborne, ducking, attacking, weapon } */
   drawCharacter(ctx, cx, footY, dir, pal, pose) {
     pose = pose || {};
+    // 2.5D: eerst het donkere inkt-silhouet (outline), dan de figuur — cartoon-look
+    if (!pose.noInk) {
+      const self = this, p2 = Object.assign({}, pose, { noInk: true });
+      this.ink(ctx, cx, footY, (c) => self.drawCharacter(c, cx, footY, dir, pal, p2));
+      return;
+    }
     // platgedrukt (steen-powerup): hele figuur in elkaar gedrukt
     if (pose.squash) { ctx.save(); ctx.translate(cx, footY); ctx.scale(1.5, 0.45); ctx.translate(-cx, -footY); }
     const duck = pose.ducking;
@@ -94,14 +141,18 @@ const Sprites = {
     drawLeg(hipX, offB);                                    // achterbeen
     drawLeg(hipX, offA);                                    // voorbeen
 
-    // --- torso (shirt) ---
+    // --- torso (shirt) — met licht-van-boven shading (2.5D) ---
     this.px(ctx, pal.shirt, cx - bh, torsoTop, bh * 2, torsoH);
-    this.px(ctx, pal.shirtDark, cx - bh, torsoTop, 2, torsoH);             // schaduw
+    this.px(ctx, this._shade(pal.shirt, 0.28), cx - bh + 2, torsoTop, bh * 2 - 2, 1);   // highlight bovenop
+    this.px(ctx, pal.shirtDark, cx - bh, torsoTop, 2, torsoH);             // schaduw (schaduwkant)
+    this.px(ctx, this._shade(pal.shirt, -0.25), cx - bh, torsoTop + torsoH - 2, bh * 2, 2);   // donkere onderrand
     if (bulky) this.px(ctx, pal.shirtDark, cx - bh, torsoTop, bh * 2, 2);  // brede schouders
 
-    // --- hoofd ---
+    // --- hoofd — met lichtkant (2.5D) ---
     this.px(ctx, pal.skin, cx - hh, headTop, hh * 2, headH);
+    this.px(ctx, this._shade(pal.skin, 0.22), cx + (dir > 0 ? hh - 2 : -hh + 1), headTop + 1, 1, headH - 3);   // highlight op de kijk-/lichtkant
     this.px(ctx, pal.skinDark, cx - hh, headTop, 2, headH);
+    this.px(ctx, this._shade(pal.skin, -0.18), cx - hh + 2, headTop + headH - 1, hh * 2 - 2, 1);               // kin-schaduw
 
     // --- haar ---
     if (bald) {
@@ -392,6 +443,10 @@ const Sprites = {
 
   /* ---------- ZOMBIE (dispatch op type) ---------- */
   drawZombie(ctx, cx, footY, dir, z) {
+    const self = this;
+    this.ink(ctx, cx, footY, (c) => self._drawZombieRaw(c, cx, footY, dir, z));   // 2.5D inkt-outline
+  },
+  _drawZombieRaw(ctx, cx, footY, dir, z) {
     const id = (z && z.type) ? z.type.id : 'walker';
     if (id === 'boss') return this.drawBoss(ctx, cx, footY, dir, z);
     if (id === 'ape') return this.drawApe(ctx, cx, footY, dir, z);
@@ -476,6 +531,7 @@ const Sprites = {
   drawPlatform(ctx, cx, y, w, style) {
     const x = Math.round(cx - w / 2);
     w = Math.round(w);
+    this.px(ctx, '#10131c', x - 1, y - 2, w + 2, 18);   // 2.5D: donkere inkt-rand rond de hele plaat
     if (style === 'wood') {
       this.px(ctx, '#6b4a2b', x, y - 1, w, 2);   // plankrand
       this.px(ctx, '#8a5e36', x, y + 1, w, 3);   // licht hout
