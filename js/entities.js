@@ -566,14 +566,32 @@ class Zombie {
 
     if (this.emerging > 0) this.emerging -= dt;
 
-    // ---- JOURNEY-PATROUILLE (mensapen/vogels): heen en weer, GEEN achtervolging; aanraking = schade ----
+    // ---- JOURNEY-PATROUILLE (mensapen/vogels): heen en weer; latere vogels achtervolgen je even ----
     if (this.patrol) {
       const s2 = game.dtScale;
+      const isBird = t.id === 'bird';
       this.dir = this.dir || 1;
-      this.x += this.dir * this.speed * s2;
-      if (this.x <= this.patrolL) { this.x = this.patrolL; this.dir = 1; }
-      else if (this.x >= this.patrolR) { this.x = this.patrolR; this.dir = -1; }
-      if (this.flying) this.y = this.patrolY + Math.sin(game.time / 380 + this.tint * 2) * 7;   // zweef-bob
+      // CHASER-VOGELS (latere levels): af en toe een tijdje achter de speler aan vliegen
+      if (this.chaser && isBird && !player.dead) {
+        if (Math.abs(player.x - this.x) < 160 && game.time > (this.chaseUntil || 0) && game.time > (this._chaseCd || 0)) {
+          this.chaseUntil = game.time + 2800; this._chaseCd = game.time + 5200;   // 2,8s jagen, dan ~5s rust
+          if (window.Sfx) Sfx.play('monkey');
+        }
+      }
+      const chasing = this.chaser && isBird && game.time < (this.chaseUntil || 0) && !player.dead;
+      if (chasing) {
+        // recht op de speler af duiken (x én y)
+        const dxp = player.x - this.x, dyp = (player.y - 14) - this.y, d = Math.hypot(dxp, dyp) || 1;
+        this.x += (dxp / d) * (this.speed * 1.35) * s2;
+        this.y += (dyp / d) * (this.speed * 1.35) * 0.85 * s2 + Math.sin(game.time / 120) * 0.4;
+        this.dir = dxp < 0 ? -1 : 1;
+      } else {
+        // normale patrouille heen en weer
+        this.x += this.dir * this.speed * s2;
+        if (this.x <= this.patrolL) { this.x = this.patrolL; this.dir = 1; }
+        else if (this.x >= this.patrolR) { this.x = this.patrolR; this.dir = -1; }
+        if (this.flying) this.y += ((this.patrolY + Math.sin(game.time / 380 + this.tint * 2) * 7) - this.y) * 0.1;   // terug naar de zweef-hoogte
+      }
       // aanraking met de speler
       if (player.hp > 0) {
         const dxp = Math.abs(this.x - player.x);
@@ -590,13 +608,13 @@ class Zombie {
             if (window.Sfx) Sfx.play('stomp');
             return;
           }
-          // anders: zij-/onderkant aanraken -> Mario-schade (helft HP)
+          // anders aanraken: VOGEL = meteen dood (1 hit), aap = helft HP
           const hp0 = player.hp;
-          player.takeDamage(t.dmg, 'touch');
+          if (isBird) player.takeDamage(9999); else player.takeDamage(t.dmg, 'touch');
           if (player.hp < hp0) {
             game.shake = Math.max(game.shake, 8);
             game.spawnBlood(player.x, player.y - 16);
-            game.knockPlayer(player.x < this.x ? -1 : 1, 6);
+            if (!isBird) game.knockPlayer(player.x < this.x ? -1 : 1, 6);
             if (window.Sfx) Sfx.play('hit');
           }
         }

@@ -151,11 +151,11 @@ const Game = {
     this.jEnemySpawns = [];                                       // specs bewaren om bij respawn opnieuw te spawnen
     const kinds = ['health', 'rage', 'speed', 'shield', 'fireball'];
     let crateN = 0;
-    const place = (type, x, y, range) => {
+    const place = (type, x, y, range, chaser) => {
       const dir = rnd() < 0.5 ? -1 : 1;
-      this.jEnemySpawns.push({ type: type.id, x: Math.round(x), y: Math.round(y), range: Math.round(range), dir });
+      this.jEnemySpawns.push({ type: type.id, x: Math.round(x), y: Math.round(y), range: Math.round(range), dir, chaser: !!chaser });
       if (!placeEnemies) return;
-      this._spawnJourneyEnemy(type.id, Math.round(x), Math.round(y), Math.round(range), dir);
+      this._spawnJourneyEnemy(type.id, Math.round(x), Math.round(y), Math.round(range), dir, !!chaser);
     };
     const clear = (x, y) => !this.platforms.some((pf) => Math.abs(pf.x - x) < pf.w / 2 + 12 && Math.abs(pf.y - y) < 20) &&
                             !this.pits.some((p) => x > p.x0 - 12 && x < p.x1 + 12);
@@ -221,22 +221,23 @@ const Game = {
       for (let i = 0; i < birds; i++) {
         const bx = Math.round(lv.length * (0.28 + i * (0.5 / Math.max(1, birds))) + (rnd() - 0.5) * 100);
         const by = 60 + Math.round(rnd() * 42);
-        place(ZOMBIE_TYPES.bird, Math.max(220, Math.min(lv.length - 180, bx)), by, 60 + Math.round(rnd() * 50));
+        place(ZOMBIE_TYPES.bird, Math.max(220, Math.min(lv.length - 180, bx)), by, 60 + Math.round(rnd() * 50), n >= 9);   // vanaf lvl 9: achtervolgen
       }
     }
   },
   // één patrouille-vijand plaatsen vanuit een spec (nieuw + bij respawn)
-  _spawnJourneyEnemy(typeId, x, y, range, dir) {
+  _spawnJourneyEnemy(typeId, x, y, range, dir, chaser) {
     const z = new Zombie(x, this.level, ZOMBIE_TYPES[typeId]);
     z.x = x; z.patrolL = x - range; z.patrolR = x + range;
     z.y = y; z.patrolY = y; z.onGround = !z.type.flying; z.vy = 0; z.dir = dir || 1;
+    z.chaser = !!chaser;
     this.zombies.push(z);
   },
   // bij respawn: alle al-gedode apen komen weer terug (op hun oorspronkelijke plek)
   _respawnJourneyEnemies() {
     if (!this.jEnemySpawns || this.coop) return;                 // co-op: host houdt de vijanden bij
     this.zombies = this.zombies.filter((z) => !z.patrol);        // dode + levende patrouille-apen weg
-    for (const s of this.jEnemySpawns) this._spawnJourneyEnemy(s.type, s.x, s.y, s.range, s.dir);
+    for (const s of this.jEnemySpawns) this._spawnJourneyEnemy(s.type, s.x, s.y, s.range, s.dir, s.chaser);
   },
 
   // BOT-MENSAAP: verschijnt op de meeste levels halverwege en moet verslagen (Power Smash-stijl)
