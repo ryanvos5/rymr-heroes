@@ -1615,7 +1615,7 @@ const UI = {
   },
 
   // ---------- SHOP (wapens / characters / hoeden in tabs) ----------
-  openShop() { if (!this._shopTab || this._shopTab === 'weapons') this._shopTab = 'chars'; this.renderShop(); this.show('shop'); },
+  openShop() { if (!this._shopTab || this._shopTab === 'weapons') this._shopTab = 'chars'; this.show('shop'); this.renderShop(); },
 
   renderShop() {
     const tab = this._shopTab || 'chars';
@@ -1626,6 +1626,7 @@ const UI = {
     else if (tab === 'hats') this.renderHatCards();
     else if (tab === 'powerups') this.renderPowerupCards(this.el.shopGrid, 'shop');
     else this.renderWeaponCards();
+    this._galleryify(this.el.shopGrid, 'shop_' + tab);
   },
 
   // power-up-kaartjes: KOOP (meermaals) in de shop; in de inventaris = loadout aan/uit + aantal
@@ -1673,7 +1674,7 @@ const UI = {
   },
 
   // ---------- INVENTARIS (3 tabs: power-ups / characters / hoeden) ----------
-  openInventory() { if (!this._invTab) this._invTab = 'powerups'; this.renderInventory(); this.show('inventory'); },
+  openInventory() { if (!this._invTab) this._invTab = 'powerups'; this.show('inventory'); this.renderInventory(); },
   renderInventory() {
     const tab = this._invTab || 'powerups';
     document.querySelectorAll('#inv-tabs .shop-tab').forEach((b) => b.classList.toggle('active', b.dataset.invtab === tab));
@@ -1685,7 +1686,82 @@ const UI = {
       this.renderPowerupCards(grid, 'inventory');
     } else if (tab === 'chars') { hint.classList.add('hidden'); this.renderOwnedChars(grid); }
     else { hint.classList.add('hidden'); this.renderOwnedHats(grid); }
+    this._galleryify(grid, 'inv_' + tab);
   },
+
+  // ---------- HORIZONTALE GALERIJ (shop + inventaris) ----------
+  // Zet de reeds gebouwde .shop-card kinderen om in een carrousel:
+  // 1 item groot in het midden (2.5D), buren kleiner, pijltjes om te scrollen.
+  _galleryify(container, key) {
+    const cards = Array.prototype.slice.call(container.children).filter((el) => el.classList && el.classList.contains('shop-card'));
+    if (!cards.length) return;                     // niets om te tonen (bv. hint-tekst) — laat staan
+    container.innerHTML = '';
+    container.classList.add('gallery');
+
+    this._galIdx = this._galIdx || {};
+    let cur = Math.min(cards.length - 1, Math.max(0, this._galIdx[key] || 0));
+
+    const viewport = document.createElement('div'); viewport.className = 'gal-viewport';
+    const track = document.createElement('div'); track.className = 'gal-track';
+    const slides = cards.map((card) => {
+      const s = document.createElement('div'); s.className = 'gal-slide';
+      s.appendChild(card); track.appendChild(s); return s;
+    });
+    viewport.appendChild(track);
+
+    const prev = document.createElement('button'); prev.className = 'gal-arrow left'; prev.type = 'button';
+    prev.innerHTML = this._ic('arrow-l');
+    const next = document.createElement('button'); next.className = 'gal-arrow right'; next.type = 'button';
+    next.innerHTML = this._ic('arrow-r');
+
+    const dots = document.createElement('div'); dots.className = 'gal-dots';
+    const dotEls = cards.map((_, i) => {
+      const d = document.createElement('span'); d.className = 'gal-dot'; d.dataset.i = i;
+      d.onclick = () => { cur = i; apply(); };
+      dots.appendChild(d); return d;
+    });
+
+    container.appendChild(prev);
+    container.appendChild(viewport);
+    container.appendChild(next);
+    container.appendChild(dots);
+
+    const apply = () => {
+      cur = Math.min(slides.length - 1, Math.max(0, cur));
+      this._galIdx[key] = cur;
+      slides.forEach((s, i) => {
+        const active = i === cur;
+        s.classList.toggle('active', active);
+        s.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      dotEls.forEach((d, i) => d.classList.toggle('on', i === cur));
+      prev.disabled = cur <= 0;
+      next.disabled = cur >= slides.length - 1;
+      const sw = slides[0].offsetWidth || (viewport.offsetWidth * 0.6);
+      const tx = viewport.offsetWidth / 2 - cur * sw - sw / 2;
+      track.style.transform = 'translateX(' + tx + 'px)';
+    };
+
+    prev.onclick = () => { if (cur > 0) { cur--; apply(); } };
+    next.onclick = () => { if (cur < slides.length - 1) { cur++; apply(); } };
+
+    // swipe/sleep-ondersteuning (mobiel)
+    let dragX = null;
+    viewport.addEventListener('touchstart', (e) => { dragX = e.touches[0].clientX; }, { passive: true });
+    viewport.addEventListener('touchend', (e) => {
+      if (dragX == null) return;
+      const dx = (e.changedTouches[0].clientX - dragX);
+      if (dx < -30 && cur < slides.length - 1) { cur++; apply(); }
+      else if (dx > 30 && cur > 0) { cur--; apply(); }
+      dragX = null;
+    }, { passive: true });
+
+    // meet & positioneer na layout (viewport moet zichtbaar zijn)
+    this._galApply = apply;
+    apply();
+    requestAnimationFrame(apply);
+  },
+
   _spriteCard(palette, opts, nameHtml, owned) {
     const card = document.createElement('div');
     card.className = 'shop-card' + (owned ? ' owned' : '');

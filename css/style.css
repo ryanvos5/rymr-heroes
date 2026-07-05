@@ -1307,6 +1307,88 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .shop-buy.cant { background: #2a2f3a; color: var(--text-dim); border-color: #3a4456; cursor: not-allowed; }
 .shop-card.owned { border-color: var(--accent-dark); }
 
+/* ====== Horizontale galerij (shop + inventaris carrousel) ====== */
+.shop-grid.gallery {
+  display: block;
+  position: relative;
+  overflow: visible;
+  padding: 0 46px;          /* zijgoten waar de pijlen in staan (buiten de viewport) */
+  max-width: 560px;
+}
+.gal-viewport { overflow: hidden; width: 100%; padding: 10px 0 6px; }
+.gal-track {
+  display: flex;
+  align-items: stretch;
+  transition: transform .34s cubic-bezier(.22, .61, .36, 1);
+  will-change: transform;
+}
+.gal-slide {
+  flex: 0 0 auto;
+  width: min(58%, 230px);
+  display: flex;
+  padding: 0 5px;
+  transform: scale(.74);
+  opacity: .55;
+  filter: saturate(.65) brightness(.8);
+  transition: transform .34s cubic-bezier(.22, .61, .36, 1), opacity .34s, filter .34s;
+  pointer-events: none;
+}
+.gal-slide.active {
+  transform: scale(1);
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+}
+.gal-slide .shop-card {
+  width: 100%;
+  margin: 0;
+}
+.gal-slide.active .shop-card {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .5);
+  border-color: var(--gold);
+}
+.gal-slide.active .shop-card canvas { transform: scale(1.18); transform-origin: center bottom; }
+.gal-arrow {
+  position: absolute;
+  top: 42%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 2px solid #4a5568;
+  background: rgba(16, 20, 28, .92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+}
+.gal-arrow.left { left: 1px; }
+.gal-arrow.right { right: 1px; }
+.gal-arrow .ic { width: 24px; height: 24px; }
+.gal-arrow:disabled { opacity: .28; cursor: default; }
+.gal-arrow:not(:disabled):active { transform: translateY(-50%) scale(.9); }
+.gal-dots {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.gal-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #3a4456;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.gal-dot.on { background: var(--gold); transform: scale(1.25); }
+@media (max-width: 620px) {
+  .shop-grid.gallery { padding: 0 38px; }
+  .gal-slide { width: min(60%, 200px); }
+  .gal-arrow { width: 36px; height: 36px; }
+}
+
 .result-stats {
   background: var(--panel);
   border: 2px solid #3a4456;
