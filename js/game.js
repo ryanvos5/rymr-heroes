@@ -130,70 +130,79 @@ const Game = {
     this.player._marioTouch = true;                     // aanraking = helft HP (zie Player.takeDamage)
     this.player.maxJumps = 2; this.player.jumps = 2;    // dubbel-jump hoort bij het eiland
     this.tutorials = []; this.tutorialMsg = ''; this.tutorialUntil = 0;   // stads-tutorials horen hier niet
-    // checkpoint-vlag halverwege (respawn-punt)
+    // checkpoint-vlag halverwege (respawn-punt) — staat op vaste grond
     this.jFlagX = Math.round(lv.length * 0.5);
     this.jFlagReached = false;
-    // smashbare power-up-kratten, verspreid over het level (deterministisch: co-op ziet dezelfde inhoud)
-    this.crates = [];
-    const kinds = ['health', 'rage', 'speed', 'shield', 'fireball'];
-    const nC = lv.crates || 0;
-    for (let i = 0; i < nC; i++) {
-      let x = Math.round(lv.length * (0.16 + (i + 0.5) * (0.72 / Math.max(1, nC))));
-      if (Math.abs(x - this.jFlagX) < 70) x += 100;     // niet óp de vlag
-      this.crates.push({ x, y: CONFIG.GROUND_Y - 34 - ((i % 2) ? 12 : 0), kind: kinds[(n * 3 + i * 7) % kinds.length], broken: false });
-    }
-    // Mario-layout: zwevende platforms + patrouille-vijanden (deterministisch, zodat co-op gelijk is)
-    if (coopRole !== 'guest') this._buildJourneyLayout(lv, n);   // gast krijgt de vijanden via sync
-    else this.platforms = this._journeyPlatforms(lv, n);         // platforms tekent de gast zelf (identiek)
+    // Mario-layout: grond met ravijn-gaten (parkour!), zwevende platforms, kratten + patrouille-vijanden.
+    // Volledig deterministisch, zodat co-op host + gast exact hetzelfde level zien.
+    this._buildJourneyLayout(lv, n, coopRole !== 'guest');   // gast plaatst geen vijanden (krijgt ghosts via sync)
     if (window.Sfx) Sfx.music(lv.theme === 'beach' ? 'beach' : 'jungle');
   },
 
-  // deterministische platform-lijst voor een Journey-level (Mario-blokken boven de grond)
-  _journeyPlatforms(lv, n) {
-    let seed = n * 2749 + 13;
-    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    const plats = [];
-    let x = 240;
-    while (x < lv.length - 220) {
-      const w = Math.round(42 + rnd() * 34);
-      const py = Math.round(CONFIG.GROUND_Y - (30 + rnd() * 56));           // 30..86 boven de grond (haalbaar met dubbel-jump)
-      plats.push({ x: Math.round(x), y: py, w });
-      x += w + 90 + Math.floor(rnd() * 120);
-    }
-    return plats;
-  },
-  // plaats platforms + patrouille-apen/vogels/boemerang-apen
-  _buildJourneyLayout(lv, n) {
-    this.platforms = this._journeyPlatforms(lv, n);
+  // bouwt platforms + ravijn-gaten + kratten (+ patrouille-vijanden als placeEnemies)
+  _buildJourneyLayout(lv, n, placeEnemies) {
     let seed = n * 6151 + 29;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    const GY = CONFIG.GROUND_Y;
-    const place = (type, x, y, range, onPlat) => {
+    const GY = CONFIG.GROUND_Y, flagX = this.jFlagX, end = lv.length - 200;
+    this.platforms = []; this.pits = []; this.crates = [];
+    const kinds = ['health', 'rage', 'speed', 'shield', 'fireball'];
+    let crateN = 0;
+    const place = (type, x, y, range) => {
+      if (!placeEnemies) return;
       const z = new Zombie(x, this.level, type);
       z.x = x; z.patrolL = Math.round(x - range); z.patrolR = Math.round(x + range);
       z.y = y; z.patrolY = y; z.onGround = !type.flying; z.vy = 0; z.dir = rnd() < 0.5 ? -1 : 1;
       this.zombies.push(z);
     };
-    // 1) grond-apen op intervallen (soms boemerang-aap vanaf lvl 9)
-    const groundCount = Math.min(9, 3 + Math.floor(n / 1.7));
-    for (let i = 0; i < groundCount; i++) {
-      let x = Math.round(lv.length * (0.16 + (i + 0.5) * (0.74 / groundCount)) + (rnd() - 0.5) * 60);
-      if (Math.abs(x - this.jFlagX) < 60) x += 90;                          // niet op de vlag
-      x = Math.max(180, Math.min(lv.length - 140, x));
-      const boom = n >= 9 && rnd() < 0.34;
-      place(boom ? ZOMBIE_TYPES.boomape : ZOMBIE_TYPES.apeling, x, GY, 30 + Math.round(rnd() * 24), false);
+    const clear = (x, y) => !this.platforms.some((pf) => Math.abs(pf.x - x) < pf.w / 2 + 12 && Math.abs(pf.y - y) < 20) &&
+                            !this.pits.some((p) => x > p.x0 - 12 && x < p.x1 + 12);
+    const addCrate = (x, y) => {
+      x = Math.round(x); if (!clear(x, y)) x += 62;                         // niet dóór een platform/gat
+      if (clear(x, y)) { this.crates.push({ x, y: Math.round(y), kind: kinds[(n * 3 + crateN * 7) % kinds.length], broken: false }); crateN++; }
+    };
+
+    let x = 200;                                                            // veilig startstuk (geen gat)
+    while (x < end) {
+      const nearFlag = Math.abs(x - flagX) < 130;
+      // ---- RAVIJN-GAT: alleen over te steken via stapsteen-platforms (val = respawn) ----
+      if (x > 340 && !nearFlag && rnd() < 0.42) {
+        const pitW = 84 + Math.floor(rnd() * 78);                          // 84..162 (dubbel-jump haalbaar)
+        const x0 = Math.round(x), x1 = Math.round(x + pitW);
+        this.pits.push({ x0, x1 });
+        const steps = Math.max(1, Math.round(pitW / 74));
+        for (let s = 0; s < steps; s++) {
+          const px = x0 + pitW * (s + 0.5) / steps;
+          const py = GY - (24 + Math.floor(rnd() * 26));
+          this.platforms.push({ x: Math.round(px), y: Math.round(py), w: 40 });
+          if (rnd() < 0.26) place(ZOMBIE_TYPES.apeling, Math.round(px), py, 8);   // aap op een stapsteen
+        }
+        x = x1 + 70 + Math.floor(rnd() * 60);
+        continue;
+      }
+      // ---- VASTE SECTIE: soms verhoogd platform + patrouille-apen + een krat ----
+      const secW = 150 + Math.floor(rnd() * 130), cx = x + secW * 0.5;
+      if (rnd() < 0.55) {
+        const py = GY - (36 + Math.floor(rnd() * 46)), w = 44 + Math.floor(rnd() * 26);
+        this.platforms.push({ x: Math.round(cx), y: Math.round(py), w: Math.round(w) });
+        if (rnd() < 0.6) place(ZOMBIE_TYPES.apeling, Math.round(cx), py, Math.max(10, w / 2 - 12));
+        if (rnd() < 0.42) addCrate(cx, py - 22);                            // krat BOVENOP het platform
+      }
+      if (rnd() < 0.7 && !nearFlag) {
+        const ex = Math.round(x + secW * (0.28 + rnd() * 0.44));
+        const boom = n >= 9 && rnd() < 0.34;
+        place(boom ? ZOMBIE_TYPES.boomape : ZOMBIE_TYPES.apeling, ex, GY, 28 + Math.round(rnd() * 22));
+      }
+      if (rnd() < 0.42) addCrate(x + secW * (0.2 + rnd() * 0.55), GY - 34); // krat op de grond
+      x += secW;
     }
-    // 2) apen op sommige platforms (patrouilleren binnen de plaat-breedte)
-    for (const pf of this.platforms) {
-      if (rnd() < 0.5 && pf.w >= 46) place(ZOMBIE_TYPES.apeling, pf.x, pf.y, Math.max(10, pf.w / 2 - 12), true);
-    }
-    // 3) vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
-    if (n >= 6) {
+    while (crateN < (lv.crates || 3)) addCrate(220 + crateN * 300, GY - 34);   // minimum aan kratten
+    // vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
+    if (placeEnemies && n >= 6) {
       const birds = 1 + Math.floor((n - 6) / 3);
       for (let i = 0; i < birds; i++) {
-        const x = Math.round(lv.length * (0.3 + i * (0.5 / Math.max(1, birds))) + (rnd() - 0.5) * 80);
-        const y = 66 + Math.round(rnd() * 40);
-        place(ZOMBIE_TYPES.bird, Math.max(200, Math.min(lv.length - 160, x)), y, 60 + Math.round(rnd() * 50), false);
+        const bx = Math.round(lv.length * (0.28 + i * (0.5 / Math.max(1, birds))) + (rnd() - 0.5) * 100);
+        const by = 60 + Math.round(rnd() * 42);
+        place(ZOMBIE_TYPES.bird, Math.max(220, Math.min(lv.length - 180, bx)), by, 60 + Math.round(rnd() * 50));
       }
     }
   },
@@ -1018,7 +1027,7 @@ const Game = {
 
     // win / verlies
     if (this.player.hp <= 0) {
-      if (this.jStage && (this.jFlagReached || this.coop)) this.journeyRespawn();   // Mario-checkpoint (co-op faalt nooit hard)
+      if (this.jStage) this.journeyRespawn();   // Mario-checkpoint: respawn bij de vlag (of start) — parkour blijf je proberen
       else this.lose();
     } else if (this.level.isBoss) {
       if (this.boss && !this.boss.alive) this.win();      // baas verslagen
@@ -1240,7 +1249,17 @@ const Game = {
         Sprites.px(ctx, theme.groundTop, gx, CONFIG.GROUND_Y + 16, 14, 2);    // strepen/tegels
         Sprites.px(ctx, '#00000033', gx + 7, CONFIG.GROUND_Y + 26, 2, 2);     // gruis
       }
-      // Journey (Mario): zwevende platforms (blad-stijl) boven de grond
+      // Journey (Mario): ravijn-gaten uit de grond snijden (val = respawn) + zwevende platforms
+      if (this.jStage && this.pits) for (const p of this.pits) {
+        if (p.x1 < this.cam.x - 12 || p.x0 > this.cam.x + W + 12) continue;
+        const pw = p.x1 - p.x0;
+        Sprites.px(ctx, '#0a1018', p.x0, CONFIG.GROUND_Y - 1, pw, H);       // donker gat over de grond heen
+        ctx.globalAlpha = 0.6; Sprites.px(ctx, '#05070c', p.x0, CONFIG.GROUND_Y + 22, pw, H); ctx.globalAlpha = 1;
+        Sprites.px(ctx, theme.groundTop, p.x0 - 5, CONFIG.GROUND_Y, 5, 4);  // afgebrokkelde randen
+        Sprites.px(ctx, theme.groundTop, p.x1, CONFIG.GROUND_Y, 5, 4);
+        Sprites.px(ctx, '#1a120a', p.x0 - 1, CONFIG.GROUND_Y, 2, 9);
+        Sprites.px(ctx, '#1a120a', p.x1 - 1, CONFIG.GROUND_Y, 2, 9);
+      }
       if (this.jStage) for (const pf of this.platforms) {
         if (pf.x + pf.w / 2 < this.cam.x - 12 || pf.x - pf.w / 2 > this.cam.x + W + 12) continue;
         Sprites.drawPlatform(ctx, pf.x, pf.y, pf.w, this.level.theme === 'beach' ? 'sand' : 'wood');
@@ -1395,7 +1414,7 @@ const Game = {
     // speler (Ryan) — schaduw op de grond, of op het platform bij parkour
     if (this.player.onGround) Sprites.shadow(ctx, this.player.x, this.level.parkour ? this.player.y + 1 : CONFIG.GROUND_Y, 7);
     const swingingBat = this.time < (this.player.swingUntil || 0) && this.player.swingWeapon;
-    Sprites.drawCharacter(ctx, this.player.x, this.player.y, this.player.dir, this.player.pal, {
+    const pOpts = {
       walkPhase: this.player.walkPhase,
       airborne: !this.player.onGround,
       ducking: this.player.ducking,
@@ -1406,7 +1425,14 @@ const Game = {
       shielding: this.player._shieldUp,
       hat: Storage.data.equippedHat, t: this.time,
       rage: this.player.hasBuff('rage', this.time), burning: this.player.burnUntil > this.time,
-    });
+    };
+    Sprites.drawCharacter(ctx, this.player.x, this.player.y, this.player.dir, this.player.pal, pOpts);
+    // hit-flash: je ziet de klap aan je character (witte silhouet-flits) — Journey-mensapen
+    if (this.player._flashUntil > this.time) {
+      ctx.globalAlpha = Math.min(0.85, (this.player._flashUntil - this.time) / 360 * 0.95);
+      Sprites.drawCharacter(ctx, this.player.x, this.player.y, this.player.dir, this._flashPal(this.player.pal), Object.assign({}, pOpts, { noInk: true }));
+      ctx.globalAlpha = 1;
+    }
 
     // zwevende munten
     for (const c of this.coinFx) {

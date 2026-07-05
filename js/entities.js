@@ -410,6 +410,7 @@ class Player {
       if (this._now < (this._touchInvUntil || 0)) return;
       n = Math.ceil(this.maxHp / 2);
       this._touchInvUntil = this._now + 1400;
+      this._flashUntil = this._now + 360;                 // je ziet de klap aan je character (witte flits + knipper)
     }
     if (this._shieldActive) return;          // schild-power-up blokkeert schade
     if (this._shieldUp) {                    // Tygo's schild blokt deze treffer -> 3s cooldown
@@ -573,11 +574,20 @@ class Zombie {
       else if (this.x >= this.patrolR) { this.x = this.patrolR; this.dir = -1; }
       if (this.flying) this.y = this.patrolY + Math.sin(game.time / 380 + this.tint * 2) * 7;   // zweef-bob
       // aanraking met de speler -> Mario-schade (helft HP, via 'touch')
-      if (!player.dead && player.respawnInvuln <= 0) {
+      if (!player.hp || player.hp > 0) {
         const dxp = Math.abs(this.x - player.x);
         const pTop = player.y - player.height, pBot = player.y;
         const myTop = this.cy - this.halfH, myBot = this.cy + this.halfH;
-        if (dxp < this.halfW + player.w / 2 - 1 && pBot > myTop && pTop < myBot) player.takeDamage(t.dmg, 'touch');
+        if (dxp < this.halfW + player.w / 2 + 1 && pBot > myTop - 2 && pTop < myBot + 2) {
+          const hp0 = player.hp;
+          player.takeDamage(t.dmg, 'touch');
+          if (player.hp < hp0) {                        // echt geraakt (niet in de korte onkwetsbaarheid)
+            game.shake = Math.max(game.shake, 8);
+            game.spawnBlood(player.x, player.y - 16);
+            game.knockPlayer(player.x < this.x ? -1 : 1, 6);
+            if (window.Sfx) Sfx.play('hit');
+          }
+        }
       }
       // boemerang-aap gooit af en toe
       if (t.boomerang) {
@@ -952,9 +962,10 @@ class EnemyShot {
       if (this.life > 2200 || this.x < 6 || this.x > game.level.length + 60) { this.alive = false; return; }
       const p = game.player;
       const hw = (p.hitHalfW != null) ? p.hitHalfW : 8;
-      if (p.respawnInvuln <= 0 && Math.abs(p.x - this.x) < hw + 4 && Math.abs((p.y - 16) - this.y) < 15) {
+      if ((p.respawnInvuln || 0) <= 0 && Math.abs(p.x - this.x) < hw + 4 && Math.abs((p.y - 16) - this.y) < 15) {
+        const hp0 = p.hp;
         p.takeDamage(this.dmg, 'touch');                   // boemerang = zelfde Mario-straf (helft HP)
-        game.knockPlayer(Math.sign(this.vx) || 1, 7); game.spawnBlood(this.x, this.y);
+        if (p.hp < hp0) { game.knockPlayer(Math.sign(this.vx) || 1, 7); game.spawnBlood(this.x, this.y); game.shake = Math.max(game.shake, 7); if (window.Sfx) Sfx.play('hit'); }
         this.alive = false;
       }
       return;

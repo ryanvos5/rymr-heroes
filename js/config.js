@@ -625,7 +625,7 @@ function buildJourneyIsland() {
       theme: n <= 7 ? 'beach' : 'jungle',                 // strand -> dieper het oerwoud in
       mode: 'reach', killAll: false,                      // Mario: haal de finish (doden mag, hoeft niet)
       noObstacles: true, doorChance: 0,
-      length: bossInfo ? 1250 : Math.round(1500 + n * 130),        // boss-aanloop is korter
+      length: bossInfo ? 2200 : Math.round(2600 + n * 300),        // fors langer; boss-aanloop iets korter
       zombieCount: bossInfo ? 8 : Math.round(9 + n * 1.6),
       spawnEvery: Math.round(1750 - t * 700),
       zombieHp: Math.round(34 + t * 46),                  // 1-2 meppen per zombie
