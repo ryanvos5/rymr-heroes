@@ -574,15 +574,26 @@ class Zombie {
       if (this.x <= this.patrolL) { this.x = this.patrolL; this.dir = 1; }
       else if (this.x >= this.patrolR) { this.x = this.patrolR; this.dir = -1; }
       if (this.flying) this.y = this.patrolY + Math.sin(game.time / 380 + this.tint * 2) * 7;   // zweef-bob
-      // aanraking met de speler -> Mario-schade (helft HP, via 'touch')
-      if (!player.hp || player.hp > 0) {
+      // aanraking met de speler
+      if (player.hp > 0) {
         const dxp = Math.abs(this.x - player.x);
         const pTop = player.y - player.height, pBot = player.y;
         const myTop = this.cy - this.halfH, myBot = this.cy + this.halfH;
         if (dxp < this.halfW + player.w / 2 + 1 && pBot > myTop - 2 && pTop < myBot + 2) {
+          // STOMP (Mario): op de kop springen -> aap/vogel dood, speler stuitert
+          if (player.vy > 1 && (player.y - player.vy * s2) <= myTop + 10) {
+            this.alive = false;
+            game.onZombieKilled(this, this.type.coin);
+            player.vy = -7; player.onGround = false; player.jumps = Math.max(player.jumps, 1);   // stuiter
+            game.shake = Math.max(game.shake, 5);
+            game.spawnBlood(this.x, this.cy);
+            if (window.Sfx) Sfx.play('stomp');
+            return;
+          }
+          // anders: zij-/onderkant aanraken -> Mario-schade (helft HP)
           const hp0 = player.hp;
           player.takeDamage(t.dmg, 'touch');
-          if (player.hp < hp0) {                        // echt geraakt (niet in de korte onkwetsbaarheid)
+          if (player.hp < hp0) {
             game.shake = Math.max(game.shake, 8);
             game.spawnBlood(player.x, player.y - 16);
             game.knockPlayer(player.x < this.x ? -1 : 1, 6);

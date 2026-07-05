@@ -312,8 +312,9 @@ const UI = {
       this.beginCoopStage(n);
       return;
     }
-    const script = this._journeyStoryFor(n);
-    if (script) { this.playStory(script, n); return; }
+    // alleen de intro speelt vóór het level; boss-verhalen (5/10/15) spelen nú pas
+    // NÁ het platform-level, vlak vóór het boss-duel (zie finishJourneyStage -> playBossStory)
+    if (n === 1 && !Storage.journeyCleared(1)) { this.playStory('intro', n); return; }
     this.startJourneyLevel(n);
   },
   // welk verhaaltje hoort bij dit level? (intro vóór lvl 1, confrontatie bij elke nieuwe aap)
@@ -345,6 +346,16 @@ const UI = {
     this.startJourneyBossFight(n);       // (vangnet: niet-mario levels = direct het duel)
   },
   // boss-fase (na de level-stage van 5/10/15): het bestaande 1v1-smash-duel
+  // eerst het boss-verhaaltje afspelen (na de finish van het platform-level), dán het duel
+  playBossStory(n) {
+    const script = this._journeyStoryFor(n);
+    if (!script) { this.startJourneyBossFight(n); return; }
+    ['menu', 'level', 'shop', 'journey', 'arena', 'win', 'lose', 'versus', 'leaderboard', 'chat', 'inventory'].forEach((s) => this.el[s].classList.add('hidden'));
+    document.getElementById('versus-result').classList.add('hidden');
+    document.body.classList.add('in-game');
+    this.el.hud.classList.add('hidden'); this.el.touch.classList.add('hidden'); this.el.pause.classList.add('hidden');
+    Game.playJourneyIntro(script, () => this.startJourneyBossFight(n));
+  },
   startJourneyBossFight(n) {
     document.getElementById('versus-result').classList.add('hidden');
     this.showVersus();                  // juiste HUD/touch-setup, alle schermen weg

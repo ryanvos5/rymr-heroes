@@ -165,21 +165,24 @@ const Game = {
     };
 
     let x = 200;                                                            // veilig startstuk (geen gat)
+    const diff = (n - 1) / 14;                                             // 0..1 moeilijkheid
     while (x < end) {
       const nearFlag = Math.abs(x - flagX) < 130;
-      // ---- RAVIJN-GAT: alleen over te steken via stapsteen-platforms (val = respawn) ----
-      if (x > 340 && !nearFlag && rnd() < 0.42) {
-        const pitW = 84 + Math.floor(rnd() * 78);                          // 84..162 (dubbel-jump haalbaar)
+      // ---- RAVIJN-GAT: veel groter, alleen over via smallere/hogere stapstenen (val = respawn) ----
+      if (x > 340 && !nearFlag && rnd() < (0.52 + diff * 0.16)) {
+        const pitW = Math.round(150 + rnd() * 140 + diff * 130);          // ~150..420 (fors groter, groeit per level)
         const x0 = Math.round(x), x1 = Math.round(x + pitW);
         this.pits.push({ x0, x1 });
-        const steps = Math.max(1, Math.round(pitW / 74));
+        const gapStep = 86 + diff * 20;                                    // stapsteen-afstand (moeilijker later)
+        const steps = Math.max(2, Math.round(pitW / gapStep));
+        const sw = Math.round(38 - diff * 12);                             // smallere stapstenen later (38..26)
         for (let s = 0; s < steps; s++) {
           const px = x0 + pitW * (s + 0.5) / steps;
-          const py = GY - (24 + Math.floor(rnd() * 26));
-          this.platforms.push({ x: Math.round(px), y: Math.round(py), w: 40 });
-          if (rnd() < 0.26) place(ZOMBIE_TYPES.apeling, Math.round(px), py, 8);   // aap op een stapsteen
+          const py = GY - (26 + Math.floor(rnd() * (22 + diff * 22)));     // hoger + meer hoogteverschil
+          this.platforms.push({ x: Math.round(px), y: Math.round(py), w: sw });
+          if (rnd() < 0.22) place(ZOMBIE_TYPES.apeling, Math.round(px), py, 6);   // aap op een stapsteen (extra lastig)
         }
-        x = x1 + 70 + Math.floor(rnd() * 60);
+        x = x1 + 56 + Math.floor(rnd() * 46);
         continue;
       }
       // ---- VASTE SECTIE: soms verhoogd platform + patrouille-apen + een krat ----
@@ -198,7 +201,13 @@ const Game = {
       if (rnd() < 0.42) addCrate(x + secW * (0.2 + rnd() * 0.55), GY - 34); // krat op de grond
       x += secW;
     }
-    while (crateN < (lv.crates || 3)) addCrate(220 + crateN * 300, GY - 34);   // minimum aan kratten
+    // minimum aan kratten garanderen (altijd toevoegen; begrensde zoektocht naar een vrije plek -> geen oneindige lus)
+    while (crateN < (lv.crates || 3)) {
+      let cx2 = 220 + crateN * 340;
+      for (let k = 0; k < 8 && !clear(cx2, GY - 34); k++) cx2 += 52;
+      this.crates.push({ x: Math.round(cx2), y: GY - 34, kind: kinds[(n * 3 + crateN * 7) % kinds.length], broken: false });
+      crateN++;
+    }
     // vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
     if (placeEnemies && n >= 6) {
       const birds = 1 + Math.floor((n - 6) / 3);
@@ -355,7 +364,7 @@ const Game = {
     // co-op: partner meteen laten weten dat de finish gehaald is (allebei klaar)
     if (this.coop && !this.coop.won && window.Net) { this.coop.won = true; Net.versusSend('jwin', {}); }
     this.coop = null;
-    if (lv.bossFight) { UI.startJourneyBossFight(idx); return; }   // finish = de boss wacht (co-op: ieder z'n eigen duel)
+    if (lv.bossFight) { UI.playBossStory(idx); return; }   // finish = eerst het verhaal, dan de boss (co-op: ieder z'n eigen duel)
     this.state = 'versusOver';
     const first = !Storage.journeyCleared(idx);
     const unlocks = Storage.clearJourneyLevel(idx);
@@ -790,9 +799,13 @@ const Game = {
     this.runCoins += reward;
     this.runKills += 1;
     if (this.level.arena) this.roundKills += 1;
-    // lijk blijft op de grond liggen (oudste opruimen bij te veel)
-    this.corpses.push({ x: z.x, dir: z.dir, type: z.type, tint: z.tint, flip: Math.random() < 0.5 });
-    if (this.corpses.length > 60) this.corpses.shift();
+    // lijk blijft op de grond liggen — NIET in de Mario-Journey (apen/vogels laten geen zombie-lijk achter)
+    if (!this.jStage) {
+      this.corpses.push({ x: z.x, dir: z.dir, type: z.type, tint: z.tint, flip: Math.random() < 0.5 });
+      if (this.corpses.length > 60) this.corpses.shift();
+    } else {
+      for (let i = 0; i < 10; i++) this.particles.push(new Particle(z.x, z.cy, (Math.random() - 0.5) * 3.5, -Math.random() * 3, Math.random() < 0.5 ? '#6a4a2c' : '#caa06a', 420, 2));   // poef ipv lijk
+    }
     // munitie valt soms op de grond (loop erover om op te rapen)
     if (Math.random() < (z.type.ammoDropChance || 0)) {
       const drop = (z.type.ammoDrop || 0) + Math.floor(Math.random() * 3);
