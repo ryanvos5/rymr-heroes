@@ -688,6 +688,22 @@ class Zombie {
     const dist = Math.abs(dx);
     this.dir = dx > 0 ? -1 : 1;
 
+    // ---- BOT-MENSAAP: op zijn kop springen brengt zijn HP omlaag (+ je stuitert) ----
+    if (this.brawler && player.vy > 1 && !player.dead) {
+      const headTop = this.cy - this.halfH;
+      if (Math.abs(this.x - player.x) < this.halfW + player.w / 2 + 3 &&
+          player.y <= headTop + 14 && (player.y - player.vy * s) <= headTop + 14 &&
+          game.time - (this._stompCd || 0) > 260) {
+        this._stompCd = game.time;
+        this.takeDamage(Math.max(1, Math.round(this.maxHp * 0.22)), (this.x >= player.x ? 1 : -1), game, 0);   // ~5 stomps
+        player.vy = -7.5; player.onGround = false; player.jumps = Math.max(player.jumps, 1);                    // stuiter
+        this.hitFlash = 110;
+        if (this.alive && game.addHitFeel) game.addHitFeel(this.x, this.cy, this.x >= player.x ? 1 : -1, Math.round(this.maxHp * 0.22), 12, false, null);
+        game.shake = Math.max(game.shake, 7);
+        if (window.Sfx) Sfx.play('stomp');
+      }
+    }
+
     // ---- MEGA ZOMBIE-AAP: springt in één keer naar de speler toe ----
     if (t.apeLeap) {
       const enraged = this.hp < this.maxHp * 0.4;          // razend bij weinig leven

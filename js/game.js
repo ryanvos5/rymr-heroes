@@ -212,6 +212,8 @@ const Game = {
     }
     // de midden-vlag mag niet dóór een platform staan -> platforms vlakbij de vlag weghalen
     this.platforms = this.platforms.filter((pf) => Math.abs(pf.x - flagX) > pf.w / 2 + 24);
+    // en er mogen geen apen op/door de vlag patrouilleren -> die weghalen (patrouille die de vlag-zone raakt)
+    this.zombies = this.zombies.filter((z) => !z.patrol || z.patrolR < flagX - 26 || z.patrolL > flagX + 26);
     // vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
     if (placeEnemies && n >= 6) {
       const birds = 1 + Math.floor((n - 6) / 3);
