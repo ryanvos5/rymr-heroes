@@ -316,6 +316,12 @@ const Game = {
   // ---- CO-OP: sync-tick (speler-state altijd; host stuurt zombies, gast meldt treffers) ----
   _coopTick(dt) {
     const co = this.coop, p = this.player;
+    // ---- partner-speler vloeiend naar de laatst gesynchte positie schuiven (geen lag/spring) ----
+    if (co.partner && co.partner.tx != null) {
+      const dx = co.partner.tx - co.partner.x, dy = co.partner.ty - co.partner.y;
+      if (Math.abs(dx) > 200 || Math.abs(dy) > 120) { co.partner.x = co.partner.tx; co.partner.y = co.partner.ty; }   // grote sprong (respawn/teleport) -> direct
+      else { const lp = Math.min(1, dt / 70); co.partner.x += dx * lp; co.partner.y += dy * lp; }
+    }
     // ---- TETHER: blijf bij je partner (je kunt niet te ver uit elkaar) ----
     const TETHER = 300;
     if (co.partner && co.partner.al && p.hp > 0) {
@@ -378,7 +384,16 @@ const Game = {
     }
   },
   // co-op-berichten van de partner
-  onCoopP(p) { if (this.coop) { this.coop.partner = p; this.coop.partnerAtFinish = !!(p && p.f); } },
+  onCoopP(p) {
+    if (!this.coop || !p) return;
+    const co = this.coop, prev = co.partner;
+    if (!prev) { co.partner = Object.assign({}, p, { x: p.x, y: p.y, tx: p.x, ty: p.y }); }   // eerste keer: direct op de plek
+    else {                                                                                    // daarna: doel-positie bewaren -> vloeiend interpoleren (geen lag/spring)
+      prev.tx = p.x; prev.ty = p.y;
+      prev.d = p.d; prev.wp = p.wp; prev.a = p.a; prev.h = p.h; prev.al = p.al; prev.ch = p.ch; prev.g = p.g; prev.f = p.f;
+    }
+    co.partnerAtFinish = !!p.f;
+  },
   onCoopZ(p) {
     if (!this.coop || this.coop.role !== 'guest' || !p || !p.l) return;
     const old = {}; for (const g of this.coop.z) old[g.i] = g;
@@ -424,7 +439,12 @@ const Game = {
   journeyRespawn() {
     const p = this.player;
     let rx = this.jFlagReached ? this.jFlagX : 60;
-    if (this.coop && this.coop.partner && this.coop.partner.al) rx = Math.max(40, this.coop.partner.x);   // co-op: kom terug bij je partner (op vaste grond)
+    if (this.coop && this.coop.partner && this.coop.partner.al) rx = Math.max(40, this.coop.partner.x);   // co-op: kom terug bij je partner
+    // NOOIT in een gat respawnen: als rx boven een ravijn ligt, snap naar de dichtstbijzijnde vaste rand
+    if (this.pits) for (const pit of this.pits) {
+      if (rx > pit.x0 - 10 && rx < pit.x1 + 10) { rx = (rx - pit.x0 < pit.x1 - rx) ? pit.x0 - 16 : pit.x1 + 16; break; }
+    }
+    rx = Math.max(40, Math.min((this.level.length || 99999) - 40, rx));
     this._respawnJourneyEnemies();                              // alle gedode apen komen weer terug (host/solo)
     if (this.coop && this.coop.role === 'guest' && window.Net) Net.versusSend('jrs', {});   // gast: host laat de vijanden terugkomen
     p.hp = p.maxHp; p.x = rx; p.y = CONFIG.GROUND_Y; p.vy = 0; p.onGround = true; p.knockVx = 0; p.downed = false;
