@@ -846,6 +846,14 @@ const Sprites = {
     this.px(ctx, '#e8c8a0', cx - 3, headTop + 3, 6, 4);                    // snuit
     this.px(ctx, '#1a0e06', cx + (dir > 0 ? 1 : -2), headTop + 3, 2, 2);   // oog
     this.px(ctx, '#1a0e06', cx - 1, headTop + 5, 2, 1);                    // neusgaten
+    // SCHILD: metalen helm op de kop (2x bespringen) — eerste stamp slaat 'm eraf, tweede maakt dood
+    if (z && z.shieldHp > 0) {
+      this.px(ctx, '#9aa6b4', cx - 6, headTop - 3, 12, 4);                 // helm-koepel
+      this.px(ctx, '#c8d2dc', cx - 6, headTop - 3, 12, 1);                 // glans bovenop
+      this.px(ctx, '#5a6675', cx - 6, headTop, 12, 1);                     // schaduwrand
+      this.px(ctx, '#6b7684', cx - 7, headTop, 14, 1);                     // brede helmrand
+      this.px(ctx, '#3f4855', cx - 1, headTop - 5, 2, 2);                  // knop bovenop
+    }
     if (boom) { this.drawBoomerangHeld(ctx, cx + dir * 8, torsoTop + 3, dir); }
   },
   // vastgehouden / vliegende boemerang (hout, gebogen)

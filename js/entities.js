@@ -600,10 +600,18 @@ class Zombie {
         if (dxp < this.halfW + player.w / 2 + 1 && pBot > myTop - 2 && pTop < myBot + 2) {
           // STOMP (Mario): op de kop springen -> aap/vogel dood, speler stuitert
           if (player.vy > 1 && (player.y - player.vy * s2) <= myTop + 10) {
-            this.alive = false;
-            game.onZombieKilled(this, this.type.coin);
             player.vy = -7; player.onGround = false; player.jumps = Math.max(player.jumps, 1);   // stuiter
             game.shake = Math.max(game.shake, 5);
+            if (this.shieldHp > 0) {                     // geschilde mensaap: eerst het schild kapot springen
+              this.shieldHp--;
+              this._shieldBreak = game.time;             // korte flits op de tekening
+              this.hitFlash = 120;
+              for (let k = 0; k < 6; k++) game.particles && game.particles.push(new Particle(this.x, this.cy - 6, (Math.random() - 0.5) * 3, -Math.random() * 2 - 0.5, '#bfe6ff', 340, 2));
+              if (window.Sfx) Sfx.play('stomp');
+              return;
+            }
+            this.alive = false;
+            game.onZombieKilled(this, this.type.coin);
             game.spawnBlood(this.x, this.cy);
             if (window.Sfx) Sfx.play('stomp');
             return;

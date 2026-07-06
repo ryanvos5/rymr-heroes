@@ -151,11 +151,11 @@ const Game = {
     this.jEnemySpawns = [];                                       // specs bewaren om bij respawn opnieuw te spawnen
     const kinds = ['health', 'rage', 'speed', 'shield', 'fireball'];
     let crateN = 0;
-    const place = (type, x, y, range, chaser) => {
+    const place = (type, x, y, range, chaser, shield) => {
       const dir = rnd() < 0.5 ? -1 : 1;
-      this.jEnemySpawns.push({ type: type.id, x: Math.round(x), y: Math.round(y), range: Math.round(range), dir, chaser: !!chaser });
+      this.jEnemySpawns.push({ type: type.id, x: Math.round(x), y: Math.round(y), range: Math.round(range), dir, chaser: !!chaser, shield: !!shield });
       if (!placeEnemies) return;
-      this._spawnJourneyEnemy(type.id, Math.round(x), Math.round(y), Math.round(range), dir, !!chaser);
+      this._spawnJourneyEnemy(type.id, Math.round(x), Math.round(y), Math.round(range), dir, !!chaser, !!shield);
     };
     const clear = (x, y) => !this.platforms.some((pf) => Math.abs(pf.x - x) < pf.w / 2 + 12 && Math.abs(pf.y - y) < 20) &&
                             !this.pits.some((p) => x > p.x0 - 12 && x < p.x1 + 12);
@@ -166,23 +166,25 @@ const Game = {
 
     let x = 200;                                                            // veilig startstuk (geen gat)
     const diff = (n - 1) / 14;                                             // 0..1 moeilijkheid
+    const hard = Math.max(0, (n - 10) / 8);                                // extra pittig vanaf lvl 11 (0.125..0.625)
+    const shielded = n >= 11;                                              // vanaf lvl 11 hebben apen een schild (2x bespringen)
     while (x < end) {
       const nearFlag = Math.abs(x - flagX) < 130;
       // ---- RAVIJN-GAT: veel groter, alleen over via smallere/hogere stapstenen (val = respawn) ----
-      const pitW0 = Math.round(150 + rnd() * 140 + diff * 130);           // ~150..420
+      const pitW0 = Math.round(150 + rnd() * 140 + diff * 130 + hard * 140);   // ~150..560 (breder vanaf lvl 11)
       const gatOverVlag = (x < flagX + 90) && (x + pitW0 > flagX - 90);    // gat zou de vlag overlappen -> niet doen
-      if (x > 340 && !nearFlag && !gatOverVlag && rnd() < (0.52 + diff * 0.16)) {
+      if (x > 340 && !nearFlag && !gatOverVlag && rnd() < (0.52 + diff * 0.16 + hard * 0.14)) {
         const pitW = pitW0;
         const x0 = Math.round(x), x1 = Math.round(x + pitW);
         this.pits.push({ x0, x1 });
-        const gapStep = 86 + diff * 20;                                    // stapsteen-afstand (moeilijker later)
+        const gapStep = 86 + diff * 20 + hard * 30;                        // grotere sprongen tussen stapstenen
         const steps = Math.max(2, Math.round(pitW / gapStep));
-        const sw = Math.round(38 - diff * 12);                             // smallere stapstenen later (38..26)
+        const sw = Math.max(20, Math.round(38 - diff * 12 - hard * 8));    // smallere stapstenen (38..18)
         for (let s = 0; s < steps; s++) {
           const px = x0 + pitW * (s + 0.5) / steps;
-          const py = GY - (26 + Math.floor(rnd() * (22 + diff * 22)));     // hoger + meer hoogteverschil
+          const py = GY - (26 + Math.floor(rnd() * (22 + diff * 22 + hard * 20)));   // hoger + meer hoogteverschil
           this.platforms.push({ x: Math.round(px), y: Math.round(py), w: sw });
-          if (rnd() < 0.22) place(ZOMBIE_TYPES.apeling, Math.round(px), py, 6);   // aap op een stapsteen (extra lastig)
+          if (rnd() < 0.22) place(ZOMBIE_TYPES.apeling, Math.round(px), py, 6, false, shielded);   // aap op een stapsteen (extra lastig)
         }
         x = x1 + 56 + Math.floor(rnd() * 46);
         continue;
@@ -192,13 +194,13 @@ const Game = {
       if (rnd() < 0.55) {
         const py = GY - (36 + Math.floor(rnd() * 46)), w = 44 + Math.floor(rnd() * 26);
         this.platforms.push({ x: Math.round(cx), y: Math.round(py), w: Math.round(w) });
-        if (rnd() < 0.6) place(ZOMBIE_TYPES.apeling, Math.round(cx), py, Math.max(10, w / 2 - 12));
+        if (rnd() < 0.6) place(ZOMBIE_TYPES.apeling, Math.round(cx), py, Math.max(10, w / 2 - 12), false, shielded);
         if (rnd() < 0.42) addCrate(cx, py - 22);                            // krat BOVENOP het platform
       }
       if (rnd() < 0.7 && !nearFlag) {
         const ex = Math.round(x + secW * (0.28 + rnd() * 0.44));
         const boom = n >= 9 && rnd() < 0.34;
-        place(boom ? ZOMBIE_TYPES.boomape : ZOMBIE_TYPES.apeling, ex, GY, 28 + Math.round(rnd() * 22));
+        place(boom ? ZOMBIE_TYPES.boomape : ZOMBIE_TYPES.apeling, ex, GY, 28 + Math.round(rnd() * 22), false, shielded);
       }
       if (rnd() < 0.42) addCrate(x + secW * (0.2 + rnd() * 0.55), GY - 34); // krat op de grond
       x += secW;
@@ -226,9 +228,9 @@ const Game = {
     this.platforms = this.platforms.filter((pf) => (pf.x + pf.w / 2) <= finishX - FZ_FIN);
     this.zombies = this.zombies.filter((z) => !z.patrol || z.patrolR < finishX - FZ_FIN);
     this.jEnemySpawns = this.jEnemySpawns.filter((s) => (s.x + s.range) < finishX - FZ_FIN);
-    // vogels vanaf level 6 (zweven heen en weer, aanraken = schade)
+    // vogels vanaf level 6 (zweven heen en weer, aanraken = schade); vanaf lvl 11 fors meer
     if (n >= 6) {
-      const birds = 1 + Math.floor((n - 6) / 3);
+      const birds = 1 + Math.floor((n - 6) / 3) + (n >= 11 ? 2 + Math.floor((n - 11) / 2) : 0);
       for (let i = 0; i < birds; i++) {
         const bx = Math.round(lv.length * (0.28 + i * (0.5 / Math.max(1, birds))) + (rnd() - 0.5) * 100);
         const by = 60 + Math.round(rnd() * 42);
@@ -237,18 +239,19 @@ const Game = {
     }
   },
   // één patrouille-vijand plaatsen vanuit een spec (nieuw + bij respawn)
-  _spawnJourneyEnemy(typeId, x, y, range, dir, chaser) {
+  _spawnJourneyEnemy(typeId, x, y, range, dir, chaser, shield) {
     const z = new Zombie(x, this.level, ZOMBIE_TYPES[typeId]);
     z.x = x; z.patrolL = x - range; z.patrolR = x + range;
     z.y = y; z.patrolY = y; z.onGround = !z.type.flying; z.vy = 0; z.dir = dir || 1;
     z.chaser = !!chaser;
+    if (shield && !z.type.flying) z.shieldHp = 1;                 // geschilde mensaap: 2x bespringen (schild kapot, dan dood)
     this.zombies.push(z);
   },
   // bij respawn: alle al-gedode apen komen weer terug (op hun oorspronkelijke plek)
   _respawnJourneyEnemies() {
     if (!this.jEnemySpawns || this.coop) return;                 // co-op: host houdt de vijanden bij
     this.zombies = this.zombies.filter((z) => !z.patrol);        // dode + levende patrouille-apen weg
-    for (const s of this.jEnemySpawns) this._spawnJourneyEnemy(s.type, s.x, s.y, s.range, s.dir, s.chaser);
+    for (const s of this.jEnemySpawns) this._spawnJourneyEnemy(s.type, s.x, s.y, s.range, s.dir, s.chaser, s.shield);
   },
 
   // BOT-MENSAAP: verschijnt op de meeste levels halverwege en moet verslagen (Power Smash-stijl)
@@ -300,10 +303,21 @@ const Game = {
   // ---- CO-OP: sync-tick (speler-state altijd; host stuurt zombies, gast meldt treffers) ----
   _coopTick(dt) {
     const co = this.coop, p = this.player;
+    // ---- TETHER: blijf bij je partner (je kunt niet te ver uit elkaar) ----
+    const TETHER = 300;
+    if (co.partner && co.partner.al && p.hp > 0) {
+      const dx = p.x - co.partner.x;
+      if (dx > TETHER || dx < -TETHER) {
+        p.x = co.partner.x + (dx > 0 ? TETHER : -TETHER);
+        if (p.knockVx) p.knockVx = 0;
+        this.tutorialMsg = 'Blijf bij je partner!'; this.tutorialUntil = this.time + 500;
+      }
+    }
+    const atFin = p.x >= this.level.length - 10;
     co._pT += dt;
     if (co._pT >= 100 && window.Net) {
       co._pT = 0;
-      Net.versusSend('jp', { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: p.walkPhase || 0, a: this.time < p.attackAnimUntil ? 1 : 0, h: Math.round(p.hp), al: p.hp > 0 ? 1 : 0, ch: p.charId || 'ryan', g: p.onGround ? 1 : 0 });
+      Net.versusSend('jp', { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: p.walkPhase || 0, a: this.time < p.attackAnimUntil ? 1 : 0, h: Math.round(p.hp), al: p.hp > 0 ? 1 : 0, ch: p.charId || 'ryan', g: p.onGround ? 1 : 0, f: atFin ? 1 : 0 });
     }
     if (co.role === 'host') {
       co._zT += dt;
@@ -347,7 +361,7 @@ const Game = {
     }
   },
   // co-op-berichten van de partner
-  onCoopP(p) { if (this.coop) this.coop.partner = p; },
+  onCoopP(p) { if (this.coop) { this.coop.partner = p; this.coop.partnerAtFinish = !!(p && p.f); } },
   onCoopZ(p) {
     if (!this.coop || this.coop.role !== 'guest' || !p || !p.l) return;
     const old = {}; for (const g of this.coop.z) old[g.i] = g;
@@ -1119,8 +1133,13 @@ const Game = {
     } else if (this.player.x >= this.level.length) {
       // kill-all: pas finishen als alle zombies dood zijn; Journey: eerst de bot-mensaap verslaan
       const brawlerBlocks = this.jStage && this.zombies.some((z) => z.alive && z.brawler);
-      if ((!this.level.killAll || this.zombiesRemaining() <= 0) && !brawlerBlocks) this.win();
-      else if (brawlerBlocks) { this.tutorialMsg = 'Versla eerst de bot-mensaap!'; this.tutorialUntil = this.time + 900; }
+      if ((!this.level.killAll || this.zombiesRemaining() <= 0) && !brawlerBlocks) {
+        if (this.coop) {
+          // co-op: allebei moeten over de finish zijn
+          if (this.coop.partnerAtFinish) this.win();
+          else { this.tutorialMsg = 'Wacht bij de finish op je partner!'; this.tutorialUntil = this.time + 600; }
+        } else this.win();
+      } else if (brawlerBlocks) { this.tutorialMsg = 'Versla eerst de bot-mensaap!'; this.tutorialUntil = this.time + 900; }
     }
 
     UI.updateHUD(this);
