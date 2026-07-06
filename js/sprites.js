@@ -511,77 +511,119 @@ const Sprites = {
     this.px(ctx, pal.skin, cx + (dir > 0 ? sh : -sh - reach), armY, reach + 3, 3);
 
     const handX = cx + (dir > 0 ? sh + reach + 2 : -(sh + reach + 2));
-    const flip = dir;
 
-    // wapen aan de hand
+    // wapen in LOKALE ruimte tekenen: oorsprong = de hand, +x = voorwaarts, -y = omhoog.
+    // Handvat zit in/onder de vuist, het blad steekt naar voren/boven — dus niet "in het midden vasthouden".
+    ctx.save();
+    ctx.translate(handX, armY);
+    if (dir < 0) ctx.scale(-1, 1);
+    const P = (col, x, y, w2, h2) => this.px(ctx, col, x, y, w2, h2);
+    const S = (hex, f) => this._shade(hex, f);
+    const atk = attacking;
+    const steel = '#cbd3db', steelDk = '#8a929c', steelLt = '#f2f6fa', wood = '#7a5230', woodDk = '#5a3a22', gold = '#caa84a';
+
     if (w.type === 'melee') {
-      const atk = attacking;
-      const steel = '#cfd6df', steelDk = '#9aa3ad', wood = '#7a5230', woodDk = '#5a3a22', gold = '#caa84a';
       const id = w.id;
-      if (id === 'machete') {
-        this.px(ctx, steel, handX, armY - (atk ? 8 : 2), 3 * flip, atk ? 11 : 9);
-        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 3);
+      if (id === 'katana') {
+        // tsuka (handvat) in de vuist + wikkel-accenten
+        P('#201c17', -1, -1, 2, 6); P('#4a3f34', -1, 1, 2, 1); P('#4a3f34', -1, 3, 2, 1);
+        // tsuba (ronde stootplaat)
+        P('#2a2a2a', -2, -2, 5, 1); P(gold, -1, -2, 2, 1);
+        // kling: enkelzijdig, licht gebogen, heldere snijkant aan de voorzijde
+        const bl = atk ? 18 : 15;
+        for (let i = 0; i < bl; i++) {
+          const curve = Math.round((i * i) / (bl * 5));            // subtiele buiging naar voren
+          const x = curve, y = -3 - i;
+          P('#b9c2cb', x, y, 2, 1);                                // kling-body (rug)
+          P('#ffffff', x + 1, y, 1, 1);                            // snijkant, helder
+        }
+        const tx = Math.round((bl * bl) / (bl * 5)), ty = -3 - bl;
+        P('#dfe6ec', tx, ty, 2, 1); P('#ffffff', tx + 1, ty - 1, 1, 1);   // kissaki (schuine punt)
       } else if (id === 'sword') {
-        this.px(ctx, gold, handX, armY - 1, 5 * flip, 2);                              // pareerstang
-        this.px(ctx, steel, handX + 2 * flip, armY - (atk ? 10 : 3), 3 * flip, atk ? 14 : 11);
-        this.px(ctx, steelDk, handX + 2 * flip, armY - (atk ? 10 : 3), 1 * flip, atk ? 14 : 11);
-        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 3);
+        P(woodDk, -1, 0, 2, 4); P(gold, -1, 4, 2, 1);             // greep + pommel
+        P(gold, -3, -1, 6, 1);                                    // kruisstang
+        const bl = atk ? 16 : 12;
+        P(steel, -1, -1 - bl, 3, bl);                             // kling
+        P(steelLt, -1, -1 - bl, 1, bl); P(steelLt, 1, -1 - bl, 1, bl);    // dubbele snede
+        P(steelDk, 0, -1 - bl, 1, bl);                            // bloedgeul
+        P(steel, -1, -2 - bl, 3, 1); P(steelLt, 0, -3 - bl, 1, 1);        // punt
+      } else if (id === 'machete') {
+        P(woodDk, -1, 0, 2, 4);                                   // greep
+        const bl = atk ? 13 : 11;
+        P(steel, 0, -1 - bl, 3, bl);                              // breed lemmet
+        P(steelDk, 0, -1 - bl, 1, bl);                            // rug
+        P(steelLt, 2, -1 - bl, 1, bl);                            // snijkant
+        P(steel, 1, -2 - bl, 2, 1);                               // schuine punt
       } else if (id === 'dagger') {
-        this.px(ctx, steel, handX, armY - (atk ? 6 : 2), 2 * flip, atk ? 8 : 6);
-        this.px(ctx, gold, handX, armY, 3 * flip, 1);
-        this.px(ctx, woodDk, handX, armY + 1, 2 * flip, 2);
+        P(woodDk, -1, 0, 2, 3); P(gold, -2, -1, 4, 1);            // greep + guard
+        const bl = atk ? 9 : 6;
+        P(steel, -1, -1 - bl, 2, bl); P(steelLt, 0, -1 - bl, 1, bl);
+        P(steel, -1, -2 - bl, 2, 1);                              // punt
       } else if (id === 'club') {
-        this.px(ctx, wood, handX, armY - (atk ? 6 : 1), 3 * flip, atk ? 9 : 7);
-        this.px(ctx, woodDk, handX + 2 * flip, armY - (atk ? 7 : 2), 3 * flip, atk ? 6 : 5);  // dikke kop
+        P(woodDk, -1, 0, 2, 4);                                   // greep
+        const bl = atk ? 8 : 6;
+        P(wood, -1, -2 - bl, 3, bl + 1);                          // slaghout
+        P(S(wood, 0.28), -1, -2 - bl, 1, bl + 1); P(woodDk, 1, -2 - bl, 1, bl + 1);
+        P(wood, -2, -3 - bl, 4, 2); P(S(wood, 0.28), -2, -3 - bl, 4, 1);  // dikke knobbel-kop
       } else if (id === 'axe') {
-        this.px(ctx, wood, handX, armY - 2, 2 * flip, 11);                              // steel
-        this.px(ctx, steel, handX + 1 * flip, armY - (atk ? 8 : 4), 6 * flip, 6);       // blad
-        this.px(ctx, steelDk, handX + 1 * flip, armY - (atk ? 8 : 4), 6 * flip, 2);
+        const sl = atk ? 13 : 12;
+        P(wood, -1, -sl + 2, 2, sl);                              // steel door de hand
+        P(woodDk, 0, -sl + 2, 1, sl);
+        P(steel, 1, -sl + 1, 5, 6); P(steelDk, 1, -sl + 1, 5, 2);         // bijlblad voor
+        P(steelLt, 5, -sl + 3, 1, 3);                             // snijkant
+        P(steel, -3, -sl + 2, 2, 4);                              // tegenpunt achter
       } else if (id === 'spear') {
-        this.px(ctx, wood, handX, armY + 1, (atk ? 17 : 14) * flip, 2);                 // lange schacht
-        this.px(ctx, steel, handX + (atk ? 17 : 14) * flip, armY - 1, 4 * flip, 4);     // punt
-        this.px(ctx, steelDk, handX + (atk ? 17 : 14) * flip, armY - 1, 4 * flip, 1);
+        const ln = atk ? 19 : 16;
+        P(wood, -3, 0, ln, 2); P(woodDk, -3, 1, ln, 1);           // schacht (achter -> voor)
+        P(steel, ln - 4, -2, 4, 5); P(steelLt, ln - 4, -2, 4, 1);         // bladpunt
+        P(steel, ln, -1, 2, 2);                                   // spitse tip
       } else if (id === 'mace') {
-        this.px(ctx, wood, handX, armY - 1, 2 * flip, 9);
-        this.px(ctx, '#6b7480', handX - 1 * flip, armY - (atk ? 10 : 6), 6 * flip, 6);  // bal
-        this.px(ctx, '#9aa3ad', handX - 1 * flip, armY - (atk ? 10 : 6), 6 * flip, 2);
-        this.px(ctx, '#4a4f57', handX + 2 * flip, armY - (atk ? 12 : 8), 2 * flip, 2);  // spike
+        P(woodDk, -1, 0, 2, 4); const hh2 = atk ? 8 : 6;
+        P(wood, -1, -hh2, 2, hh2);                                // steel
+        P('#6b7480', -2, -4 - hh2, 6, 6); P('#9aa3ad', -2, -4 - hh2, 6, 2);   // bal
+        P('#4a4f57', -3, -1 - hh2, 2, 2); P('#4a4f57', 3, -1 - hh2, 2, 2);    // spikes zij
+        P('#4a4f57', 0, -6 - hh2, 2, 2);                          // spike top
       } else if (id === 'flail') {
-        this.px(ctx, woodDk, handX, armY - 1, 2 * flip, 6);                             // handvat
-        this.px(ctx, '#888f99', handX + 1 * flip, armY - 3, 1 * flip, 4);               // ketting
-        this.px(ctx, '#6b7480', handX + 1 * flip, armY - (atk ? 9 : 6), 5 * flip, 5);   // bal
-        this.px(ctx, '#9aa3ad', handX + 1 * flip, armY - (atk ? 9 : 6), 5 * flip, 2);
+        P(woodDk, -1, 0, 2, 6);                                   // handvat
+        P('#888f99', 0, -3, 1, 4);                                // ketting
+        P('#6b7480', -1, -3 - (atk ? 5 : 4), 5, 5); P('#9aa3ad', -1, -3 - (atk ? 5 : 4), 5, 2);   // bal
+        P('#4a4f57', 1, -5 - (atk ? 5 : 4), 2, 2);                // spike
       } else if (id === 'bostaff') {
-        this.px(ctx, wood, handX - (atk ? 11 : 9) * flip, armY + 1, (atk ? 24 : 20) * flip, 2);  // lange staf, beide kanten
-        this.px(ctx, woodDk, handX - (atk ? 11 : 9) * flip, armY + 2, (atk ? 24 : 20) * flip, 1);
-      } else if (id === 'katana') {
-        this.px(ctx, '#1a1a1a', handX, armY, 2 * flip, 3);                              // tsuba
-        this.px(ctx, steel, handX + 2 * flip, armY - (atk ? 9 : 3), 3 * flip, atk ? 13 : 11);
-        this.px(ctx, '#eef2f6', handX + 2 * flip, armY - (atk ? 9 : 3), 1 * flip, atk ? 13 : 11);
+        const ln = atk ? 24 : 20;
+        P(wood, -(ln >> 1), 0, ln, 2); P(woodDk, -(ln >> 1), 1, ln, 1);
+        P(S(wood, 0.28), -(ln >> 1), 0, ln, 1);                   // lange staf, beide kanten
+        P('#3a2f22', -(ln >> 1), 0, 2, 2); P('#3a2f22', (ln >> 1) - 2, 0, 2, 2);  // metalen doppen
       } else if (id === 'halberd') {
-        this.px(ctx, wood, handX, armY + 1, (atk ? 18 : 15) * flip, 2);                 // lange schacht
-        this.px(ctx, steel, handX + (atk ? 13 : 10) * flip, armY - 5, 6 * flip, 6);     // bijlblad
-        this.px(ctx, steelDk, handX + (atk ? 13 : 10) * flip, armY - 5, 6 * flip, 2);
-        this.px(ctx, steel, handX + (atk ? 18 : 15) * flip, armY - 6, 2 * flip, 5);     // punt bovenop
+        const ln = atk ? 20 : 17;
+        P(wood, -3, 0, ln, 2); P(woodDk, -3, 1, ln, 1);           // schacht
+        P(steel, ln - 8, -6, 6, 6); P(steelDk, ln - 8, -6, 6, 2);         // bijlblad
+        P(steelLt, ln - 3, -7, 2, 7);                             // punt bovenop
+        P(steel, ln - 5, 2, 2, 2);                                // haak onder
       } else { // bat
-        this.px(ctx, wood, handX, armY - (atk ? 7 : 1), 3 * flip, atk ? 10 : 8);
-        this.px(ctx, woodDk, handX, armY + 2, 2 * flip, 3);
+        P(woodDk, -1, 0, 2, 4);                                   // greep
+        const bl = atk ? 10 : 8;
+        P(wood, -1, -1 - bl, 2, bl);                              // dun bij de hand
+        P(wood, -2, -2 - bl, 4, 4);                               // dikke top
+        P(S(wood, 0.28), -2, -2 - bl, 1, 4); P(woodDk, 1, -2 - bl, 1, 4);
       }
     } else {
       // vuurwapens
-      const gunBody = '#3a3f46', gunDark = '#23262b', gunWood = '#6b4a2a';
+      const gunBody = '#3a3f46', gunDark = '#23262b', gunWood = '#6b4a2a', gunLt = '#565d66';
       if (w.id === 'pistol') {
-        this.px(ctx, gunBody, handX, armY - 1, 6 * flip, 3);
-        this.px(ctx, gunDark, handX, armY + 2, 2 * flip, 3);
+        P(gunBody, 0, -2, 6, 3); P(gunLt, 0, -2, 6, 1);           // slede
+        P(gunDark, 0, 1, 2, 3);                                   // greep
       } else if (w.id === 'uzi') {
-        this.px(ctx, gunBody, handX, armY - 1, 8 * flip, 3);
-        this.px(ctx, gunDark, handX + 1 * flip, armY + 2, 2 * flip, 4); // magazijn
+        P(gunBody, 0, -2, 8, 3); P(gunLt, 0, -2, 8, 1);
+        P(gunDark, 1, 1, 2, 4);                                   // magazijn
+        P(gunDark, -2, -2, 2, 2);                                 // achterkant
       } else if (w.id === 'ak47') {
-        this.px(ctx, gunBody, handX, armY - 1, 12 * flip, 3);
-        this.px(ctx, gunWood, handX - 1 * flip, armY, 3 * flip, 2);
-        this.px(ctx, gunDark, handX + 4 * flip, armY + 2, 3 * flip, 4); // gebogen magazijn
+        P(gunBody, -2, -2, 13, 3); P(gunLt, -2, -2, 13, 1);       // body/loop
+        P(gunWood, -4, -2, 3, 3);                                 // kolf
+        P(gunDark, 4, 1, 3, 4);                                   // gebogen magazijn
+        P(gunDark, 6, 2, 2, 2);
       }
     }
+    ctx.restore();
     if (doSwing) ctx.restore();
   },
 
