@@ -1531,3 +1531,10 @@ body.is-touch.portrait.in-game #rotate-hint { display: flex; }
 .train-pu-ico { width: 44px; height: 44px; image-rendering: pixelated; pointer-events: none; }
 .train-pu-lbl { font-family: var(--pixel-font); font-size: 10px; text-align: center; line-height: 1.1; }
 .train-pu-hint { margin-top: 8px; font-size: 11px; color: #9fb0c4; text-align: center; }
+
+.train-clear-btn {
+  margin-top: 10px; width: 100%; padding: 8px; border-radius: 10px;
+  border: 2px solid #b3443a; background: rgba(120,34,30,0.55); color: #ffd7d0;
+  font-family: var(--pixel-font); font-size: 12px; letter-spacing: 1px; cursor: pointer;
+}
+.train-clear-btn:active { transform: scale(0.98); background: rgba(150,44,38,0.7); }

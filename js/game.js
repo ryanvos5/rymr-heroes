@@ -2373,9 +2373,10 @@ const Game = {
           const facing = (Math.sign(oppX - p.x) === p.dir) || Math.abs(oppX - p.x) < 8;
           p.cannon--; p._fireCd = this.time + 900; this.spawnCannon(p, facing);   // niet gericht -> mist
         }
-      } else if (p.gunAmmo > 0 && p.rangedId === 'ak47') {  // AK47: snelvuur tot de kogels op zijn
+      } else if (p.gunAmmo > 0 && (p.rangedId === 'ak47' || p.rangedId === 'deagle' || p.rangedId === 'crossbow')) {  // geweren: vuren tot de kogels op zijn
         if (this.time >= (p._fireCd || 0)) {
-          p.gunAmmo--; p._fireCd = this.time + 150; this.spawnVersusGun(p);
+          const g = GUN_STATS[p.rangedId];
+          p.gunAmmo--; p._fireCd = this.time + g.cd; this.spawnGunShot(p, g);
           if (p.gunAmmo <= 0) { p.rangedId = null; p.weaponId = p.meleeId || 'bat'; }
         }
       } else if (p.beachball > 0 && !this.ball) {           // strandbal afschieten (1 actieve bal tegelijk)
@@ -2419,6 +2420,16 @@ const Game = {
     this.bullets.push(bl);
     this.spawnMuzzleFlash(p.x + dir * 14, p.y - 16, dir);
     if (window.Sfx) Sfx.play('shoot');
+  },
+  // geweerschot (AK47 / Desert Eagle / Kruisboog) met per-wapen-stats + eventuele terugslag
+  spawnGunShot(p, g) {
+    const dir = p.dir;
+    const bl = new Bullet(p.x + dir * 14, p.y - 16, dir * (g.speed || 9), 0, 0);
+    bl.kind = g.kind; bl.hitDmg = g.dmg; bl.power = g.power; bl.vy = 0; bl.life = 0;
+    this.bullets.push(bl);
+    this.spawnMuzzleFlash(p.x + dir * 14, p.y - 16, dir);
+    if (g.recoil) { p.knockVx = -dir * g.recoil; p.vy = Math.min(p.vy || 0, -1.5); this.shake = Math.max(this.shake, 5); }   // Desert Eagle: terugslag
+    if (window.Sfx && p === this.player) Sfx.play(g.kind === 'arrow' ? 'shoot' : 'gun');
   },
 
   spawnVersusProjectile(shooter, kind) {
@@ -3600,8 +3611,8 @@ const Game = {
   applyDrop(pl, d) {
     if (window.Sfx && pl === this.player) Sfx.play('pickup');
     for (let i = 0; i < 8; i++) this.particles.push(new Particle(d.x, d.y, (Math.random() - 0.5) * 2, -Math.random() * 2, '#ffe27a', 340, 2));
-    // een ander vuurwapen pakken vervangt de AK47
-    if (d.kind === 'fireball' || d.kind === 'rocket' || d.kind === 'cannon' || d.kind === 'giant' || d.kind === 'ninjastar') { pl.gunAmmo = 0; if (pl.rangedId === 'ak47') pl.rangedId = null; }
+    // een ander vuurwapen pakken vervangt het vorige geweer (AK47/Deagle/Kruisboog)
+    if (['fireball', 'rocket', 'cannon', 'giant', 'ninjastar', 'deagle', 'crossbow'].includes(d.kind)) { pl.gunAmmo = 0; if (pl.rangedId === 'ak47' || pl.rangedId === 'deagle' || pl.rangedId === 'crossbow') pl.rangedId = null; }
     if (d.kind === 'weapon') { pl.meleeId = d.wid; pl.weaponId = pl.rangedId || d.wid; pl._weaponUntil = this.time + SMASH_WEAPON_TIME; }
     else if (d.kind === 'giant') {                                    // REUS: gigantisch, dubbel leven, kan niet aanvallen
       pl._baseMaxHp = pl._baseMaxHp || pl.maxHp;
@@ -3610,6 +3621,9 @@ const Game = {
       for (let i = 0; i < 14; i++) this.particles.push(new Particle(pl.x, pl.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, '#7affa0', 420, 3));
     }
     else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = 50; pl.weaponId = 'ak47'; }   // AK47 met 50 kogels
+    else if (d.kind === 'deagle') { pl.rangedId = 'deagle'; pl.gunAmmo = 3; pl.weaponId = 'deagle'; }       // Desert Eagle: 3 kogels
+    else if (d.kind === 'crossbow') { pl.rangedId = 'crossbow'; pl.gunAmmo = 7; pl.weaponId = 'crossbow'; }  // Kruisboog: 7 pijlen
+    else if (d.kind === 'chainsaw') { pl.meleeId = 'chainsaw'; pl.weaponId = 'chainsaw'; }                   // Kettingzaag: melee-wapen
     else if (d.kind === 'fireball') pl.fireballs = SMASH_FIREBALL_SHOTS;
     else if (d.kind === 'rocket') { pl.smashRockets = SMASH_ROCKETS; pl.rangedId = 'rocketlauncher'; pl.weaponId = 'rocketlauncher'; }   // echt een raketwerper vasthouden
     else if (d.kind === 'ninjastar') { pl.stars = SMASH_STARS; pl.rangedId = 'ninjastar'; pl.weaponId = 'ninjastar'; }                   // 3 ninja-sterren, ster in de hand
@@ -3722,7 +3736,7 @@ const Game = {
     const sw = p.swingUntil || 0;
     if (sw && sw !== this.vs.lastSwing && this.time < sw) {
       this.vs.lastSwing = sw;
-      const reach = 40;                              // ruime melee-reach in versus
+      const reach = Math.max(40, (WEAPONS[p.meleeId] && WEAPONS[p.meleeId].range) || 40);   // lang wapen (speer/hellebaard) reikt verder
       const dx = (r.x - p.x) * p.dir;
       const close = Math.abs(r.x - p.x) < 24;        // bijna in elkaar -> altijd raak (ook als je net de andere kant op kijkt)
       if ((close || (dx > -16 && dx < reach)) && Math.abs(r.y - p.y) < 34) {
@@ -5277,9 +5291,19 @@ const Game = {
   },
   _trainClearWeapons(p) {
     p.fireballs = 0; p.smashRockets = 0; p.stars = 0; p.cannon = 0; p.gunAmmo = 0; p.rangedId = null;
-    p.beachball = 0; p.coco = 0; p.boomerang = 0; p.dart = 0; p.shieldHp = 0; p.giant = false;
-    p.weaponId = p.meleeId || p.baseMelee || 'bat'; p._weaponUntil = 0; p._fireCd = 0; p._trapCharges = 0;
-    if (p._baseMaxHp) { p.maxHp = p._baseMaxHp; }
+    p.beachball = 0; p.coco = 0; p.boomerang = 0; p.dart = 0; p.shieldHp = 0; p.giant = false; p.heli = false;
+    p.meleeId = p.baseMelee || 'bat';                                   // kettingzaag e.d. terug naar basis-melee
+    p.weaponId = p.meleeId; p._weaponUntil = 0; p._fireCd = 0; p._trapCharges = 0;
+    if (p._baseMaxHp) { p.maxHp = p._baseMaxHp; if (p.hp > p.maxHp) p.hp = p.maxHp; }
+  },
+  // Training: alle opgepakte power-ups weer weghalen (bv. reus terugzetten)
+  trainClearPowerups() {
+    if (this.state !== 'training' || !this.player) return;
+    const p = this.player;
+    this._trainClearWeapons(p);
+    for (let i = 0; i < 10; i++) this.particles.push(new Particle(p.x, p.y - 12, (Math.random() - 0.5) * 3, -Math.random() * 2.5, '#bfe9ff', 380, 2));
+    this.addFloatText(p.x, p.y - 22, 'POWER-UP WEG', '#bfe9ff', false);
+    if (window.Sfx) Sfx.play('pickup');
   },
   quitTraining() {
     this.training = false;
@@ -5348,7 +5372,7 @@ const Game = {
     const sw = p.swingUntil || 0;
     if (!sw || this.time >= sw) return;
     if (sw !== this._trainLastAtk) { this._trainLastAtk = sw; this._trainHitSet = {}; }
-    const reach = 40;
+    const reach = Math.max(40, (WEAPONS[p.meleeId] && WEAPONS[p.meleeId].range) || 40);   // lang wapen reikt verder
     for (const id in this.trainPeers) {
       if (this._trainHitSet[id]) continue;
       const pe = this.trainPeers[id];
@@ -5464,6 +5488,8 @@ const Game = {
     else if (b.kind === 'coco') { Sprites.px(ctx, '#5e3f22', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#8a5e36', b.x - 4, b.y - 4, 8, 3); }
     else if (b.kind === 'star') { const f = Math.floor(this.time / 35) % 2, c = '#cfd6df'; if (f) { Sprites.px(ctx, c, b.x - 4, b.y - 1, 8, 2); Sprites.px(ctx, c, b.x - 1, b.y - 4, 2, 8); } else { Sprites.px(ctx, c, b.x - 3, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x - 3, b.y + 1, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y + 1, 2, 2); } }
     else if (b.kind === 'dart') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#2f7a3a', b.x - d * 4, b.y - 1, 8, 2); Sprites.px(ctx, '#cfd6df', b.x + d * 3, b.y - 1, 2, 2); }
+    else if (b.kind === 'deagle') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#ffd24a', b.x - d * 3, b.y - 1, 5, 3); Sprites.px(ctx, '#fff3c0', b.x + d, b.y - 1, 2, 2); }   // dikke gouden kogel
+    else if (b.kind === 'arrow') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#6b4a2a', b.x - d * 5, b.y, 8, 1); Sprites.px(ctx, '#cfd6df', b.x + d * 3, b.y - 1, 3, 2); Sprites.px(ctx, '#8a5e36', b.x - d * 6, b.y - 1, 2, 3); }   // pijl: schacht + punt + veren
     else Sprites.px(ctx, '#ffe27a', b.x - 1, b.y - 1, 3, 2);
   },
   drawComputer(ctx, x, y) {

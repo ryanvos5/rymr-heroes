@@ -81,6 +81,20 @@ const Sprites = {
     const self = this;
     this.ink(ctx, cx, cy, (c) => self._powerupRaw(c, kind, cx, cy));
   },
+  // ---- gedeelde AK47-vorm (grip op oorsprong, loop naar +x) — gebruikt in-game + iconen ----
+  _akShape(P, S) {
+    const body = '#3a3f46', bodyLt = '#565d66', dark = '#23262b', wood = '#7a4e24', woodLt = '#9a6a34', woodDk = '#4a2f16', mag = '#a86a2e', magDk = '#7a4818';
+    P(wood, -9, -3, 4, 4); P(woodLt, -9, -3, 4, 1); P(woodDk, -9, 0, 4, 1);   // houten kolf (achter)
+    P(body, -6, -3, 2, 3);                                                     // kolf-hals
+    P(body, -5, -3, 8, 4); P(bodyLt, -5, -3, 8, 1); P(dark, -5, 0, 8, 1);      // grijze ontvanger
+    P(bodyLt, -3, -5, 8, 1);                                                    // gasbuis bovenop
+    P(body, 2, -6, 1, 2); P(body, 9, -6, 1, 2);                               // vizier + korrel
+    P(body, 3, -2, 9, 2); P(bodyLt, 3, -2, 9, 1);                             // loop vooruit
+    P(wood, 3, 0, 4, 2); P(woodLt, 3, 0, 4, 1); P(woodDk, 3, 2, 4, 1);        // houten voorgreep
+    P(wood, -1, 1, 2, 4); P(woodDk, 0, 1, 1, 4);                              // houten pistoolgreep
+    P(mag, 1, 1, 3, 2); P(mag, 2, 3, 3, 2); P(magDk, 3, 5, 3, 2);             // gebogen banaan-magazijn
+    P(S(mag, 0.3), 1, 1, 3, 1);
+  },
   _powerupRaw(ctx, kind, cx, cy) {
     const P = (col, x, y, w, h) => this.px(ctx, col, cx + x, cy + y, w, h);
     const S = (hex, f) => this._shade(hex, f);
@@ -145,12 +159,45 @@ const Sprites = {
         P('#ffd24a', 3, -9, 2, 2);                       // zeldzaam-sprankel
         break;
       }
-      case 'ak47': {                                     // AK47
-        P('#2a2a2e', -7, -2, 12, 3); P('#54545c', -7, -2, 12, 1);   // loop + highlight
-        P('#6a4326', 3, -1, 4, 5); P('#8a5e36', 3, -1, 4, 1);       // kolf
-        P('#3a2f22', -3, 1, 3, 3); P('#2a2119', -2, 4, 3, 2);       // magazijn (gebogen)
-        P('#3a2f22', 0, 1, 2, 4);                        // greep
-        P('#2a2a2e', -5, -4, 2, 2);                      // vizier
+      case 'ak47': {                                     // AK47 (gedeelde vorm, gecentreerd)
+        const P2 = (c, x, y, w, h) => P(c, x - 1, y, w, h);
+        this._akShape(P2, S);
+        break;
+      }
+      case 'ninjastar': {                                // Ninja-ster (shuriken)
+        const st = '#d7dde3', stDk = '#8a929c';
+        P(st, -1, -7, 3, 5); P(st, -1, 3, 3, 5); P(st, -7, -1, 5, 3); P(st, 3, -1, 5, 3);   // 4 punten
+        P(st, -2, -2, 5, 5); P(stDk, -2, 1, 5, 1);       // naaf
+        P('#3a3f46', 0, 0, 1, 1);                        // gaatje
+        break;
+      }
+      case 'deagle': {                                   // Desert Eagle (fors pistool)
+        const body = '#4a5058', bodyLt = '#6a727c', dark = '#23262b';
+        P(body, -6, -3, 13, 4); P(bodyLt, -6, -3, 13, 1);           // slede
+        P(dark, -6, -3, 2, 2);                                       // achterkant
+        P(body, 6, -2, 3, 2);                                        // loop-mond
+        P('#8a5e36', -3, 1, 3, 6); P('#6b4426', -3, 1, 1, 6);        // houten greep (schuin)
+        P(dark, 0, 1, 2, 4);                                         // trekkerbeugel
+        P('#caa84a', 5, -4, 2, 2);                                   // goud accent
+        break;
+      }
+      case 'crossbow': {                                 // Kruisboog
+        const wood = '#7a5230', woodLt = '#9a6a34', steel = '#cfd6df';
+        P(wood, -2, -1, 12, 3); P(woodLt, -2, -1, 12, 1);           // lade (stock)
+        P('#4a3320', -6, -7, 2, 15);                                 // boog-arm (verticaal)
+        P('#4a3320', -6, -7, 3, 2); P('#4a3320', -6, 6, 3, 2);       // boog-uiteinden
+        P('#888f99', -5, 0, 12, 1);                                  // pees
+        P(steel, 6, -1, 5, 2); P('#ffffff', 9, -1, 2, 1);           // pijl op de lade
+        P('#3a2f22', 0, 2, 2, 3);                                    // trekker/greep
+        break;
+      }
+      case 'chainsaw': {                                 // Kettingzaag
+        P('#c8402a', -6, -3, 6, 7); P('#e05a3a', -6, -3, 6, 2);      // rode motor
+        P('#2a2a2e', -2, 0, 3, 4);                                   // greep
+        P('#9aa3ad', 0, -2, 12, 3); P('#cfd6df', 0, -2, 12, 1);      // grijze zaagbalk
+        for (let i = 0; i < 12; i += 2) P('#e8edf2', 1 + i, 1, 1, 1);   // tanden
+        P('#3a3f46', 0, -2, 2, 3);                                   // aandrijving
+        P('#ffd24a', -4, -1, 1, 1);                                  // vonk
         break;
       }
       case 'rocket': {                                   // Raket (verticaal)
@@ -664,10 +711,18 @@ const Sprites = {
         P(steelLt, 5, -sl + 3, 1, 3);                             // snijkant
         P(steel, -3, -sl + 2, 2, 4);                              // tegenpunt achter
       } else if (id === 'spear') {
-        const ln = atk ? 19 : 16;
-        P(wood, -3, 0, ln, 2); P(woodDk, -3, 1, ln, 1);           // schacht (achter -> voor)
-        P(steel, ln - 4, -2, 4, 5); P(steelLt, ln - 4, -2, 4, 1);         // bladpunt
-        P(steel, ln, -1, 2, 2);                                   // spitse tip
+        const ln = atk ? 30 : 26;                                 // extra lange schacht (groot bereik)
+        P(wood, -4, 0, ln, 2); P(woodDk, -4, 1, ln, 1);           // schacht (achter -> voor)
+        P(S(wood, 0.28), -4, 0, ln, 1);                           // highlight langs de schacht
+        P(steel, ln - 5, -2, 4, 5); P(steelLt, ln - 5, -2, 4, 1);         // bladpunt
+        P(steel, ln - 1, -1, 3, 2);                               // spitse tip
+      } else if (id === 'chainsaw') {
+        P('#c8402a', -3, -2, 5, 6); P('#e05a3a', -3, -2, 5, 2);   // rode motor-behuizing
+        P('#2a2a2e', 0, 0, 2, 3);                                 // greep
+        const bl = atk ? 16 : 13;
+        P('#9aa3ad', 2, -1, bl, 3); P('#cfd6df', 2, -1, bl, 1);   // grijze zaagbalk
+        for (let i = 0; i < bl; i += 2) P('#eef3f7', 3 + i, 2, 1, 1);   // tanden onderaan
+        P('#3a3f46', 2, -1, 1, 3);                                // aandrijving
       } else if (id === 'mace') {
         P(woodDk, -1, 0, 2, 4); const hh2 = atk ? 8 : 6;
         P(wood, -1, -hh2, 2, hh2);                                // steel
@@ -708,10 +763,18 @@ const Sprites = {
         P(gunDark, 1, 1, 2, 4);                                   // magazijn
         P(gunDark, -2, -2, 2, 2);                                 // achterkant
       } else if (w.id === 'ak47') {
-        P(gunBody, -2, -2, 13, 3); P(gunLt, -2, -2, 13, 1);       // body/loop
-        P(gunWood, -4, -2, 3, 3);                                 // kolf
-        P(gunDark, 4, 1, 3, 4);                                   // gebogen magazijn
-        P(gunDark, 6, 2, 2, 2);
+        this._akShape(P, S);                                      // gedetailleerde AK47 (kolf/greep/voorgreep/magazijn)
+      } else if (w.id === 'deagle') {
+        P(gunBody, 0, -2, 9, 3); P(gunLt, 0, -2, 9, 1);           // slede
+        P('#6b4426', -1, 1, 2, 4);                                // houten greep
+        P(gunDark, 1, 1, 2, 2);                                   // trekkerbeugel
+        P('#caa84a', 7, -2, 2, 1);                                // goud accent aan de loop
+      } else if (w.id === 'crossbow') {
+        P('#5a3a22', -6, -6, 2, 13);                              // boog-arm (verticaal)
+        P('#888f99', -5, -1, 3, 1); P('#888f99', -5, 1, 3, 1);    // pees
+        P('#7a5230', -3, -1, 12, 2); P(S('#7a5230', 0.3), -3, -1, 12, 1);   // lade
+        P('#cfd6df', 6, -1, 5, 2); P('#ffffff', 10, -1, 1, 1);    // pijl
+        P('#3a2f22', -1, 1, 2, 3);                                // greep
       }
     }
     ctx.restore();
@@ -1516,7 +1579,7 @@ const Sprites = {
         this.px(ctx, wood, L + 4, y - 6, 4, 16); this.px(ctx, woodDk, L + 4, y - 6, 2, 16);
         this.px(ctx, steel, L + 8, y - 7, 12, 9); this.px(ctx, steelDk, L + 8, y - 7, 12, 3);
       } else if (weaponId === 'spear') {
-        this.px(ctx, wood, L, y - 1, 22, 3); this.px(ctx, steel, L + 20, y - 3, 8, 7); this.px(ctx, steelDk, L + 20, y - 3, 8, 2);
+        this.px(ctx, wood, L - 4, y - 1, 30, 3); this.px(ctx, steel, L + 24, y - 3, 8, 7); this.px(ctx, steelDk, L + 24, y - 3, 8, 2);
       } else if (weaponId === 'mace') {
         this.px(ctx, wood, L, y - 1, 16, 4);
         this.px(ctx, '#6b7480', L + 13, y - 7, 12, 12); this.px(ctx, '#9aa3ad', L + 13, y - 7, 12, 4);
@@ -1533,6 +1596,11 @@ const Sprites = {
       } else if (weaponId === 'halberd') {
         this.px(ctx, wood, L, y - 2, 26, 3); this.px(ctx, steel, L + 14, y - 9, 9, 9);
         this.px(ctx, steelDk, L + 14, y - 9, 9, 3); this.px(ctx, steel, L + 23, y - 11, 4, 6);
+      } else if (weaponId === 'chainsaw') {
+        this.px(ctx, '#c8402a', cx - 14, y - 6, 9, 11); this.px(ctx, '#e05a3a', cx - 14, y - 6, 9, 3);   // rode motor
+        this.px(ctx, '#2a2a2e', cx - 8, y + 3, 5, 6);                                                    // greep
+        this.px(ctx, '#9aa3ad', cx - 5, y - 4, 22, 5); this.px(ctx, '#cfd6df', cx - 5, y - 4, 22, 2);    // zaagbalk
+        for (let i = 0; i < 22; i += 3) this.px(ctx, '#eef3f7', cx - 4 + i, y + 1, 2, 1);                 // tanden
       } else { // bat
         this.px(ctx, wood, cx - 12, y - 7, 16, 5); this.px(ctx, '#9a6a3a', cx - 12, y - 7, 16, 2); this.px(ctx, woodDk, cx + 2, y - 6, 6, 4);
       }
@@ -1546,10 +1614,19 @@ const Sprites = {
         this.px(ctx, dark, cx - 4, y - 1, 4, 9);
         this.px(ctx, dark, cx + 6, y - 8, 3, 4);
       } else if (weaponId === 'ak47') {
-        this.px(ctx, body, cx - 16, y - 6, 30, 5);
-        this.px(ctx, wood, cx + 8, y - 6, 8, 5);
-        this.px(ctx, wood, cx - 16, y - 6, 5, 5);
-        this.px(ctx, dark, cx - 2, y - 1, 5, 9);
+        const S = (hex, f) => this._shade(hex, f);
+        const P = (c, dx, dy, w2, h2) => this.px(ctx, c, cx + dx * 1.6, y + dy * 1.6, Math.ceil(w2 * 1.6), Math.ceil(h2 * 1.6));   // 1.6× vergroot, gecentreerd
+        this._akShape(P, S);
+      } else if (weaponId === 'deagle') {
+        this.px(ctx, '#4a5058', cx - 12, y - 6, 22, 6); this.px(ctx, '#6a727c', cx - 12, y - 6, 22, 2);   // slede
+        this.px(ctx, '#23262b', cx - 12, y - 6, 3, 3);                                                    // achterkant
+        this.px(ctx, '#8a5e36', cx - 6, y, 4, 10); this.px(ctx, '#6b4426', cx - 6, y, 2, 10);            // houten greep
+        this.px(ctx, '#caa84a', cx + 8, y - 4, 3, 2);                                                     // goud accent
+      } else if (weaponId === 'crossbow') {
+        this.px(ctx, '#4a3320', cx - 12, y - 10, 3, 22);                                                  // boog-arm
+        this.px(ctx, '#888f99', cx - 10, y - 2, 20, 1); this.px(ctx, '#888f99', cx - 10, y + 1, 20, 1);   // pees
+        this.px(ctx, '#7a5230', cx - 6, y - 1, 22, 4); this.px(ctx, '#9a6a34', cx - 6, y - 1, 22, 1);     // lade
+        this.px(ctx, '#cfd6df', cx + 6, y - 1, 8, 2); this.px(ctx, '#ffffff', cx + 12, y - 1, 2, 1);      // pijl
       } else if (weaponId === 'rocket') {
         this.px(ctx, '#3a4750', cx - 16, y - 6, 26, 6);    // buis
         this.px(ctx, '#566872', cx - 16, y - 6, 26, 2);

@@ -58,8 +58,8 @@ const WEAPONS = {
   },
   spear: {
     id: 'spear', name: 'Spear', type: 'melee',
-    damage: 48, cooldown: 420, range: 56, knock: 8, cost: 900,
-    desc: 'Lang bereik — raak vijanden van veraf.'
+    damage: 48, cooldown: 420, range: 76, knock: 8, cost: 900,
+    desc: 'Extra lang bereik — raak vijanden van heel veraf.'
   },
   mace: {
     id: 'mace', name: 'Mace', type: 'melee',
@@ -117,6 +117,22 @@ const WEAPONS = {
     damage: 34, cooldown: 360, range: 30, cost: 0,
     desc: 'Shield bash + block.'
   },
+  // ---- Training-lobby-only wapens (alleen via de computer) ----
+  chainsaw: {
+    id: 'chainsaw', name: 'Kettingzaag', type: 'melee',
+    damage: 60, cooldown: 640, range: 30, knock: 10, cost: 0,
+    desc: 'Zaagt door alles: 60 schade, maar traag.'
+  },
+  deagle: {
+    id: 'deagle', name: 'Desert Eagle', type: 'ranged',
+    damage: 50, cooldown: 520, range: 999, bulletSpeed: 11, pellets: 1, cost: 0,
+    desc: 'Fors pistool met terugslag: halve HP per treffer, 3 kogels.'
+  },
+  crossbow: {
+    id: 'crossbow', name: 'Kruisboog', type: 'ranged',
+    damage: 35, cooldown: 560, range: 999, bulletSpeed: 12, pellets: 1, cost: 0,
+    desc: 'Schiet pijlen: 35 schade, 7 pijlen.'
+  },
 };
 
 // volgorde in de shop: eerst alle melee (oplopend in prijs), dan de vuurwapens
@@ -124,6 +140,12 @@ const WEAPON_ORDER = [
   'bat', 'club', 'machete', 'sword', 'dagger', 'axe', 'spear', 'mace', 'flail', 'bostaff', 'katana', 'halberd',
   'pistol', 'uzi', 'ak47', 'rocket',
 ];
+// geweer-stats voor Power Smash / Training (schade per kogel, tempo, terugslag)
+const GUN_STATS = {
+  ak47:     { cd: 150, dmg: 13, power: 7,  speed: 9,  kind: 'gun' },
+  deagle:   { cd: 520, dmg: 50, power: 16, speed: 11, kind: 'deagle', recoil: 10 },   // halve HP + terugslag
+  crossbow: { cd: 560, dmg: 35, power: 8,  speed: 12, kind: 'arrow' },
+};
 // raketten: prijs per stuk in de shop + zeldzame drop-kans (alleen als je de RPG hebt)
 const ROCKET_COST = 250;
 const ROCKET_DROP_CHANCE = 0.02;   // ~2% per kill -> soms 0 in een heel level
@@ -767,8 +789,15 @@ const SHOP_POWERUPS = {
   dart:      { name: 'Gifdart',     cost: 0, kind: 'dart',      icon: '🎯', desc: 'Snelle dart die verdooft. Alleen uit kisten.', chestOnly: true },
   rock:      { name: 'Rotsblok',    cost: 0, kind: 'rock',      icon: '🪨', desc: 'Laat rotsblokken op je tegenstander vallen. Alleen uit kisten.', chestOnly: true },
   lightning: { name: 'Bliksem',     cost: 0, kind: 'lightning', icon: '🌩', desc: 'Verdoof je tegenstander met de bliksem. Alleen uit kisten.', chestOnly: true },
+  // ---- alleen in de Training-lobby-computer ----
+  ninjastar: { name: 'Ninja-sterren', cost: 0, kind: 'ninjastar', icon: '🌟', desc: '3 draaiende ninja-sterren.', trainingOnly: true },
+  deagle:     { name: 'Desert Eagle',  cost: 0, kind: 'deagle',    icon: '🔫', desc: 'Fors pistool met terugslag: halve HP, 3 kogels.', trainingOnly: true },
+  crossbow:   { name: 'Kruisboog',     cost: 0, kind: 'crossbow',  icon: '🏹', desc: 'Schiet pijlen: 35 schade, 7 pijlen.', trainingOnly: true },
+  chainsaw:   { name: 'Kettingzaag',   cost: 0, kind: 'chainsaw',  icon: '🪚', desc: 'Melee: 60 schade, maar traag.', trainingOnly: true },
 };
 const POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'rocket', 'cannon', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
+// volgorde in de Training-lobby-computer: alles wat je kunt uitproberen (incl. training-only wapens)
+const TRAINING_POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'deagle', 'crossbow', 'rocket', 'cannon', 'ninjastar', 'chainsaw', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
 
 /* ---------- KISTEN (loot uit online matches, Clash-stijl met unlock-timers) ---------- */
 const CHEST_TYPES = {

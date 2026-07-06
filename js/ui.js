@@ -51,6 +51,7 @@ const UI = {
     { const q = $('btn-train-quit'); if (q) this._tap(q, () => Game.quitTraining(), { immediate: true }); }
     { const cb = $('train-computer-btn'); if (cb) this._tap(cb, () => this.openTrainComputer(), { immediate: true }); }
     { const cc = $('train-computer-close'); if (cc) this._tap(cc, () => this.closeTrainComputer(), { immediate: true }); }
+    { const rp = $('train-clear-pu'); if (rp) rp.onclick = () => { Game.trainClearPowerups(); this.closeTrainComputer(); }; }
     $('btn-inventory-back').onclick = () => this.show('menu');
     document.querySelectorAll('#inv-tabs .shop-tab').forEach((b) => { b.onclick = () => { this._invTab = b.dataset.invtab; this.renderInventory(); }; });
     document.querySelectorAll('.chest-slot').forEach((b) => { b.onclick = () => this.chestClick(+b.dataset.chest); });
@@ -1410,7 +1411,8 @@ const UI = {
   renderTrainPowerups() {
     const grid = document.getElementById('train-pu-grid'); if (!grid) return;
     grid.innerHTML = '';
-    (typeof POWERUP_ORDER !== 'undefined' ? POWERUP_ORDER : []).forEach((id) => {
+    const order = (typeof TRAINING_POWERUP_ORDER !== 'undefined') ? TRAINING_POWERUP_ORDER : POWERUP_ORDER;
+    order.forEach((id) => {
       const pu = SHOP_POWERUPS[id]; if (!pu) return;
       const b = document.createElement('button'); b.className = 'train-pu'; b.dataset.kind = pu.kind;
       const cv = document.createElement('canvas'); cv.width = 44; cv.height = 44; cv.className = 'train-pu-ico';
