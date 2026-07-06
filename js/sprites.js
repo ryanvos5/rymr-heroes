@@ -563,6 +563,15 @@ const Sprites = {
       P('#e8703a', 11, -3, 3, 1);             // punt-highlight
       P('#ffd24a', 14, -1, 1, 2);             // spitse neus
       P('#2a2f36', 2, -5, 3, 1); P('#2a2f36', 3, -6, 1, 1);   // vizier bovenop
+    } else if (weaponId === 'ninjastar') {
+      // NINJA-STER (shuriken) klaar in de hand
+      const st = '#d7dde3', stDk = '#8a929c';
+      P('#241f1a', -1, 0, 2, 3);                              // greep in de vuist
+      P(st, 3, -4, 3, 3); P(st, 3, 1, 3, 3);                  // boven/onder punt
+      P(st, 0, -2, 3, 3); P(st, 6, -2, 3, 3);                 // links/rechts punt
+      P(st, 3, -2, 3, 3);                                     // naaf
+      P(stDk, 3, 0, 3, 1);                                    // schaduwrand
+      P('#3a3f46', 4, -1, 1, 1);                              // gaatje in het midden
     } else if (w.type === 'melee') {
       const id = w.id;
       if (id === 'katana') {

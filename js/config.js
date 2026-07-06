@@ -503,6 +503,9 @@ const SMASH_DROP_EVERY = 5000;       // ms tussen drops (host bepaalt)
 const SMASH_WEAPON_TIME = 13000;     // opgepakt melee-wapen ben je na ~13s weer kwijt
 const SMASH_FIREBALL_SHOTS = 3;      // aantal vuurballen
 const SMASH_ROCKETS = 3;             // raketten bij een RPG-drop
+const SMASH_STARS = 3;               // ninja-sterren bij een ster-drop
+const SMASH_STAR_DMG = 26;           // veel schade per ster
+const SMASH_STAR_CD = 200;           // snel achter elkaar gooien
 const SMASH_PORTAL_EVERY = 22000;    // ms tussen portalen (host bepaalt) — minder vaak
 const SMASH_PORTAL_LIFE = 11000;     // hoe lang een portaalpaar blijft staan
 // drakenei: zeldzaam, verdwijnt snel -> snel pakken; roept een draak op die de tegenstander beschiet
@@ -799,6 +802,23 @@ const VERSUS_MAPS = [
       { x: 175, y: 132, w: 64 }, { x: 545, y: 132, w: 64 },    // 2 lage platforms
       { x: 300, y: 96, w: 56 }, { x: 420, y: 96, w: 56 },      // 2 hogere platforms
       { x: 230, y: 40, w: 34, mast: true }, { x: 490, y: 40, w: 34, mast: true },  // 2 masten (kraaiennest)
+    ],
+  },
+  {
+    // Temple: stenen tempel-arena (net zo groot als Pirate Ship). Getrapte muur-blokken links/rechts
+    // (langs lopen op de grond + erop springen), een GROOT GAT in het midden (val = eraf), 2 zwevende
+    // platforms, en 2 deuren die je naar de overkant teleporteren. Géén portals op deze map.
+    id: 'temple', name: 'Temple', sky: ['#3a2f22', '#150e08'], void: '#0a0604', plat: 'stone', stone: true, temple: true, noPortals: true,
+    w: 720, fallY: 232, camTop: -20, camBottom: 30,
+    spawnL: { x: 90, y: 178 }, spawnR: { x: 630, y: 178 },
+    platforms: [
+      { x: 110, y: 180, w: 180, wall: true }, { x: 610, y: 180, w: 180, wall: true },   // grond links/rechts (midden = het grote gat)
+      { x: 150, y: 132, w: 118, wall: true }, { x: 570, y: 132, w: 118, wall: true },    // getrapte muur-blokken (met een deur erin)
+      { x: 268, y: 90, w: 60 }, { x: 452, y: 90, w: 60 },                                 // 2 zwevende platforms (deur-bestemmingen)
+    ],
+    doors: [
+      { x: 150, y: 132, tx: 452, ty: 76 },   // linker deur (2) -> rechter zwevend platform
+      { x: 570, y: 132, tx: 268, ty: 76 },   // rechter deur (1) -> linker zwevend platform
     ],
   },
   {

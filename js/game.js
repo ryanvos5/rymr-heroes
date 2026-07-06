@@ -2334,9 +2334,10 @@ const Game = {
         if (this.time >= (p._fireCd || 0)) { p.boomerang--; p._fireCd = this.time + 700; this.spawnBoomerang(p); }
       } else if (p.dart > 0) {                               // gifdart (snel + verdoving)
         if (this.time >= (p._fireCd || 0)) { p.dart--; p._fireCd = this.time + 280; this.spawnDart(p); }
-      } else if (p.fireballs > 0 || p.smashRockets > 0) {  // vuurwapen opgepakt -> vuren
+      } else if (p.fireballs > 0 || p.smashRockets > 0 || p.stars > 0) {  // vuurwapen opgepakt -> vuren
         if (this.time >= (p._fireCd || 0)) {
           if (p.fireballs > 0) { p.fireballs--; p._fireCd = this.time + 420; this.spawnVersusProjectile(p, 'fire'); }
+          else if (p.stars > 0) { p.stars--; p._fireCd = this.time + SMASH_STAR_CD; this.spawnVersusProjectile(p, 'star'); if (p.stars <= 0) { p.rangedId = null; if (p.weaponId === 'ninjastar') p.weaponId = p.meleeId || 'bat'; } }
           else { p.smashRockets--; p._fireCd = this.time + 850; this.spawnVersusProjectile(p, 'rocket'); if (p.smashRockets <= 0) { p.rangedId = null; if (p.weaponId === 'rocketlauncher') p.weaponId = p.meleeId || 'bat'; } }
         }
       } else {
@@ -2370,12 +2371,15 @@ const Game = {
 
   spawnVersusProjectile(shooter, kind) {
     const dir = shooter.dir;
-    const bl = new Bullet(shooter.x + dir * 14, shooter.y - 16, dir * (kind === 'rocket' ? 6 : 7.5), 0, 0);
+    const speed = kind === 'rocket' ? 6 : (kind === 'star' ? 11 : 7.5);   // ster vliegt snel
+    const bl = new Bullet(shooter.x + dir * 14, shooter.y - 16, dir * speed, 0, 0);
     bl.kind = kind;
-    if (kind === 'fire') { bl.hitDmg = 22; bl.power = 14; } else { bl.hitDmg = 40; bl.power = 26; }
+    if (kind === 'fire') { bl.hitDmg = 22; bl.power = 14; }
+    else if (kind === 'star') { bl.hitDmg = SMASH_STAR_DMG; bl.power = 10; bl.spin = 0; }   // veel schade, weinig knockback
+    else { bl.hitDmg = 40; bl.power = 26; }
     this.bullets.push(bl);
     this.spawnMuzzleFlash(shooter.x + dir * 14, shooter.y - 16, dir);
-    if (window.Sfx && shooter === this.player) Sfx.play(kind === 'rocket' ? 'rocket' : 'fireball');
+    if (window.Sfx && shooter === this.player) Sfx.play(kind === 'rocket' ? 'rocket' : (kind === 'star' ? 'shoot' : 'fireball'));
   },
 
   // ===== Journey-eiland-powerups =====
@@ -2662,15 +2666,20 @@ const Game = {
     }
     this.drops = this.drops.filter((d) => !d.taken && this.time - d.born < (d.kind === 'dragon' ? SMASH_DRAGON_LIFE : 16000));
 
-    // ----- portalen: af en toe een paar dat je naar de overkant teleporteert -----
+    // ----- portalen: af en toe een paar dat je naar de overkant teleporteert (niet op maps met noPortals) -----
     if (!this.portals) this.portals = [];
-    if (this.vsBot || this.vs.role === 'host') {
+    if ((this.vsBot || this.vs.role === 'host') && !(this.vsMap && this.vsMap.noPortals)) {
       this._portalTimer -= dt;
       if (this._portalTimer <= 0 && this.portals.length === 0) { this._portalTimer = SMASH_PORTAL_EVERY; this.spawnPortal(); }
     }
     this.checkPortal(this.player);
     if (this.vsBot && this.bot && !this.bot.dead) this.checkPortal(this.bot);
     this.portals = this.portals.filter((pt) => this.time - pt.born < SMASH_PORTAL_LIFE);
+    // ----- tempel-deuren: loop erin -> teleporteer naar het gekoppelde platform -----
+    if (this.vsMap && this.vsMap.doors) {
+      this.checkDoor(this.player);
+      if (this.vsBot && this.bot && !this.bot.dead) this.checkDoor(this.bot);
+    }
 
     // draken (drakenei-powerup)
     this.updateDragons(dt);
@@ -3138,6 +3147,23 @@ const Game = {
     this.portals.push({ id: p.id, ax: p.ax, ay: p.ay, bx: p.bx, by: p.by, born: this.time });
   },
 
+  // TEMPEL-DEUR: sta je op een deur-blok bij de deur -> teleporteer naar de gekoppelde bestemming
+  checkDoor(pl) {
+    if (pl.dead || this.time < (pl._doorCd || 0)) return;
+    const doors = this.vsMap && this.vsMap.doors; if (!doors) return;
+    for (const d of doors) {
+      if (Math.abs(pl.x - d.x) < 12 && pl.y <= d.y + 5 && pl.y >= d.y - 32) {
+        for (let i = 0; i < 16; i++) this.particles.push(new Particle(pl.x, pl.y - 14, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, '#ffd24a', 340, 2));
+        pl.x = d.tx; pl.y = d.ty; pl.vy = 0.5; pl.knockVx = 0; pl.onGround = false;   // kom boven het platform uit en zak erop
+        pl._doorCd = this.time + 900;                                                  // niet meteen terugstappen
+        for (let i = 0; i < 16; i++) this.particles.push(new Particle(pl.x, pl.y - 14, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, '#b06bff', 340, 2));
+        this.shake = Math.max(this.shake, 5);
+        if (window.Sfx && pl === this.player) Sfx.play('pickup');
+        break;
+      }
+    }
+  },
+
   spawnDrop() {
     let pool = SMASH_DROPS.slice();
     const mid = this.vsMap && this.vsMap.id;
@@ -3151,6 +3177,7 @@ const Game = {
       if (mid === 'pirate') pool.push({ kind: 'cannon', w: 9 });                      // kanonskogel alleen op Pirate Ship
       if (mid === 'pirate' || mid === 'sky') pool.push({ kind: 'shield', w: 9 });     // shield op Pirate + Sky
       if (mid === 'beach') pool.push({ kind: 'beachball', w: 10 });                     // strandbal op Beach
+      if (mid === 'temple') pool.push({ kind: 'ninjastar', w: 12 });                    // ninja-sterren op Temple
       if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); }  // Giant + AK47 op Jungle
       if (mid === 'dohyo') {                                                          // Dohyo: ALLE power-ups
         pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'rock', w: 8 }); pool.push({ kind: 'cannon', w: 9 });
@@ -3383,7 +3410,7 @@ const Game = {
     if (window.Sfx && pl === this.player) Sfx.play('pickup');
     for (let i = 0; i < 8; i++) this.particles.push(new Particle(d.x, d.y, (Math.random() - 0.5) * 2, -Math.random() * 2, '#ffe27a', 340, 2));
     // een ander vuurwapen pakken vervangt de AK47
-    if (d.kind === 'fireball' || d.kind === 'rocket' || d.kind === 'cannon' || d.kind === 'giant') { pl.gunAmmo = 0; if (pl.rangedId === 'ak47') pl.rangedId = null; }
+    if (d.kind === 'fireball' || d.kind === 'rocket' || d.kind === 'cannon' || d.kind === 'giant' || d.kind === 'ninjastar') { pl.gunAmmo = 0; if (pl.rangedId === 'ak47') pl.rangedId = null; }
     if (d.kind === 'weapon') { pl.meleeId = d.wid; pl.weaponId = pl.rangedId || d.wid; pl._weaponUntil = this.time + SMASH_WEAPON_TIME; }
     else if (d.kind === 'giant') {                                    // REUS: gigantisch, dubbel leven, kan niet aanvallen
       pl._baseMaxHp = pl._baseMaxHp || pl.maxHp;
@@ -3394,6 +3421,7 @@ const Game = {
     else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = 50; pl.weaponId = 'ak47'; }   // AK47 met 50 kogels
     else if (d.kind === 'fireball') pl.fireballs = SMASH_FIREBALL_SHOTS;
     else if (d.kind === 'rocket') { pl.smashRockets = SMASH_ROCKETS; pl.rangedId = 'rocketlauncher'; pl.weaponId = 'rocketlauncher'; }   // echt een raketwerper vasthouden
+    else if (d.kind === 'ninjastar') { pl.stars = SMASH_STARS; pl.rangedId = 'ninjastar'; pl.weaponId = 'ninjastar'; }                   // 3 ninja-sterren, ster in de hand
     else if (d.kind === 'health') pl.hp = Math.min(pl.maxHp, pl.hp + 40);
     else if (d.kind === 'rage') pl.buffs.rage = this.time + POWERUPS.rage.dur;
     else if (d.kind === 'speed') pl.buffs.speed = this.time + POWERUPS.speed.dur;
@@ -3575,6 +3603,10 @@ const Game = {
       } else if (this.vsMode === 'smash' && b.fireballs > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 7.5, 0, 0); bl.kind = 'fire'; bl.hitDmg = 22; bl.power = 14;
         b.fireballs--; b._shootCd = this.time + 600;
+      } else if (this.vsMode === 'smash' && b.stars > 0) {
+        bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 11, 0, 0); bl.kind = 'star'; bl.hitDmg = SMASH_STAR_DMG; bl.power = 10;
+        b.stars--; b._shootCd = this.time + 320;
+        if (b.stars <= 0) { b.rangedId = null; if (b.weaponId === 'ninjastar') b.weaponId = b.meleeId || 'bat'; }
       } else if (this.vsMode === 'smash' && b.smashRockets > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 6, 0, 0); bl.kind = 'rocket'; bl.hitDmg = 40; bl.power = 26;
         b.smashRockets--; b._shootCd = this.time + 950;
@@ -3683,7 +3715,7 @@ const Game = {
     b.guard = GUARD_MAX; b._guardBroken = false; b._blockStart = 0;
     if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
     b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
-    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; b.beachball = 0; b.coco = 0; b.boomerang = 0; b.dart = 0; }
+    if (this.vsMode === 'smash') { b.meleeId = b.baseMelee || 'bat'; b.weaponId = b.meleeId; b.fireballs = 0; b.smashRockets = 0; b.stars = 0; b.cannon = 0; b.shieldHp = 0; b._weaponUntil = 0; b.gunAmmo = 0; b.beachball = 0; b.coco = 0; b.boomerang = 0; b.dart = 0; }
     this.vs.remote.alive = true;
   },
 
@@ -3904,7 +3936,7 @@ const Game = {
     if (this.vsMode === 'smash') {                  // elke ronde weer met de knuppel
       this.player.meleeId = this.player.baseMelee || 'bat'; this.player.rangedId = null;
       this.player.weaponId = this.player.meleeId;    // ook het getekende wapen terug naar de knuppel
-      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0; this.player.beachball = 0; this.player.coco = 0; this.player.boomerang = 0; this.player.dart = 0;
+      this.player.fireballs = 0; this.player.smashRockets = 0; this.player.stars = 0; this.player.cannon = 0; this.player.shieldHp = 0; this.player._weaponUntil = 0; this.player.gunAmmo = 0; this.player.beachball = 0; this.player.coco = 0; this.player.boomerang = 0; this.player.dart = 0;
       // Yarno's zap-mes blijft nog een ronde staan
       if (this.player._bladeRounds > 0) { this.player._bladeRounds--; if (this.player._bladeRounds > 0) { this.player.meleeId = 'zapblade'; this.player.weaponId = 'zapblade'; } }
     }
@@ -4103,6 +4135,7 @@ const Game = {
     if (map.jbg) this.drawJungleBg(ctx);                // Journey-jungle: zelfde oerwoud-achtergrond (zonder kooi-gimmick)
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
     if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
+    if (map.temple) this.drawTempleBg(ctx);             // stenen tempel: verre pilaren + fakkels
 
     // afgrond onderin (map-thema), camera-bewust (volle zichtbare breedte bij uitzoomen)
     ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, visW + 8, visH + Math.abs(camY) + 320);
@@ -4115,10 +4148,12 @@ const Game = {
     for (const pf of this.platforms) {
       if (pf.soft) { this.drawSoftCloud(ctx, pf); continue; }
       if (pf.mast) { this.drawMast(ctx, pf); continue; }
+      if (pf.wall) { this.drawTempleBlock(ctx, pf); continue; }   // solide stenen muur-blok (langs lopen + erop staan)
       if (pf.slide) { this.drawSlantPlatform(ctx, pf, platStyle); }
       else Sprites.drawPlatform(ctx, pf.x, pf.y, pf.w, platStyle);
       if (pf.mv) { ctx.globalAlpha = 0.5; Sprites.px(ctx, '#ffe9a0', pf.x - 1, pf.y - 5, 2, 2); ctx.globalAlpha = 1; }
     }
+    if (map.temple) this.drawTempleDoors(ctx);          // deuren op de muur-blokken
 
     if (map.pirate) this.drawPirateMast(ctx);           // middenmast loopt door het dek heen
     if (map.throne) this.drawThrone(ctx);               // troonzaal-eindbaas: troon achter de spelers
@@ -4141,6 +4176,12 @@ const Game = {
       else if (b.kind === 'coco') { Sprites.px(ctx, '#5e3f22', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#8a5e36', b.x - 4, b.y - 4, 8, 3); Sprites.px(ctx, '#3a2614', b.x - 1, b.y - 1, 2, 2); }
       else if (b.kind === 'boom') { const a = Math.floor(this.time / 40) % 2; Sprites.px(ctx, '#a8824a', b.x - 4, b.y - 1, 8, 2); Sprites.px(ctx, '#a8824a', b.x - 1, b.y - 4, 2, 8); if (a) { Sprites.px(ctx, '#caa860', b.x - 4, b.y - 4, 3, 3); Sprites.px(ctx, '#caa860', b.x + 1, b.y + 1, 3, 3); } }
       else if (b.kind === 'dart') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#2f7a3a', b.x - d * 4, b.y - 1, 8, 2); Sprites.px(ctx, '#cfd6df', b.x + d * 3, b.y - 1, 2, 2); }
+      else if (b.kind === 'star') {   // draaiende ninja-ster (shuriken)
+        const f = Math.floor(this.time / 35) % 2, c = '#cfd6df';
+        if (f) { Sprites.px(ctx, c, b.x - 4, b.y - 1, 8, 2); Sprites.px(ctx, c, b.x - 1, b.y - 4, 2, 8); }        // +
+        else { Sprites.px(ctx, c, b.x - 3, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x - 3, b.y + 1, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y + 1, 2, 2); }   // x
+        Sprites.px(ctx, '#8a929c', b.x - 1, b.y - 1, 2, 2); Sprites.px(ctx, '#3a3f46', b.x, b.y, 1, 1);          // naaf + gaatje
+      }
       else Sprites.px(ctx, '#ffe27a', b.x - 1, b.y - 1, 3, 2);
     };
     if (this.bullets) for (const b of this.bullets) drawBullet(b);
@@ -4444,6 +4485,13 @@ const Game = {
       Sprites.px(ctx, '#1a1a1a', x - 1, y - 1, 2, 2);            // kern (stralings-symbool)
       Sprites.px(ctx, '#1a1a1a', x - 4, y - 4, 2, 2); Sprites.px(ctx, '#1a1a1a', x + 2, y - 4, 2, 2); Sprites.px(ctx, '#1a1a1a', x - 1, y + 2, 2, 2);   // 3 bladen
     }
+    else if (d.kind === 'ninjastar') {
+      // ninja-ster (shuriken): 4-punts metalen ster
+      Sprites.px(ctx, '#cfd6df', x - 1, y - 5, 2, 10); Sprites.px(ctx, '#cfd6df', x - 5, y - 1, 10, 2);   // plus-vorm
+      Sprites.px(ctx, '#f2f6fa', x - 1, y - 5, 2, 3); Sprites.px(ctx, '#f2f6fa', x - 5, y - 1, 3, 2);      // glans
+      Sprites.px(ctx, '#8a929c', x - 2, y - 2, 4, 4);            // naaf
+      Sprites.px(ctx, '#2a2f36', x - 1, y - 1, 2, 2);            // gaatje
+    }
   },
 
   // draken tekenen (scherm-ruimte): de draak vliegt bovenin en spuugt vuur naar het doel
@@ -4549,6 +4597,61 @@ const Game = {
     Sprites.px(ctx, '#4a3219', x - 2, pf.y, 1, deckY - pf.y);
     Sprites.drawPlatform(ctx, pf.x, pf.y, pf.w, 'wood');                  // kraaiennest
     Sprites.px(ctx, '#3a2615', x - pf.w / 2, pf.y - 5, pf.w, 4);          // randje van het nest
+  },
+
+  // ===== TEMPLE =====
+  // solide stenen muur-blok (pilaar): je loopt ernaast en staat op de bovenkant
+  drawTempleBlock(ctx, pf) {
+    const x0 = Math.round(pf.x - pf.w / 2), w = Math.round(pf.w);
+    const top = Math.round(pf.y), bot = CONFIG.GROUND_Y + 48;
+    Sprites.px(ctx, '#6b5f4a', x0, top, w, bot - top);                    // steen-body
+    Sprites.px(ctx, '#8a7c60', x0, top, w, 3);                           // licht loopvlak bovenop
+    Sprites.px(ctx, '#7d7058', x0, top + 3, 3, bot - top - 3);           // licht links
+    Sprites.px(ctx, '#4f4636', x0 + w - 3, top + 3, 3, bot - top - 3);   // schaduw rechts
+    for (let yy = top + 12; yy < bot; yy += 12) Sprites.px(ctx, '#4f4636', x0, yy, w, 1);          // horizontale voegen
+    for (let yy = top + 3; yy < bot; yy += 24) {                                                    // verticale voegen (verspringend)
+      Sprites.px(ctx, '#4f4636', x0 + Math.round(w / 3), yy, 1, 11);
+      Sprites.px(ctx, '#4f4636', x0 + Math.round(2 * w / 3), yy + 12, 1, 11);
+    }
+  },
+  // deuren op de muur-blokken (donkere opening met paarse teleport-gloed)
+  drawTempleDoors(ctx) {
+    if (!this.vsMap || !this.vsMap.doors) return;
+    for (const d of this.vsMap.doors) {
+      const x0 = Math.round(d.x - 6), top = Math.round(d.y - 22), h = 22;
+      Sprites.px(ctx, '#8a7c60', x0 - 2, top - 3, 16, 3);               // boog bovenaan
+      Sprites.px(ctx, '#161009', x0, top, 12, h);                       // donkere opening
+      Sprites.px(ctx, '#0a0704', x0 + 2, top + 2, 8, h - 2);
+      const glow = 0.35 + Math.sin(this.time / 280 + d.x) * 0.25;
+      ctx.globalAlpha = Math.max(0, glow);
+      Sprites.px(ctx, '#b06bff', x0, top, 12, 1); Sprites.px(ctx, '#b06bff', x0, top, 1, h); Sprites.px(ctx, '#b06bff', x0 + 11, top, 1, h);
+      Sprites.px(ctx, '#8fd0ff', x0 + 4, top + h - 4, 4, 3);            // rune-gloed in de opening
+      ctx.globalAlpha = 1;
+    }
+  },
+  // tempel-achtergrond: verre stenen pilaren + twee fakkels met warme gloed
+  drawTempleBg(ctx) {
+    const W = this.vsMapW;
+    ctx.globalAlpha = 0.45;
+    for (let i = 0; i < 6; i++) {                                        // verre pilaren-rij
+      const px = 40 + i * ((W - 60) / 5);
+      Sprites.px(ctx, '#2b2418', Math.round(px), -20, 22, 210);
+      Sprites.px(ctx, '#352c1d', Math.round(px), -20, 22, 4);
+      Sprites.px(ctx, '#201a11', Math.round(px) + 18, -20, 4, 210);
+      Sprites.px(ctx, '#352c1d', Math.round(px) - 3, -22, 28, 3);       // kapiteel bovenop
+    }
+    ctx.globalAlpha = 1;
+    // twee fakkels (bij de muur-blokken) met flakkerende gloed
+    const flick = 0.6 + Math.sin(this.time / 90) * 0.2 + Math.sin(this.time / 37) * 0.15;
+    for (const fx of [70, W - 70]) {
+      Sprites.px(ctx, '#3a2a16', fx, 120, 3, 14);                       // steel
+      ctx.globalAlpha = Math.max(0.2, flick);
+      const g = ctx.createRadialGradient(fx + 1, 116, 2, fx + 1, 116, 26);
+      g.addColorStop(0, 'rgba(255,180,60,0.7)'); g.addColorStop(1, 'rgba(255,120,20,0)');
+      ctx.fillStyle = g; ctx.fillRect(fx - 25, 90, 52, 52);
+      ctx.globalAlpha = 1;
+      Sprites.px(ctx, '#ffd24a', fx, 112, 3, 4); Sprites.px(ctx, '#ff8a2a', fx, 110, 3, 3);   // vlam
+    }
   },
 
   // piratenschip-achtergrond: water + zeil + (langzaam opkomend) zeemonster op de achtergrond
