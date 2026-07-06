@@ -2337,7 +2337,7 @@ const Game = {
       } else if (p.fireballs > 0 || p.smashRockets > 0) {  // vuurwapen opgepakt -> vuren
         if (this.time >= (p._fireCd || 0)) {
           if (p.fireballs > 0) { p.fireballs--; p._fireCd = this.time + 420; this.spawnVersusProjectile(p, 'fire'); }
-          else { p.smashRockets--; p._fireCd = this.time + 850; this.spawnVersusProjectile(p, 'rocket'); if (p.smashRockets <= 0) p.rangedId = null; }
+          else { p.smashRockets--; p._fireCd = this.time + 850; this.spawnVersusProjectile(p, 'rocket'); if (p.smashRockets <= 0) { p.rangedId = null; if (p.weaponId === 'rocketlauncher') p.weaponId = p.meleeId || 'bat'; } }
         }
       } else {
         Input.state.melee = true;                          // alleen melee -> vuurknop slaat ook
@@ -3393,7 +3393,7 @@ const Game = {
     }
     else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = 50; pl.weaponId = 'ak47'; }   // AK47 met 50 kogels
     else if (d.kind === 'fireball') pl.fireballs = SMASH_FIREBALL_SHOTS;
-    else if (d.kind === 'rocket') pl.smashRockets = SMASH_ROCKETS;
+    else if (d.kind === 'rocket') { pl.smashRockets = SMASH_ROCKETS; pl.rangedId = 'rocketlauncher'; pl.weaponId = 'rocketlauncher'; }   // echt een raketwerper vasthouden
     else if (d.kind === 'health') pl.hp = Math.min(pl.maxHp, pl.hp + 40);
     else if (d.kind === 'rage') pl.buffs.rage = this.time + POWERUPS.rage.dur;
     else if (d.kind === 'speed') pl.buffs.speed = this.time + POWERUPS.speed.dur;
@@ -3578,6 +3578,7 @@ const Game = {
       } else if (this.vsMode === 'smash' && b.smashRockets > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 6, 0, 0); bl.kind = 'rocket'; bl.hitDmg = 40; bl.power = 26;
         b.smashRockets--; b._shootCd = this.time + 950;
+        if (b.smashRockets <= 0 && b.weaponId === 'rocketlauncher') b.weaponId = b.meleeId || 'bat';
       } else if (this.vsMode === 'smash' && b.cannon > 0) {
         bl = new Bullet(b.x + sdir * 14, b.y - 16, sdir * 8, 0, 0); bl.kind = 'cannon'; bl.hitDmg = 18; bl.power = 42;
         b.cannon--; b._shootCd = this.time + 900;

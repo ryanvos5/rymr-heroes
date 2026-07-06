@@ -549,7 +549,21 @@ const Sprites = {
     const atk = attacking;
     const steel = '#cbd3db', steelDk = '#8a929c', steelLt = '#f2f6fa', wood = '#7a5230', woodDk = '#5a3a22', gold = '#caa84a';
 
-    if (w.type === 'melee') {
+    if (weaponId === 'rocketlauncher') {
+      // RAKETWERPER (RPG): lange buis vooruit, brede uitlaat achter, raketpunt voor
+      const tube = '#414852', tubeLt = '#5e6874', tubeDk = '#262b31', warhead = '#c24a2a';
+      P('#23262b', -1, 0, 2, 4);              // greep in de vuist
+      P(tube, -5, -3, 16, 5);                 // hoofdbuis
+      P(tubeLt, -5, -3, 16, 1);               // highlight bovenop
+      P(tubeDk, -5, 1, 16, 1);                // schaduw onder
+      P(tube, -8, -4, 3, 7);                  // brede achterkant (uitlaat)
+      P(tubeDk, -9, -4, 1, 7);
+      P('#0e0e0e', -10, -1, 1, 3);            // uitlaat-opening
+      P(warhead, 11, -3, 3, 5);               // raketpunt (kop)
+      P('#e8703a', 11, -3, 3, 1);             // punt-highlight
+      P('#ffd24a', 14, -1, 1, 2);             // spitse neus
+      P('#2a2f36', 2, -5, 3, 1); P('#2a2f36', 3, -6, 1, 1);   // vizier bovenop
+    } else if (w.type === 'melee') {
       const id = w.id;
       if (id === 'katana') {
         // tsuka (handvat) in de vuist + wikkel-accenten
