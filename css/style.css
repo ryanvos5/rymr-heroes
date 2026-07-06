@@ -1544,3 +1544,16 @@ body.is-touch.portrait.in-game #rotate-hint { display: flex; }
   font-family: var(--pixel-font); font-size: 12px; letter-spacing: 1px; cursor: pointer;
 }
 .train-clear-btn:active { transform: scale(0.98); background: rgba(150,44,38,0.7); }
+
+/* lage/liggende schermen (mobiel landscape): compacte tegels zodat alles past + scrollt */
+@media (max-height: 540px) {
+  .train-pu-box { width: min(96vw, 720px); max-height: 94vh; padding: 8px; }
+  .train-pu-head { font-size: 12px; margin-bottom: 4px; }
+  .train-pu-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
+  .train-pu { padding: 4px 2px; gap: 1px; }
+  .train-pu-ico { width: 30px; height: 30px; }
+  .train-pu-lbl { font-size: 8px; }
+  .train-pu-divider { font-size: 9px; padding: 2px; }
+  .train-clear-btn { margin-top: 6px; padding: 6px; font-size: 11px; }
+  .train-pu-hint { display: none; }
+}

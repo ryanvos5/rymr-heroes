@@ -1422,7 +1422,7 @@ const UI = {
       this._puIcon(cv, pu.kind);
       const lbl = document.createElement('span'); lbl.className = 'train-pu-lbl'; lbl.textContent = pu.name;
       b.appendChild(cv); b.appendChild(lbl);
-      b.onclick = (e) => { const k = (e.currentTarget || b).dataset.kind; if (k) { Game.trainGivePowerup(k); this.closeTrainComputer(); } };
+      this._tap(b, () => { const k = b.dataset.kind; if (k) { Game.trainGivePowerup(k); this.closeTrainComputer(); } });
       grid.appendChild(b);
     });
     // --- melee-wapens ---
@@ -1435,9 +1435,20 @@ const UI = {
       this._weaponIcon(cv, wid);
       const lbl = document.createElement('span'); lbl.className = 'train-pu-lbl'; lbl.textContent = w.name;
       b.appendChild(cv); b.appendChild(lbl);
-      b.onclick = (e) => { const k = (e.currentTarget || b).dataset.melee; if (k) { Game.trainGiveMelee(k); this.closeTrainComputer(); } };
+      this._tap(b, () => { const k = b.dataset.melee; if (k) { Game.trainGiveMelee(k); this.closeTrainComputer(); } });
       grid.appendChild(b);
     });
+    this._attachGridDrag(grid);
+  },
+  // sleep-scroll voor het power-up-grid (werkt óók onder touch-action:none, want we zetten scrollTop zelf)
+  _attachGridDrag(grid) {
+    if (grid._dragBound) return; grid._dragBound = true;
+    let sy = 0, st = 0, id = null;
+    grid.addEventListener('pointerdown', (e) => { id = e.pointerId; sy = e.clientY; st = grid.scrollTop; });
+    grid.addEventListener('pointermove', (e) => { if (e.pointerId === id) grid.scrollTop = st - (e.clientY - sy); });
+    const end = (e) => { if (e.pointerId === id) id = null; };
+    grid.addEventListener('pointerup', end);
+    grid.addEventListener('pointercancel', end);
   },
   // wapen-icoon gecentreerd op een klein canvas tekenen
   _weaponIcon(canvas, wid) {
