@@ -3653,11 +3653,11 @@ const Game = {
     const blocking = b.ducking && b.onGround && !b._guardBroken;
     const parry = blocking && !!melee && (this.time - (b._blockStart || 0)) <= PARRY_WINDOW;   // perfect block alleen bij melee
     if (parry) {
-      // bot parriet -> de speler (aanvaller) stuitert terug + verdoofd
+      // bot parriet -> de speler (aanvaller) stuitert alleen terug (geen stun meer)
       b.knockVx = 0; b.guard = Math.min(GUARD_MAX, b.guard + 400);
       this.spawnParryFlash(b.x, b.y - 14); this.shake = Math.max(this.shake, 6);
       const me = this.player;
-      if (me && !me.dead && me.respawnInvuln <= 0) { me.knockVx = -dir * 20; me.vy = -4.5; me.onGround = false; me.stunUntil = this.time + 650; me.combo = 0; }
+      if (me && !me.dead && me.respawnInvuln <= 0) { me.knockVx = -dir * 20; me.vy = -4.5; me.onGround = false; me.combo = 0; }
       return;
     }
     b.combo = 0; b.comboUntil = 0;                    // geraakt worden verbreekt de combo
@@ -3843,13 +3843,13 @@ const Game = {
     const blocking = p.ducking && p.onGround && !p._guardBroken;   // bukken = blok
     const parry = blocking && !!payload.melee && (this.time - (p._blockStart || 0)) <= PARRY_WINDOW;   // perfect block alleen bij melee
     if (parry) {
-      // 100% geblokt + de aanvaller stuitert terug en is even verdoofd
+      // 100% geblokt + de aanvaller stuitert alleen terug (geen stun meer)
       p.knockVx = 0; p.guard = Math.min(GUARD_MAX, p.guard + 400);
       this.spawnParryFlash(p.x, p.y - 14); this.shake = Math.max(this.shake, 6);
       if (this.vsBot && this.bot && !this.bot.dead) {
         const kd = this.bot.x >= p.x ? 1 : -1;
         this.bot.knockVx = kd * 20; this.bot.vy = -4.5; this.bot.onGround = false;
-        this.bot.stunUntil = this.time + 650; this.bot.combo = 0;
+        this.bot.combo = 0;
       } else if (window.Net) Net.versusSend('parry', { dir: payload.dir || 1 });
       return;
     }
@@ -3867,12 +3867,12 @@ const Game = {
     else this.shake = Math.max(this.shake, blocking ? 3 : 5);
   },
 
-  // de aanvaller hoort dat z'n klap geparried is -> zelf terugstuiteren + verdoofd
+  // de aanvaller hoort dat z'n klap geparried is -> alleen terugstuiteren (geen stun meer)
   onVersusParry(payload) {
     const me = this.player;
     if (!me || me.dead) return;
     me.knockVx = -(payload && payload.dir ? payload.dir : 1) * 20; me.vy = -4.5; me.onGround = false;
-    me.stunUntil = this.time + 650; me.combo = 0;
+    me.combo = 0;
     this.spawnParryFlash(me.x, me.y - 14); this.shake = Math.max(this.shake, 5);
   },
 
