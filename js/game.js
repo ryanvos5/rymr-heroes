@@ -206,13 +206,7 @@ const Game = {
       if (rnd() < 0.42) addCrate(x + secW * (0.2 + rnd() * 0.55), GY - 34); // krat op de grond
       x += secW;
     }
-    // minimum aan kratten garanderen (altijd toevoegen; begrensde zoektocht naar een vrije plek -> geen oneindige lus)
-    while (crateN < (lv.crates || 3)) {
-      let cx2 = 220 + crateN * 340;
-      for (let k = 0; k < 8 && !clear(cx2, GY - 34); k++) cx2 += 52;
-      this.crates.push({ x: Math.round(cx2), y: GY - 34, kind: kinds[(n * 3 + crateN * 7) % kinds.length], broken: false });
-      crateN++;
-    }
+    // (minimum-kratten + apen-op-krat-fix gebeurt hieronder, ná de vlag/finish-filters)
     // ---- VLAG-VEILIGE ZONE: rond de checkpoint-vlag vlakke, vaste grond ----
     // geen GAT onder/naast de vlag (ook al gefilterd bij het aanmaken; hier hard gegarandeerd)
     const FZ_PIT = 130, FZ_PLAT = 90;
@@ -229,6 +223,21 @@ const Game = {
     this.platforms = this.platforms.filter((pf) => (pf.x + pf.w / 2) <= finishX - FZ_FIN);
     this.zombies = this.zombies.filter((z) => !z.patrol || z.patrolR < finishX - FZ_FIN);
     this.jEnemySpawns = this.jEnemySpawns.filter((s) => (s.x + s.range) < finishX - FZ_FIN);
+    // ---- KRATTEN NIET OP EEN PATROUILLE-AAP ---- (patrouille-apen lopen anders 'over' een krat)
+    const enemyBlocked = (cx, cy) => this.jEnemySpawns.some((s) => s.type !== 'bird' && Math.abs(s.y - cy) < 30 && cx > s.x - s.range - 16 && cx < s.x + s.range + 16);
+    const crateClear = (cx, cy) => clear(cx, cy) && !enemyBlocked(cx, cy) && cx > 40 && cx < finishX - FZ_FIN && Math.abs(cx - flagX) > 40;
+    // bestaande kratten die op/onder een aap staan: opzij schuiven, anders weghalen
+    this.crates = this.crates.filter((c) => {
+      if (crateClear(c.x, c.y)) return true;
+      for (let d = 1; d <= 6; d++) for (const nx of [c.x + d * 42, c.x - d * 42]) if (crateClear(nx, c.y)) { c.x = Math.round(nx); return true; }
+      return false;                                          // nergens vrij -> krat weghalen
+    });
+    // minimum aantal kratten opnieuw garanderen (enemy-bewust; begrensde zoektocht -> geen oneindige lus)
+    for (let guard = 0; this.crates.length < (lv.crates || 3) && guard < 60; guard++) {
+      let cx2 = 240 + guard * 190;
+      for (let k = 0; k < 10 && !crateClear(cx2, GY - 34); k++) cx2 += 44;
+      if (crateClear(cx2, GY - 34)) this.crates.push({ x: Math.round(cx2), y: GY - 34, kind: kinds[(n * 3 + this.crates.length * 7) % kinds.length], broken: false });
+    }
     // vogels vanaf level 6 (zweven heen en weer, aanraken = schade); vanaf lvl 11 fors meer
     if (n >= 6) {
       const birds = 1 + Math.floor((n - 6) / 3) + (n >= 11 ? 2 + Math.floor((n - 11) / 2) : 0);

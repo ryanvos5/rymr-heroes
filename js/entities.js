@@ -598,8 +598,10 @@ class Zombie {
         const pTop = player.y - player.height, pBot = player.y;
         const myTop = this.cy - this.halfH, myBot = this.cy + this.halfH;
         if (dxp < this.halfW + player.w / 2 + 1 && pBot > myTop - 2 && pTop < myBot + 2) {
-          // STOMP (Mario): op de kop springen -> aap/vogel dood, speler stuitert
-          if (player.vy > 1 && (player.y - player.vy * s2) <= myTop + 10) {
+          // STOMP (Mario): op de kop van een AAP springen -> aap dood (of schild kapot), speler stuitert.
+          // VOGELS kun je NIET doden -> die slaan de stomp over en vallen door naar de aanraak-tak (= jij dood),
+          // dus je moet gewoon van ze wegvluchten. Aap-stomp is ruimer: dalend + voeten tot de romp = stomp.
+          if (!isBird && player.vy > 0.5 && (player.y - player.vy * s2) <= this.cy + 2) {
             player.vy = -7; player.onGround = false; player.jumps = Math.max(player.jumps, 1);   // stuiter
             game.shake = Math.max(game.shake, 5);
             if (this.shieldHp > 0) {                     // geschilde mensaap: eerst het schild kapot springen
