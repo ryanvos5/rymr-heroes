@@ -131,6 +131,7 @@ const Game = {
     this.brawlerSpawned = false;
     // Mario-regels
     this.player._marioTouch = true;                     // aanraking = helft HP (zie Player.takeDamage)
+    this.player.downed = false; this._coopReviveAt = 0; // co-op respawn-state schoon
     this.player.maxJumps = 2; this.player.jumps = 2;    // dubbel-jump hoort bij het eiland
     this.tutorials = []; this.tutorialMsg = ''; this.tutorialUntil = 0;   // stads-tutorials horen hier niet
     // checkpoint-vlag halverwege (respawn-punt) — staat op vaste grond
@@ -249,10 +250,13 @@ const Game = {
   },
   // bij respawn: alle al-gedode apen komen weer terug (op hun oorspronkelijke plek)
   _respawnJourneyEnemies() {
-    if (!this.jEnemySpawns || this.coop) return;                 // co-op: host houdt de vijanden bij
+    if (!this.jEnemySpawns) return;
+    if (this.coop && this.coop.role === 'guest') return;         // gast bezit geen echte vijanden (host beheert ze + synct)
     this.zombies = this.zombies.filter((z) => !z.patrol);        // dode + levende patrouille-apen weg
     for (const s of this.jEnemySpawns) this._spawnJourneyEnemy(s.type, s.x, s.y, s.range, s.dir, s.chaser, s.shield);
   },
+  // gast vraagt de host om de vijanden te resetten (na een respawn)
+  onCoopRespawnEnemies() { if (this.coop && this.coop.role === 'host') this._respawnJourneyEnemies(); },
 
   // BOT-MENSAAP: verschijnt op de meeste levels halverwege en moet verslagen (Power Smash-stijl)
   _maybeSpawnBrawler() {
@@ -313,7 +317,7 @@ const Game = {
         this.tutorialMsg = 'Blijf bij je partner!'; this.tutorialUntil = this.time + 500;
       }
     }
-    const atFin = p.x >= this.level.length - 10;
+    const atFin = p.hp > 0 && !p.downed && p.x >= this.level.length - 10;
     co._pT += dt;
     if (co._pT >= 100 && window.Net) {
       co._pT = 0;
@@ -393,9 +397,11 @@ const Game = {
   // dood na de vlag -> respawn bij de vlag (Mario-checkpoint); co-op: ook vóór de vlag (bij de start)
   journeyRespawn() {
     const p = this.player;
-    const rx = this.jFlagReached ? this.jFlagX : 60;
-    this._respawnJourneyEnemies();                              // alle gedode apen komen weer terug
-    p.hp = p.maxHp; p.x = rx; p.y = CONFIG.GROUND_Y; p.vy = 0; p.onGround = true; p.knockVx = 0;
+    let rx = this.jFlagReached ? this.jFlagX : 60;
+    if (this.coop && this.coop.partner && this.coop.partner.al) rx = Math.max(40, this.coop.partner.x);   // co-op: kom terug bij je partner (op vaste grond)
+    this._respawnJourneyEnemies();                              // alle gedode apen komen weer terug (host/solo)
+    if (this.coop && this.coop.role === 'guest' && window.Net) Net.versusSend('jrs', {});   // gast: host laat de vijanden terugkomen
+    p.hp = p.maxHp; p.x = rx; p.y = CONFIG.GROUND_Y; p.vy = 0; p.onGround = true; p.knockVx = 0; p.downed = false;
     p.burnUntil = 0; p._touchInvUntil = this.time + 2200;      // even onkwetsbaar na de respawn
     // zombies vlakbij het respawn-punt wegduwen (geen respawn-kill)
     for (const z of this.zombies) if (z.alive && Math.abs(z.x - rx) < 120) z.x += (z.x < rx ? -1 : 1) * 140;
@@ -1123,7 +1129,15 @@ const Game = {
 
     // win / verlies
     if (this.player.hp <= 0) {
-      if (this.jStage && this.coop) this.journeyRespawn();     // co-op: auto-respawn (partner speelt door)
+      if (this.jStage && this.coop) {
+        // co-op: 10 sec 'down' (partner speelt door), daarna respawn bij de partner
+        const pl = this.player;
+        if (!pl.downed) { pl.downed = true; this._coopReviveAt = this.time + 10000; if (window.Input) Input.clear(); this.shake = Math.max(this.shake, 6); }
+        const pt = this.coop.partner;
+        if (pt && pt.al) { pl.x = pt.x; pl.y = pt.y; pl.vy = 0; pl.onGround = true; }   // volg je partner terwijl je wacht
+        if (this.time >= this._coopReviveAt) { pl.downed = false; this.journeyRespawn(); }
+        else { this.tutorialMsg = 'Terug in ' + Math.ceil((this._coopReviveAt - this.time) / 1000) + 's…'; this.tutorialUntil = this.time + 300; }
+      }
       else if (this.jStage) { this.state = 'jdead'; Input.clear(); if (window.UI) UI.showJourneyDeath(this.jFlagReached); }   // solo: dood-scherm (checkpoint of menu)
       else this.lose();
     } else if (this.level.isBoss) {
@@ -1515,8 +1529,10 @@ const Game = {
     // raketten
     for (const rk of this.rocketShots) Sprites.drawRocket(ctx, rk.x, rk.y, rk.vx);
 
+    // co-op: terwijl je 'down' bent zie je jezelf als doorzichtige geest bij je partner
+    if (this.player.downed) ctx.globalAlpha = 0.35;
     // speler (Ryan) — schaduw op de grond, of op het platform bij parkour
-    if (this.player.onGround) Sprites.shadow(ctx, this.player.x, this.level.parkour ? this.player.y + 1 : CONFIG.GROUND_Y, 7);
+    if (this.player.onGround && !this.player.downed) Sprites.shadow(ctx, this.player.x, this.level.parkour ? this.player.y + 1 : CONFIG.GROUND_Y, 7);
     const swingingBat = this.time < (this.player.swingUntil || 0) && this.player.swingWeapon;
     const pOpts = {
       walkPhase: this.player.walkPhase,
@@ -1531,6 +1547,7 @@ const Game = {
       rage: this.player.hasBuff('rage', this.time), burning: this.player.burnUntil > this.time,
     };
     Sprites.drawCharacter(ctx, this.player.x, this.player.y, this.player.dir, this.player.pal, pOpts);
+    if (this.player.downed) ctx.globalAlpha = 1;
     // hit-flash: je ziet de klap aan je character (witte silhouet-flits) — Journey-mensapen
     if (this.player._flashUntil > this.time) {
       ctx.globalAlpha = Math.min(0.85, (this.player._flashUntil - this.time) / 360 * 0.95);

@@ -96,7 +96,7 @@ class Player {
   update(dt, game, inputOverride) {
     const s = game.dtScale;
     // bliksem-stun / platgedrukt (Cave): geen besturing
-    const frozen = (this.stunUntil && game.time < this.stunUntil) || (this.flatUntil && game.time < this.flatUntil);
+    const frozen = (this.stunUntil && game.time < this.stunUntil) || (this.flatUntil && game.time < this.flatUntil) || this.downed;
     const inp = frozen ? { left: false, right: false, jump: false, duck: false, attack: false, melee: false, jumpPressed: false }
                        : (inputOverride || Input.state);   // bot kan eigen input meegeven
 

@@ -298,6 +298,7 @@ const Net = {
     ch.on('broadcast', { event: 'jhit' }, (m) => { if (v.cbs.onJHit) v.cbs.onJHit(m.payload); });
     ch.on('broadcast', { event: 'jcrate' }, (m) => { if (v.cbs.onJCrate) v.cbs.onJCrate(m.payload); });
     ch.on('broadcast', { event: 'jwin' }, (m) => { if (v.cbs.onJWin) v.cbs.onJWin(m.payload); });
+    ch.on('broadcast', { event: 'jrs' }, (m) => { if (v.cbs.onJRS) v.cbs.onJRS(m.payload); });
     ch.on('broadcast', { event: 'parry' }, (m) => { if (v.cbs.onParry) v.cbs.onParry(m.payload); });
     ch.on('broadcast', { event: 'tide' }, (m) => { if (v.cbs.onTide) v.cbs.onTide(m.payload); });
     ch.on('broadcast', { event: 'ball' }, (m) => { if (v.cbs.onBall) v.cbs.onBall(m.payload); });

@@ -244,6 +244,7 @@ const UI = {
       onJHit: (p) => Game.onCoopHit(p),
       onJCrate: (p) => Game.onCoopCrate(p),
       onJWin: () => Game.onCoopWin(),
+      onJRS: () => Game.onCoopRespawnEnemies(),
     };
   },
   // online vrienden tonen met een "Uitnodigen"-knop
