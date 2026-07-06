@@ -1692,6 +1692,20 @@ const UI = {
     this._galleryify(grid, 'inv_' + tab);
   },
 
+  // ---------- HOED-PREVIEW (shop / inventaris) — grote 2.5D buste met de hoed ----------
+  _hatCanvas(id) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 120; canvas.height = 92;
+    const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    const sc = canvas.height / 30;
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2 - 2 * sc);
+    ctx.scale(sc, sc);
+    if (Sprites.drawHatBust) Sprites.drawHatBust(ctx, id, 0, 0, 0);
+    ctx.restore();
+    return canvas;
+  },
+
   // ---------- CHARACTER-PREVIEW (shop / inventaris) — 2.5D net als in de game ----------
   // Maakt een canvas met grondschaduw + inkt-outline, en registreert 'm voor de idle-animatie.
   _charCanvas(palette, opts) {
@@ -1864,13 +1878,15 @@ const UI = {
   },
   renderOwnedHats(grid) {
     grid.innerHTML = '';
-    const cc = CHARACTERS[Storage.data.equippedCharacter] || CHARACTERS.ryan;
     HAT_ORDER.forEach((hid) => {
       if (!Storage.ownsHat(hid)) return;
       const h = HATS[hid]; const equipped = Storage.data.equippedHat === hid;
-      const card = this._spriteCard(cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: hid }, '<div class="w-name">' + h.name + '</div>', true);
+      const card = document.createElement('div'); card.className = 'shop-card owned';
+      card.appendChild(this._hatCanvas(hid));                       // grote 2.5D hoed-buste
+      const info = document.createElement('div'); info.innerHTML = '<div class="w-name">' + h.name + '</div>';
+      card.appendChild(info);
       const btn = document.createElement('button'); btn.className = 'shop-buy';
-      if (equipped) { btn.classList.add('equipped'); btn.textContent = hid === 'none' ? 'OP' : 'OP'; }
+      if (equipped) { btn.classList.add('equipped'); btn.textContent = 'OP'; }
       else { btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN'; btn.onclick = () => { Storage.equipHat(hid); this.renderInventory(); }; }
       card.appendChild(btn); grid.appendChild(card);
     });
@@ -2159,8 +2175,8 @@ const UI = {
       const card = document.createElement('div');
       card.className = 'shop-card' + (owned ? ' owned' : '');
 
-      // preview: jouw character met deze hoed (2.5D met grondschaduw + idle, net als in de game)
-      const canvas = this._charCanvas(cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: hid });
+      // preview: de hoed zelf als groot 2.5D-item (buste met de hoed erop)
+      const canvas = this._hatCanvas(hid);
 
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${h.name}</div><div class="w-stats">${h.desc}</div>`;

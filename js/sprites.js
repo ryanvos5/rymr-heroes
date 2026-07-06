@@ -474,6 +474,33 @@ const Sprites = {
     }
   },
 
+  // ---------- HOED-ICOON (shop / inventaris) — 2.5D buste met de hoed erop ----------
+  drawHatBust(ctx, id, cx, cy, t) {
+    const self = this;
+    this.ink(ctx, cx, cy, (c) => self._hatBustRaw(c, id, cx, cy, t || 0));
+  },
+  _hatBustRaw(ctx, id, cx, cy, t) {
+    const P = (col, x, y, w, h) => this.px(ctx, col, cx + x, cy + y, w, h);
+    const S = (hex, f) => this._shade(hex, f);
+    const skin = '#e0ac7a', shirt = '#3a4756';
+    const hh = 4, headTop = 2, headH = 9;
+    // schouders / borst (buste)
+    P(shirt, -6, headTop + headH, 12, 4);
+    P(S(shirt, 0.25), -6, headTop + headH, 12, 1);              // licht bovenop
+    P(S(shirt, -0.28), -6, headTop + headH + 3, 12, 1);        // schaduw onder
+    P(S(skin, -0.15), -1, headTop + headH - 1, 2, 2);          // nek
+    // kop met 2.5D-shading
+    P(skin, -hh, headTop, hh * 2, headH);
+    P(S(skin, 0.22), -hh, headTop, 1, headH);                   // licht (links)
+    P(S(skin, -0.2), hh - 1, headTop, 1, headH);                // schaduw (rechts)
+    P(S(skin, -0.2), -hh, headTop + headH - 1, hh * 2, 1);      // kin-schaduw
+    P(S(skin, -0.12), -hh + 1, headTop + 5, hh * 2 - 2, 1);     // neus/wang-lijn
+    P('#26262c', -2, headTop + 3, 1, 2); P('#26262c', 1, headTop + 3, 1, 2);   // ogen
+    // de hoed erop (of kaal hoofd bij 'none')
+    if (id && id !== 'none') this.drawHat(ctx, id, cx, cy + headTop, hh, 1, t);
+    else P(S(skin, 0.32), -hh + 1, headTop, hh * 2 - 2, 1);     // kale-hoofd glans
+  },
+
   drawArmAndWeapon(ctx, cx, torsoTop, dir, pal, weaponId, attacking, bh, shielding, swing) {
     const armY = torsoTop + 3;
     const reach = attacking ? 9 : 5;
