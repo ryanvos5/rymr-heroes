@@ -828,6 +828,16 @@ class Zombie {
         }
       }
     }
+    // BOT-MENSAAP moet ALTIJD bereikbaar blijven (ook tijdens knockback/airborne): nooit in een gat of van de map af,
+    // anders blijft hij leven maar kun je hem niet verslaan en dus het level niet halen.
+    if (this.brawler) {
+      this.x = Math.max(30, Math.min(game.level.length - 30, this.x));
+      if (game.pits) for (const p of game.pits) {
+        if (this.x > p.x0 - 10 && this.x < p.x1 + 10) {
+          this.x = (this.x - p.x0 < p.x1 - this.x) ? p.x0 - 10 : p.x1 + 10;   // naar de dichtstbijzijnde vaste rand
+        }
+      }
+    }
 
     // loop-animatie
     this.walkTimer += dt;
