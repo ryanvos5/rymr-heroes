@@ -321,10 +321,27 @@ body.is-touch #hud { justify-content: flex-start; gap: 8px; }
   width: 58px; height: 58px;
   background: rgba(28,18,10,0.5); border-color: rgba(255,160,60,0.5);
   align-self: center; margin-bottom: -2px;
+  position: relative;
+  opacity: 0.5; filter: grayscale(0.5);            /* aan het opladen -> duidelijk gedimd/onbruikbaar */
+  transition: opacity .18s, filter .18s;
 }
 .tbtn-ability.hidden { display: none; }
-.tbtn-ability.ready { border-color: #ffd24a; animation: abReady 0.8s ease-in-out infinite; }
-@keyframes abReady { 0%,100% { box-shadow: 0 0 6px rgba(255,150,40,.5); } 50% { box-shadow: 0 0 18px rgba(255,190,70,.95); } }
+.tbtn-ability.ready {
+  opacity: 1; filter: none;                        /* klaar -> fel */
+  border-color: #ffe27a;
+  animation: abReady 0.7s ease-in-out infinite;
+}
+/* "KLAAR"-label boven de knop zodra de ability opgeladen is */
+.tbtn-ability.ready::after {
+  content: 'KLAAR';
+  position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  font-family: var(--pixel-font); font-size: 8px; font-weight: bold; letter-spacing: .5px;
+  color: #2a1a06; background: #ffd24a; padding: 1px 5px; border-radius: 5px;
+  white-space: nowrap; box-shadow: 0 0 10px rgba(255,200,80,.95);
+  animation: abReadyLbl 0.7s ease-in-out infinite; pointer-events: none;
+}
+@keyframes abReady { 0%,100% { box-shadow: 0 0 8px rgba(255,150,40,.6); transform: scale(1); } 50% { box-shadow: 0 0 24px rgba(255,205,90,1); transform: scale(1.09); } }
+@keyframes abReadyLbl { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.14); } }
 .tbtn-ability .tbtn-ic { width: 82%; height: 82%; }
 /* iets kleiner op echt lage schermen zodat alles past */
 @media (max-height: 380px) {
