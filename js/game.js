@@ -1690,12 +1690,16 @@ const Game = {
     worldId = worldId || 1;
     const world = JOURNEY[worldId]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
-    // ---- Temple-wereld: speel op de Temple-map ----
+    // ---- Temple-wereld: eigen tempel-arena met DICHTE ondergrond (geen gat), per level iets anders ----
     let mapObj;
     if (worldId === 2) {
-      mapObj = VERSUS_MAPS.find((m) => m.id === 'temple') || null;
+      const layout = TEMPLE_JOURNEY_LAYOUTS[(lv.layout || 0) % TEMPLE_JOURNEY_LAYOUTS.length];
+      mapObj = {
+        id: 'templeJ', name: lv.name, sky: ['#f2b96a', '#9a5a4a'], void: '#0a0604', plat: 'stone', stone: true, temple: true, noPortals: true,
+        w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
+      };
       this.journey = { world: worldId, idx, lv };
-      this.startVersus('host', { mapObj, mapId: 'temple', mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot, swapSides: Math.random() < 0.5 });
+      this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot, swapSides: Math.random() < 0.5 });
       this.journey = { world: worldId, idx, lv };
       return;
     }
@@ -1906,6 +1910,7 @@ const Game = {
     this.ghostBullets = []; this.botBullets = [];
     this.drops = []; this._dropTimer = SMASH_DROP_EVERY; this._dropId = 1;
     this.nuke = null; this._nukeUsed = false;            // nuke-powerup: max 1x per match
+    this.traps = [];                                     // Tempelbewaker-vallen
     this.portals = []; this._portalTimer = SMASH_PORTAL_EVERY;
     this.dragons = [];
     // Cave: knoppen + muur + sfeer (bats/druppels)
@@ -2009,6 +2014,8 @@ const Game = {
         onDrop: (p) => this.onVersusDrop(p),
         onPickup: (p) => this.onVersusPickup(p),
         onNuke: () => this.onVersusNuke(),
+        onTraps: (p) => this.onVersusTraps(p),
+        onRooted: () => this.onVersusRooted(),
         onPortal: (p) => this.onVersusPortal(p),
         onDragon: () => this.onVersusDragon(),
         onStun: () => this.onVersusStun(),
@@ -2689,6 +2696,7 @@ const Game = {
       this.checkDoor(this.player);
       if (this.vsBot && this.bot && !this.bot.dead) this.checkDoor(this.bot);
     }
+    if (this.traps && this.traps.length) this.updateTraps();   // Tempelbewaker-vallen: sta erop -> vast
 
     // draken (drakenei-powerup)
     this.updateDragons(dt);
@@ -3173,6 +3181,57 @@ const Game = {
     }
   },
 
+  // ===== TEMPELBEWAKER-VALLEN =====
+  // 3 vallen op de grond bij de plaatser neerzetten
+  placeTraps(placer, owner) {
+    this.traps = this.traps || [];
+    const gy = Math.round(placer.y);
+    const xs = [-80, 0, 80].map((dx) => Math.max(20, Math.min(this.vsMapW - 20, Math.round(placer.x + dx))));
+    for (const x of xs) {
+      this.traps.push({ x, y: gy, owner, born: this.time });
+      for (let i = 0; i < 5; i++) this.particles.push(new Particle(x, gy - 4, (Math.random() - 0.5) * 2, -Math.random() * 1.5, '#caa84a', 340, 2));
+    }
+    if (owner === 'me' && !this.vsBot && window.Net) Net.versusSend('traps', { xs, y: gy });
+    if (window.Sfx) Sfx.play('stomp');
+  },
+  // sta je op een val van je tegenstander -> 8s vastgeklonken (wel slaan, niet bewegen/springen)
+  updateTraps() {
+    const root = (e) => { if (!e || e.dead) return; e._rootedUntil = this.time + 8000; e.knockVx = 0; this.shake = Math.max(this.shake, 6); for (let k = 0; k < 12; k++) this.particles.push(new Particle(e.x, e.y - 6, (Math.random() - 0.5) * 3, -Math.random() * 2, '#8a6a3a', 460, 2)); if (window.Sfx) Sfx.play('stomp'); };
+    const on = (e, t) => e && !e.dead && Math.abs(e.x - t.x) < 14 && e.onGround && Math.abs(e.y - t.y) < 16;
+    for (let i = this.traps.length - 1; i >= 0; i--) {
+      const t = this.traps[i];
+      if (this.time - t.born > 25000) { this.traps.splice(i, 1); continue; }   // oude vallen vervallen
+      if (t.owner === 'me') {                       // val van de lokale speler -> treft de tegenstander
+        const opp = this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
+        if (on(opp, t)) { this.traps.splice(i, 1); if (this.vsBot) root(this.bot); else if (window.Net) { Net.versusSend('rooted', {}); this.spawnAbilityFx(opp.x, opp.y, '#8a6a3a'); } }
+      } else {                                      // val van bot/online-tegenstander -> treft de speler
+        if (on(this.player, t)) { this.traps.splice(i, 1); root(this.player); }
+      }
+    }
+  },
+  onVersusTraps(p) {
+    if (!p || !p.xs) return; this.traps = this.traps || [];
+    for (const x of p.xs) this.traps.push({ x: x, y: p.y, owner: 'foe', born: this.time });
+  },
+  onVersusRooted() {
+    const p = this.player; if (p && !p.dead) { p._rootedUntil = this.time + 8000; p.knockVx = 0; this.shake = Math.max(this.shake, 6); if (window.Sfx) Sfx.play('stomp'); }
+  },
+  // val op de grond: houten plaat met metalen tanden, licht pulserend
+  drawTrap(ctx, t) {
+    const x = Math.round(t.x), y = Math.round(t.y);
+    const pulse = Math.sin(this.time / 300 + t.x) > 0;
+    Sprites.px(ctx, '#5a4630', x - 9, y - 3, 18, 4);              // houten voetplaat
+    Sprites.px(ctx, '#3f3020', x - 9, y - 3, 18, 1);
+    for (let i = -7; i <= 6; i += 3) Sprites.px(ctx, pulse ? '#e8edf2' : '#aab2bc', x + i, y - 6, 2, 3);   // metalen tanden
+    Sprites.px(ctx, '#8a929c', x - 9, y - 4, 18, 1);
+  },
+  // ketens rond de voeten van een vastgeklonken vechter
+  drawRooted(ctx, x, y) {
+    Sprites.px(ctx, '#8a929c', x - 8, y - 3, 16, 3);             // grondketen
+    Sprites.px(ctx, '#cfd6df', x - 8, y - 3, 16, 1);
+    Sprites.px(ctx, '#6b7480', x - 3, y - 8, 2, 6); Sprites.px(ctx, '#6b7480', x + 1, y - 8, 2, 6);   // enkelboeien
+  },
+
   spawnDrop() {
     let pool = SMASH_DROPS.slice();
     const mid = this.vsMap && this.vsMap.id;
@@ -3241,6 +3300,7 @@ const Game = {
       case 'earthquake': this.startEarthquake(); break;
       case 'knife': p._bladeRounds = 2; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
       case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000; this._abFx(p, '#f2f6fa'); break;
+      case 'traps': this.placeTraps(p, 'me'); this._abFx(p, '#caa84a'); break;
       case 'stunstrike': p._stunStrikeUntil = now + 5000; this._abFx(p, '#8fd0ff'); break;
       case 'invisible': p._invisUntil = now + 6000; this._abFx(p, '#b06bff'); break;
       default: break;
@@ -3349,6 +3409,7 @@ const Game = {
       case 'earthquake': this.botEarthquake(); break;
       case 'knife': b._bladeRounds = 2; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
       case 'katanacombo': b.meleeId = 'katana'; b.weaponId = 'katana'; b._fastMeleeUntil = now + 5000; this._abFx(b, '#f2f6fa'); break;
+      case 'traps': this.placeTraps(b, 'bot'); this._abFx(b, '#caa84a'); break;
       case 'stunstrike': b._stunStrikeUntil = now + 5000; this._abFx(b, '#8fd0ff'); break;
       case 'invisible': b._invisUntil = now + 6000; this._abFx(b, '#b06bff'); break;
       default: break;
@@ -3605,6 +3666,7 @@ const Game = {
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
     r.hp = b.hp; r.maxHp = b.maxHp; r.ducking = b.ducking;
     r.iv = !!(b._invisUntil && this.time < b._invisUntil);   // ninja onzichtbaar -> jij ziet 'm niet
+    r.rooted = !!(b._rootedUntil && this.time < b._rootedUntil);   // in een val vast
     r._flashUntil = b._flashUntil || 0;                 // witte hit-flash mee-spiegelen
 
     // bot schiet: vuurwapen (beide-wapens) of fireball/rocket (smash)
@@ -3730,7 +3792,7 @@ const Game = {
     const sp = this.vs.botSpawn;
     b.x = sp.x; b.y = sp.y; b.dir = sp.dir; b.vy = 0; b.knockVx = 0;
     b.onGround = true; b.dead = false; b.respawnInvuln = 1300; b.hp = b.maxHp; b.burnUntil = 0;
-    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0; b.vine = null; b._caged = false;
+    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._rootedUntil = 0; b._invisUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0; b.vine = null; b._caged = false;
     b.guard = GUARD_MAX; b._guardBroken = false; b._blockStart = 0;
     if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
     b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
@@ -3930,7 +3992,7 @@ const Game = {
 
   localFell() {
     if (this.vs.over || this.vs.roundFreezeUntil > this.time) return;   // al klaar / al in freeze
-    this.nuke = null;                                                   // een KO ontmantelt de nuke
+    this.nuke = null; this.traps = [];                                  // KO ontmantelt de nuke + vallen weg
     this.player.dead = true;
     this.triggerKO(this.player.x, this.player.y, false);                // KO-cinematic (jij bent eraf)
     this.vs.oppScore++;
@@ -3945,7 +4007,7 @@ const Game = {
     this.player.vy = 0; this.player.knockVx = 0; this.player.onGround = true;
     this.player.dead = false; this.player.respawnInvuln = 1300;
     this.player.hp = this.player.maxHp; this.player.burnUntil = 0;   // fris (ook na burn-dood)
-    this.player.stunUntil = 0; this.player.flatUntil = 0; this.player._beamSafeUntil = 0;
+    this.player.stunUntil = 0; this.player.flatUntil = 0; this.player._rootedUntil = 0; this.player._invisUntil = 0; this.player._beamSafeUntil = 0;
     this.player.combo = 0; this.player.comboUntil = 0; this.player.vine = null; this.player._caged = false;
     this.player.guard = GUARD_MAX; this.player._guardBroken = false; this.player._blockStart = 0;
     this.player.swingWeapon = null; this.player.swingUntil = 0;       // geen lingerende mep-animatie
@@ -3963,7 +4025,7 @@ const Game = {
 
   onVersusFell(payload) {
     if (this.vs.over) return;
-    this.nuke = null;                                                   // een KO ontmantelt de nuke
+    this.nuke = null; this.traps = [];                                  // KO ontmantelt de nuke + vallen weg
     // absolute score overnemen (max) -> dubbele meldingen tellen niet dubbel, gemiste herstellen
     const before = this.vs.myScore;
     if (payload && typeof payload.winScore === 'number') this.vs.myScore = Math.max(this.vs.myScore, payload.winScore);
@@ -4184,6 +4246,8 @@ const Game = {
     // portalen (Power Smash) — achter de spelers
     if (this.portals) for (const pt of this.portals) this.drawPortal(ctx, pt);
 
+    // Tempelbewaker-vallen op de grond
+    if (this.traps) for (const t of this.traps) this.drawTrap(ctx, t);
     // drops (Power Smash)
     if (this.drops) for (const d of this.drops) { if (!d.taken) this.drawDrop(ctx, d); }
     // vallende stenen (steen-powerup)
@@ -4248,6 +4312,7 @@ const Game = {
       }
       if (r.ducking) this.drawBlockGuard(ctx, Math.round(r.x), Math.round(r.y), r.dir);
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
+      if (r.rooted) this.drawRooted(ctx, Math.round(r.x), Math.round(r.y));
       this.drawVsMarker(ctx, Math.round(r.x), Math.round(r.y), rc.build, '#ff5a5a');
     }
 
@@ -4278,6 +4343,7 @@ const Game = {
         }
         if (p.ducking && p.onGround) this.drawBlockGuard(ctx, Math.round(p.x), Math.round(p.y), p.dir);
         if (p.stunUntil && this.time < p.stunUntil) this.drawStunAura(ctx, Math.round(p.x), Math.round(p.y));
+        if (p._rootedUntil && this.time < p._rootedUntil) this.drawRooted(ctx, Math.round(p.x), Math.round(p.y));
       }
       this.drawVsMarker(ctx, Math.round(p.x), Math.round(p.y), p.build, '#5aff7a');
     }

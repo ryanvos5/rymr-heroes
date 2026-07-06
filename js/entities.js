@@ -98,6 +98,7 @@ class Player {
     const s = game.dtScale;
     // bliksem-stun / platgedrukt (Cave): geen besturing
     const frozen = (this.stunUntil && game.time < this.stunUntil) || (this.flatUntil && game.time < this.flatUntil) || this.downed;
+    const rooted = this._rootedUntil && game.time < this._rootedUntil;   // Tempelbewaker-val: vast aan de grond (wel slaan)
     const inp = frozen ? { left: false, right: false, jump: false, duck: false, attack: false, melee: false, jumpPressed: false }
                        : (inputOverride || Input.state);   // bot kan eigen input meegeven
 
@@ -187,8 +188,9 @@ class Player {
     // horizontaal bewegen (ook tijdens duiken, maar langzaam)
     const prevX = this.x;
     let moving = false;
-    if (inp.left) { this.x -= spd * s; moving = true; }
-    if (inp.right) { this.x += spd * s; moving = true; }
+    if (inp.left && !rooted) { this.x -= spd * s; moving = true; }
+    if (inp.right && !rooted) { this.x += spd * s; moving = true; }
+    if (rooted) this.knockVx = 0;                      // vastgeklonken: geen wegglijden
     // weggeslagen worden (versus: grote melee-knockback) — momentum dat uitdooft
     if (this.knockVx) {
       this.x += this.knockVx * s;
@@ -241,7 +243,7 @@ class Player {
       return;                                     // geen normale fysica tijdens het slingeren
     }
 
-    if (jumpPressed && !this.ducking && !inCloud) {
+    if (jumpPressed && !this.ducking && !inCloud && !rooted) {
       if (this.jumps > 0) {
         const air = !this.onGround;              // dit is de dubbel-jump (al in de lucht)
         this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * (air ? this.dblJumpMul : 1);

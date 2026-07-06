@@ -268,14 +268,14 @@ const CHARACTERS = {
   // ---- TEMPLE-WERELD BOSSES (unlockbaar door ze te verslaan in Journey) ----
   guardian: {
     id: 'guardian', name: 'Tempelbewaker', cost: 0, journeyOnly: true,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'stocky', hair: 'bald', ability: 'katanacombo', forcedMelee: 'katana',
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'stocky', hair: 'bald', ability: 'traps', forcedMelee: 'katana',
     palette: {
       hair: '#c9a84a', hairDark: '#8a6f28',
       skin: '#caa06a', skinDark: '#9a734a',
       eye: '#3a2a12',
       shirt: '#b8912e', shirtDark: '#7a5e18', pants: '#4a3a1e', shoe: '#241a0c',
     },
-    desc: 'Tempelbewaker: katana-combo (2× snel slaan). Versla hem in de Temple-wereld.'
+    desc: 'Tempelbewaker: zet 3 vallen — sta je erop, dan zit je 8s vast. Versla hem in de Temple-wereld.'
   },
   monnik: {
     id: 'monnik', name: 'Monnik', cost: 0, journeyOnly: true,
@@ -298,6 +298,16 @@ const CHARACTERS = {
       shirt: '#1c1f26', shirtDark: '#0e1014', pants: '#141619', shoe: '#0a0b0d',
     },
     desc: 'Ninja: vooruit-salto-sprong + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
+  },
+  // ---- INDIAAN: tempel-minion (alleen als bot in de Temple-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
+  indiaan: {
+    id: 'indiaan', name: 'Indiaan', maxHp: 95, speedMul: 1.05, meleeMul: 1.0, build: 'normal', hair: 'spiky',
+    palette: {
+      hair: '#1a1a1e', hairDark: '#0c0c0e',
+      skin: '#b87848', skinDark: '#8a5630',
+      eye: '#2a1a0e',
+      shirt: '#8a4a2a', shirtDark: '#5a2c16', pants: '#6b4020', shoe: '#3a2210',
+    },
   },
   // ---- vijand-mensapen (alleen als bot in Journey, niet in de shop / niet in CHARACTER_ORDER) ----
   aapje: {
@@ -324,6 +334,7 @@ const ABILITIES = {
   ultrarage:  { name: 'Ultra Rage',  desc: 'Ultra rage 5s (4× schade).' },
   knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 2 rondes (snel + hard).' },
   katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
+  traps:      { name: 'Vallen',       desc: 'Zet 3 vallen neer: sta je erop, dan zit je 8s vast (wel slaan, niet bewegen).' },
   stunstrike: { name: 'Stun-slag',   desc: '5s lang: je volgende klap verdooft je tegenstander.' },
   invisible:  { name: 'Onzichtbaar', desc: '6s onzichtbaar — je tegenstander ziet je niet.' },
 };
@@ -642,6 +653,15 @@ const BEACH_LAYOUTS = [
   [{ x: 180, y: 150, w: 210 }, { x: 70, y: 116, w: 46 }, { x: 290, y: 116, w: 46 }, { x: 120, y: 84, w: 44 }, { x: 240, y: 84, w: 44 }],
   [{ x: 180, y: 150, w: 300 }, { x: 78, y: 112, w: 64 }, { x: 282, y: 112, w: 64 }, { x: 180, y: 80, w: 92 }],   // baas-arena
 ];
+// Temple-journey: DICHTE ondergrond (volle brede grond, geen gat) + per level iets andere platforms
+const TEMPLE_JOURNEY_LAYOUTS = [
+  [{ x: 180, y: 152, w: 360 }, { x: 90, y: 112, w: 56 }, { x: 270, y: 112, w: 56 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 180, y: 116, w: 84 }, { x: 82, y: 82, w: 48 }, { x: 278, y: 82, w: 48 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 70, y: 120, w: 50 }, { x: 290, y: 120, w: 50 }, { x: 180, y: 86, w: 66 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 120, y: 118, w: 54 }, { x: 240, y: 118, w: 54 }, { x: 180, y: 80, w: 56 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 60, y: 124, w: 46 }, { x: 300, y: 124, w: 46 }, { x: 130, y: 92, w: 44 }, { x: 230, y: 92, w: 44 }, { x: 180, y: 56, w: 40 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 96, y: 108, w: 56 }, { x: 264, y: 108, w: 56 }, { x: 180, y: 74, w: 72 }],
+];
 // jungle-varianten (vanaf level 10, dieper het oerwoud in); laatste = troonzaal-eindbaas
 const JUNGLE_LAYOUTS = [
   [{ x: 180, y: 150, w: 210 }, { x: 80, y: 112, w: 52 }, { x: 280, y: 112, w: 52 }],
@@ -697,17 +717,15 @@ function buildTempleWorld() {
   const names = ['Poort', 'Binnenhof', 'Zuilengang', 'Altaar', 'TEMPELBEWAKER',
     'Kloostergang', 'Meditatietuin', 'Klokkentoren', 'Verborgen kamer', 'MONNIK',
     'Daktuinen', 'Schaduwpad', 'Val-gangen', 'Dojo', 'NINJA'];
-  const minions = ['jenze', 'tygo', 'timo', 'ricky', 'just', 'vince', 'yarno', 'bonzo', 'koba'];
   const bosses = { 5: { bot: 'guardian', diff: 6 },
                    10: { bot: 'monnik', diff: 8 },
                    15: { bot: 'ninja', diff: 10, boss: true } };
   const levels = [];
-  let mi = 0;
   for (let n = 1; n <= 15; n++) {
     const t = (n - 1) / 14;
-    const lv = { id: n, name: names[n - 1], temple: true, reward: 0, drops: ['ninjastar'] };
+    const lv = { id: n, name: names[n - 1], temple: true, reward: 0, drops: ['ninjastar'], layout: (n - 1) % 6 };   // elk level iets andere layout
     if (bosses[n]) Object.assign(lv, bosses[n], { bossFight: true, drops: ['ninjastar', 'dart', 'coco'] });
-    else { lv.bot = minions[mi++ % minions.length]; lv.diff = Math.round(3 + t * 6); }
+    else { lv.bot = 'indiaan'; lv.diff = Math.round(3 + t * 6); }   // minions = indianen (geen shop/wereld-1 characters)
     levels.push(lv);
   }
   return levels;
