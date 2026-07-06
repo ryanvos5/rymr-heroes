@@ -1622,6 +1622,7 @@ const UI = {
     document.querySelectorAll('.shop-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     this.el.shopCoins.textContent = Storage.data.coins;
     this.el.shopGrid.innerHTML = '';
+    this._charAnims = [];
     if (tab === 'chars') this.renderCharCards();
     else if (tab === 'hats') this.renderHatCards();
     else if (tab === 'powerups') this.renderPowerupCards(this.el.shopGrid, 'shop');
@@ -1680,6 +1681,7 @@ const UI = {
     const tab = this._invTab || 'powerups';
     document.querySelectorAll('#inv-tabs .shop-tab').forEach((b) => b.classList.toggle('active', b.dataset.invtab === tab));
     const grid = document.getElementById('inv-grid'); grid.innerHTML = '';
+    this._charAnims = [];
     const hint = document.getElementById('inv-hint');
     if (tab === 'powerups') {
       hint.classList.remove('hidden');
@@ -1688,6 +1690,61 @@ const UI = {
     } else if (tab === 'chars') { hint.classList.add('hidden'); this.renderOwnedChars(grid); }
     else { hint.classList.add('hidden'); this.renderOwnedHats(grid); }
     this._galleryify(grid, 'inv_' + tab);
+  },
+
+  // ---------- CHARACTER-PREVIEW (shop / inventaris) — 2.5D net als in de game ----------
+  // Maakt een canvas met grondschaduw + inkt-outline, en registreert 'm voor de idle-animatie.
+  _charCanvas(palette, opts) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 120; canvas.height = 92;
+    this._charAnims = this._charAnims || [];
+    this._charAnims.push({ canvas, palette, opts });
+    this._drawCharPreview(canvas, palette, opts, (typeof performance !== 'undefined' ? performance.now() : 0));
+    this._startCharAnim();
+    return canvas;
+  },
+  // teken het character in de kaart: grondschaduw (diepte) + zachte idle-beweging, zoals in de game
+  _drawCharPreview(canvas, palette, opts, t) {
+    const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const sc = canvas.height / 48;
+    const footY = canvas.height / sc - 4;
+    const ph = t / 640;
+    const bob = Math.sin(ph);                                   // rustige adem/idle
+    ctx.save();
+    ctx.translate(canvas.width / 2, 0);
+    ctx.scale(sc, sc);
+    // zachte vloer-schijf (pedestal) — geeft diepte en laat de schaduw lezen op de donkere kaart
+    ctx.globalAlpha = 0.12; ctx.fillStyle = '#7fa6cf';
+    ctx.beginPath(); ctx.ellipse(0, footY + 1.5, 13, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    Sprites.shadow(ctx, 0, footY, 9 - Math.max(0, bob) * 1.2);   // schaduw krimpt als hij 'ademt'
+    const pose = Object.assign({ airborne: false }, opts, { walkPhase: Math.sin(ph) * 0.4, t: t });
+    Sprites.drawCharacter(ctx, 0, footY - bob, 1, palette, pose);
+    ctx.restore();
+  },
+  // gedeelde idle-animatielus: draait alleen als shop of inventaris zichtbaar is (throttled ~22fps)
+  _startCharAnim() {
+    if (this._charAnimRunning) return;
+    this._charAnimRunning = true;
+    let last = 0;
+    const step = (now) => {
+      const vis = (this.el.shop && !this.el.shop.classList.contains('hidden')) ||
+                  (this.el.inventory && !this.el.inventory.classList.contains('hidden'));
+      const anims = this._charAnims || [];
+      if (!vis || !anims.length) { this._charAnimRunning = false; return; }
+      if (now - last >= 45) {                                    // throttle: ~22 fps is genoeg voor idle
+        last = now;
+        for (const a of anims) {
+          if (!a.canvas.isConnected) continue;
+          const slide = a.canvas.closest ? a.canvas.closest('.gal-slide') : null;
+          if (slide && !slide.classList.contains('active')) continue;   // alleen de grote actieve kaart animeren
+          this._drawCharPreview(a.canvas, a.palette, a.opts, now);
+        }
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   },
 
   // ---------- HORIZONTALE GALERIJ (shop + inventaris) ----------
@@ -1788,10 +1845,7 @@ const UI = {
   _spriteCard(palette, opts, nameHtml, owned) {
     const card = document.createElement('div');
     card.className = 'shop-card' + (owned ? ' owned' : '');
-    const canvas = document.createElement('canvas'); canvas.width = 110; canvas.height = 64;
-    const cctx = canvas.getContext('2d'); cctx.imageSmoothingEnabled = false;
-    cctx.save(); cctx.translate(55, 4); cctx.scale(1.4, 1.4);
-    Sprites.drawCharacter(cctx, 0, 38, 1, palette, opts); cctx.restore();
+    const canvas = this._charCanvas(palette, opts);
     const info = document.createElement('div'); info.innerHTML = nameHtml;
     card.appendChild(canvas); card.appendChild(info);
     return card;
@@ -2052,17 +2106,10 @@ const UI = {
       const card = document.createElement('div');
       card.className = 'shop-card' + (owned ? ' owned' : '');
 
-      // preview-tekening van het character
-      const canvas = document.createElement('canvas');
-      canvas.width = 110; canvas.height = 64;
-      const cctx = canvas.getContext('2d');
-      cctx.imageSmoothingEnabled = false;
-      cctx.save();
-      cctx.translate(55, 4); cctx.scale(1.4, 1.4);
-      Sprites.drawCharacter(cctx, 0, 38, 1, c.palette, {
+      // preview-tekening van het character (2.5D met grondschaduw + idle, net als in de game)
+      const canvas = this._charCanvas(c.palette, {
         weapon: c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat,
       });
-      cctx.restore();
 
       // stats t.o.v. Ryan
       const spd = c.speedMul >= 1 ? 'snel' : (c.speedMul >= 0.9 ? 'iets trager' : 'traag');
@@ -2112,15 +2159,8 @@ const UI = {
       const card = document.createElement('div');
       card.className = 'shop-card' + (owned ? ' owned' : '');
 
-      // preview: jouw character met deze hoed
-      const canvas = document.createElement('canvas');
-      canvas.width = 110; canvas.height = 64;
-      const cctx = canvas.getContext('2d');
-      cctx.imageSmoothingEnabled = false;
-      cctx.save();
-      cctx.translate(55, 4); cctx.scale(1.4, 1.4);
-      Sprites.drawCharacter(cctx, 0, 38, 1, cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: hid });
-      cctx.restore();
+      // preview: jouw character met deze hoed (2.5D met grondschaduw + idle, net als in de game)
+      const canvas = this._charCanvas(cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: hid });
 
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${h.name}</div><div class="w-stats">${h.desc}</div>`;
