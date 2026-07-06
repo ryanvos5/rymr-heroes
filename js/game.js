@@ -799,6 +799,25 @@ const Game = {
     for (let i = 0; i < 5; i++)
       this.particles.push(new Particle(x, y, dir * (1 + Math.random() * 2), (Math.random() - 0.5) * 1.5, '#ffd24a', 120, 2));
   },
+  // vuurbal afvuren: felle vlam-uitbarsting uit de hand (moment van afvuren)
+  spawnFireCast(shooter, x, y, dir) {
+    shooter._fireHandUntil = this.time + 220;                 // korte vlam-in-de-hand-flits (zie drawFireHand)
+    const cols = ['#ff5a1e', '#ff8a2a', '#ffd24a', '#ffe9a0'];
+    for (let i = 0; i < 12; i++) {
+      const sp = 1.4 + Math.random() * 3.2, spr = (Math.random() - 0.5) * 1.8;
+      this.particles.push(new Particle(x, y, dir * sp, spr - Math.random() * 1.2, cols[i & 3], 260 + Math.random() * 160, 2 + (i & 1)));
+    }
+    this.shake = Math.max(this.shake, 3);
+  },
+  // vlam die je in de hand vasthoudt op het moment van afvuren
+  drawFireHand(ctx, x, y, dir, t) {
+    const hx = Math.round(x + dir * 13), hy = Math.round(y - 16);
+    const fl = Math.round(Math.sin(t / 45) * 2);
+    Sprites.px(ctx, '#ff5a1e', hx - 2, hy - 3 - fl, 5, 6);            // buitenvlam
+    Sprites.px(ctx, '#ff9a2a', hx - 1, hy - 4 - fl, 3, 6);            // middenvlam
+    Sprites.px(ctx, '#ffe27a', hx, hy - 5 - fl, 2, 4);               // hete kern
+    Sprites.px(ctx, '#fff3c0', hx, hy - 2, 1, 2);                    // glans op de handpalm
+  },
   spawnBlood(x, y) {
     for (let i = 0; i < 6; i++)
       this.particles.push(new Particle(x, y, (Math.random() - 0.5) * 3, -Math.random() * 2, '#8a2222', 350, 2));
@@ -1592,6 +1611,7 @@ const Game = {
       shielding: this.player._shieldUp,
       hat: Storage.data.equippedHat, t: this.time,
       rage: this.player.hasBuff('rage', this.time), burning: this.player.burnUntil > this.time,
+      outfit: this.player.outfit,
     };
     Sprites.drawCharacter(ctx, this.player.x, this.player.y, this.player.dir, this.player.pal, pOpts);
     if (this.player.downed) ctx.globalAlpha = 1;
@@ -2394,7 +2414,8 @@ const Game = {
     else if (kind === 'star') { bl.hitDmg = SMASH_STAR_DMG; bl.power = 10; bl.spin = 0; }   // veel schade, weinig knockback
     else { bl.hitDmg = 40; bl.power = 26; }
     this.bullets.push(bl);
-    this.spawnMuzzleFlash(shooter.x + dir * 14, shooter.y - 16, dir);
+    if (kind === 'fire') this.spawnFireCast(shooter, shooter.x + dir * 14, shooter.y - 16, dir);   // vuur uit de hand
+    else this.spawnMuzzleFlash(shooter.x + dir * 14, shooter.y - 16, dir);
     if (window.Sfx && shooter === this.player) Sfx.play(kind === 'rocket' ? 'rocket' : (kind === 'star' ? 'shoot' : 'fireball'));
   },
 
@@ -3302,6 +3323,7 @@ const Game = {
       case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000; this._abFx(p, '#f2f6fa'); break;
       case 'traps': this.placeTraps(p, 'me'); this._abFx(p, '#caa84a'); break;
       case 'stunstrike': p._stunStrikeUntil = now + 5000; this._abFx(p, '#8fd0ff'); break;
+      case 'stunpulse': this.stunPulse(p, 'me'); break;
       case 'invisible': p._invisUntil = now + 6000; this._abFx(p, '#b06bff'); break;
       default: break;
     }
@@ -3315,7 +3337,37 @@ const Game = {
   _abilityColor(ab) {
     return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', fireaura10: '#ff8a2a',
       rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', zapdash: '#ffe27a',
-      earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', invisible: '#b06bff' })[ab] || '#c9a6ff';
+      earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', stunpulse: '#8fd0ff', invisible: '#b06bff' })[ab] || '#c9a6ff';
+  },
+  // Monnik-ability: energiegolf die iedereen binnen bereik verdooft (werkt tegen bot én online)
+  stunPulse(src, who) {
+    if (!src) return;
+    const now = this.time;
+    this._abFx(src, '#8fd0ff');
+    this.spawnStunPulseFx(src.x, src.y);              // zichtbare uitdijende ring
+    this.shake = Math.max(this.shake, 8);
+    if (window.Sfx) Sfx.play('stomp');
+    // doelwit bepalen: bot (vsBot) of de online-tegenstander
+    const opp = who === 'me' ? (this.vsBot ? this.bot : (this.vs ? this.vs.remote : null)) : this.player;
+    if (!opp) return;
+    const inRange = Math.abs((opp.x || 0) - src.x) <= STUN_PULSE_RANGE && Math.abs((opp.y || 0) - src.y) <= 70;
+    const kdir = (opp.x >= src.x) ? 1 : -1;
+    if (who === 'me' && !this.vsBot) {
+      // online: stuur een treffer met verdoving (geen schade) mee — de tegenstander verwerkt de stun
+      if (inRange && window.Net) Net.versusSend('hit', { dir: kdir, power: 12, vy: -4, dmg: 0, stun: STUN_PULSE_MS });
+      return;
+    }
+    // lokaal (speler vs bot, of bot vs speler): pas de verdoving direct toe
+    if (inRange && !opp.dead && (opp.respawnInvuln == null || opp.respawnInvuln <= 0)) {
+      opp.stunUntil = Math.max(opp.stunUntil || 0, now + STUN_PULSE_MS);
+      opp.knockVx = kdir * 12; opp.vy = Math.min(opp.vy || 0, -4); opp.onGround = false; opp.combo = 0;
+    }
+  },
+  // uitdijende blauwe schokring op (x,y) — visuele feedback van de stun-pulse
+  spawnStunPulseFx(x, y) {
+    if (!this.abilityFx) this.abilityFx = [];
+    this.abilityFx.push({ x, y, born: this.time, dur: 520, color: '#8fd0ff', ring: STUN_PULSE_RANGE });
+    for (let i = 0; i < 20; i++) { const a = (i / 20) * 6.2832; this.particles.push(new Particle(x + Math.cos(a) * 8, y - 12 + Math.sin(a) * 8, Math.cos(a) * 3.4, Math.sin(a) * 3.4, i % 2 ? '#bfe9ff' : '#8fd0ff', 480, 2)); }
   },
   // magische ring + sprankels rond een positie (moment van ability-inzet)
   spawnAbilityFx(x, y, color) {
@@ -3411,6 +3463,7 @@ const Game = {
       case 'katanacombo': b.meleeId = 'katana'; b.weaponId = 'katana'; b._fastMeleeUntil = now + 5000; this._abFx(b, '#f2f6fa'); break;
       case 'traps': this.placeTraps(b, 'bot'); this._abFx(b, '#caa84a'); break;
       case 'stunstrike': b._stunStrikeUntil = now + 5000; this._abFx(b, '#8fd0ff'); break;
+      case 'stunpulse': this.stunPulse(b, 'bot'); break;
       case 'invisible': b._invisUntil = now + 6000; this._abFx(b, '#b06bff'); break;
       default: break;
     }
@@ -3668,6 +3721,7 @@ const Game = {
     r.iv = !!(b._invisUntil && this.time < b._invisUntil);   // ninja onzichtbaar -> jij ziet 'm niet
     r.rooted = !!(b._rootedUntil && this.time < b._rootedUntil);   // in een val vast
     r._flashUntil = b._flashUntil || 0;                 // witte hit-flash mee-spiegelen
+    r._fireHandUntil = b._fireHandUntil || 0;           // vuur-in-de-hand-flits mee-spiegelen
 
     // bot schiet: vuurwapen (beide-wapens) of fireball/rocket (smash)
     const p2 = this.player;
@@ -3699,7 +3753,7 @@ const Game = {
         b.gunAmmo--; b._shootCd = this.time + 220;
         if (b.gunAmmo <= 0) { b.rangedId = null; b.weaponId = b.meleeId || 'bat'; }
       }
-      if (bl) { b.dir = sdir; this.botBullets.push(bl); this.spawnMuzzleFlash(b.x + sdir * 14, b.y - 16, sdir); if (window.Sfx) Sfx.play(bl.kind === 'cannon' ? 'cannon' : bl.kind === 'rocket' ? 'rocket' : bl.kind === 'fire' ? 'fireball' : 'gun'); }
+      if (bl) { b.dir = sdir; this.botBullets.push(bl); if (bl.kind === 'fire') this.spawnFireCast(b, b.x + sdir * 14, b.y - 16, sdir); else this.spawnMuzzleFlash(b.x + sdir * 14, b.y - 16, sdir); if (window.Sfx) Sfx.play(bl.kind === 'cannon' ? 'cannon' : bl.kind === 'rocket' ? 'rocket' : bl.kind === 'fire' ? 'fireball' : 'gun'); }
     }
     // bot-kogels bewegen + de speler raken
     if (this.botBullets && this.botBullets.length) {
@@ -4255,7 +4309,14 @@ const Game = {
 
     // kogels: gewoon + fireball/rocket + ghost van de tegenstander + bot
     const drawBullet = (b) => {
-      if (b.kind === 'fire') { Sprites.px(ctx, '#ff7a2a', b.x - 2, b.y - 2, 5, 5); Sprites.px(ctx, '#ffd24a', b.x - 1, b.y - 1, 3, 3); }
+      if (b.kind === 'fire') {                          // flikkerende vuurbal met sliert erachter
+        const d = Math.sign(b.vx) || 1, f = Math.floor(this.time / 45) % 2;
+        Sprites.px(ctx, '#ff5a1e', b.x - d * 6, b.y - 1, 4, 2);                 // staart-vlam achter de bal
+        Sprites.px(ctx, '#ff8a2a', b.x - d * 3 - 1, b.y - 2, 3, 4 + f);         // buitengloed
+        Sprites.px(ctx, '#ff7a2a', b.x - 2, b.y - 3, 5, 6);                     // kern-vlam
+        Sprites.px(ctx, '#ffd24a', b.x - 1, b.y - 2, 3, 4);                     // hete kern
+        Sprites.px(ctx, '#fff3c0', b.x, b.y - 1 - f, 1, 2);                     // wit-hete punt
+      }
       else if (b.kind === 'rocket') { Sprites.px(ctx, '#cfd6df', b.x - 3, b.y - 1, 6, 3); Sprites.px(ctx, '#ffd24a', b.x - (Math.sign(b.vx) || 1) * 3, b.y - 1, 2, 3); }
       else if (b.kind === 'cannon') { Sprites.px(ctx, '#0e0e0e', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#3a3a3a', b.x - 4, b.y - 4, 8, 2); Sprites.px(ctx, '#666', b.x - 2, b.y - 3, 2, 2); }
       else if (b.kind === 'coco') { Sprites.px(ctx, '#5e3f22', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#8a5e36', b.x - 4, b.y - 4, 8, 3); Sprites.px(ctx, '#3a2614', b.x - 1, b.y - 1, 2, 2); }
@@ -4304,11 +4365,12 @@ const Game = {
       const rOpts = {
         walkPhase: r.walkPhase, airborne: !r.onGround, attacking: r.attacking, ducking: r.ducking, swing: rSwing,
         weapon: r.giant ? null : (r.swingWeapon || r.heldWeapon || 'bat'), build: rc.build, hair: rc.hair, squash: r.flat,
-        hat: r.hat || 'none', t: this.time, rage: r.rage, burning: r.burn,
+        hat: r.hat || 'none', t: this.time, rage: r.rage, burning: r.burn, outfit: rc.outfit,
       };
       Sprites.drawCharacter(ctx, 0, 0, r.dir, rc.palette, rOpts);
       if (r._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (r._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, r.dir, this._flashPal(rc.palette), rOpts); ctx.globalAlpha = 1; }   // witte hit-flash
       ctx.restore();
+      if (r._fireHandUntil && this.time < r._fireHandUntil) this.drawFireHand(ctx, r.x, r.y, r.dir, this.time);   // vuur-in-de-hand
       }
       if (r.ducking) this.drawBlockGuard(ctx, Math.round(r.x), Math.round(r.y), r.dir);
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
@@ -4335,11 +4397,12 @@ const Game = {
           weapon: p.giant ? null : (swinging ? p.swingWeapon : p.weaponId), build: p.build, hair: p.hairStyle,
           squash: (p.flatUntil && this.time < p.flatUntil),
           hat: Storage.data.equippedHat, t: this.time,
-          rage: p.hasBuff('rage', this.time), burning: p.burnUntil > this.time,
+          rage: p.hasBuff('rage', this.time), burning: p.burnUntil > this.time, outfit: p.outfit,
         };
         Sprites.drawCharacter(ctx, 0, 0, p.dir, p.pal, pOpts);
         if (p._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (p._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, p.dir, this._flashPal(p.pal), pOpts); ctx.globalAlpha = 1; }   // witte hit-flash
         ctx.restore();
+        if (p._fireHandUntil && this.time < p._fireHandUntil) this.drawFireHand(ctx, p.x, p.y, p.dir, this.time);   // vuur-in-de-hand
         }
         if (p.ducking && p.onGround) this.drawBlockGuard(ctx, Math.round(p.x), Math.round(p.y), p.dir);
         if (p.stunUntil && this.time < p.stunUntil) this.drawStunAura(ctx, Math.round(p.x), Math.round(p.y));
@@ -4381,7 +4444,7 @@ const Game = {
     // ability-effect: magische ring + sprankels rond de speler die 'm inzette
     if (this.abilityFx) for (const fx of this.abilityFx) {
       const t = (this.time - fx.born) / fx.dur; if (t < 0 || t >= 1) continue;
-      const cy = fx.y - 12, R = 8 + t * 30, a = 1 - t;
+      const cy = fx.y - 12, R = 8 + t * (fx.ring ? fx.ring - 8 : 30), a = 1 - t;
       ctx.strokeStyle = fx.color; ctx.lineWidth = 2.5; ctx.globalAlpha = a * 0.85;
       ctx.beginPath(); ctx.arc(fx.x, cy, R, 0, 6.2832); ctx.stroke();
       ctx.globalAlpha = a * 0.5; ctx.beginPath(); ctx.arc(fx.x, cy, R * 0.6, 0, 6.2832); ctx.stroke();

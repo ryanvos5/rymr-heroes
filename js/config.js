@@ -279,25 +279,25 @@ const CHARACTERS = {
   },
   monnik: {
     id: 'monnik', name: 'Monnik', cost: 0, journeyOnly: true,
-    maxHp: 120, speedMul: 0.9, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'stunstrike',
+    maxHp: 120, speedMul: 0.9, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'stunpulse', outfit: 'monk',
     palette: {
       hair: '#5a3a22', hairDark: '#3f2817',
       skin: '#d8a878', skinDark: '#b8895e',
       eye: '#3a2414',
       shirt: '#e08a2a', shirtDark: '#a85e14', pants: '#8a4a1a', shoe: '#4a2a10',
     },
-    desc: 'Monnik: taai + stun-slag. Versla hem in de Temple-wereld.'
+    desc: 'Monnik: taai + stun-pulse (verdooft iedereen dichtbij). Versla hem in de Temple-wereld.'
   },
   ninja: {
     id: 'ninja', name: 'Ninja', cost: 0, journeyOnly: true,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', ninjaSalto: true,
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', outfit: 'ninja',
     palette: {
       hair: '#1a1a1e', hairDark: '#0c0c0e',
       skin: '#c99a6a', skinDark: '#9a7048',
       eye: '#e83030',
       shirt: '#1c1f26', shirtDark: '#0e1014', pants: '#141619', shoe: '#0a0b0d',
     },
-    desc: 'Ninja: vooruit-salto-sprong + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
+    desc: 'Ninja: dubbel-jump + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
   },
   // ---- INDIAAN: tempel-minion (alleen als bot in de Temple-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
   indiaan: {
@@ -336,8 +336,11 @@ const ABILITIES = {
   katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
   traps:      { name: 'Vallen',       desc: 'Zet 3 vallen neer: sta je erop, dan zit je 8s vast (wel slaan, niet bewegen).' },
   stunstrike: { name: 'Stun-slag',   desc: '5s lang: je volgende klap verdooft je tegenstander.' },
+  stunpulse:  { name: 'Stun-pulse',  desc: 'Golf van energie: verdooft iedereen dichtbij 1,6s.' },
   invisible:  { name: 'Onzichtbaar', desc: '6s onzichtbaar — je tegenstander ziet je niet.' },
 };
+const STUN_PULSE_MS = 1600;      // Monnik-ability: verdovingsduur
+const STUN_PULSE_RANGE = 96;     // bereik van de stun-pulse (px)
 const ABILITY_CHARGE_MS = 42000;   // basis-oplaadtijd van de ability (combos versnellen dit)
 // Journey-enemy-stats blijven ongewijzigd (online zijn koba/kong aangepast)
 const JOURNEY_ENEMY_OVERRIDE = {

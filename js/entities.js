@@ -52,7 +52,8 @@ class Player {
     this.jumping = false; // bezig met een (variabele) sprong
     // Vince: vuuraura — elke 30s, 5s lang; aanraking geeft 3s burn
     this.fireAura = !!ch.fireAura;
-    this.ninjaSalto = !!ch.ninjaSalto;   // Ninja: dubbeljump = vooruit-salto
+    this.ninjaSalto = !!ch.ninjaSalto;   // Ninja: dubbeljump = vooruit-salto (uit — nu normale dubbel-jump)
+    this.outfit = ch.outfit || null;     // 'ninja' / 'monk' — extra kleding-look in de sprite
     this.auraNextAt = 30000;   // eerste aura na 30s spelen
     this.auraUntil = 0;
     this._auraOn = false;

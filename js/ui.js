@@ -50,9 +50,12 @@ const UI = {
     document.querySelectorAll('#inv-tabs .shop-tab').forEach((b) => { b.onclick = () => { this._invTab = b.dataset.invtab; this.renderInventory(); }; });
     document.querySelectorAll('.chest-slot').forEach((b) => { b.onclick = () => this.chestClick(+b.dataset.chest); });
     document.querySelectorAll('.loadout-slot').forEach((b) => {
-      b.onclick = () => { const id = b.dataset.pu; if (id) { Game.usePowerupSlot(id); } };
+      // in-match: op pointerdown activeren, zodat een power-up ook werkt terwijl je beweegt
+      this._tap(b, () => { const id = b.dataset.pu; if (id) { Game.usePowerupSlot(id); } }, { immediate: true });
     });
-    $('ability-btn').onclick = () => Game.useAbility();                                    // vlam-knop
+    // vlam-knop: op pointerdown vuren (niet 'click') — zo werkt de ability óók terwijl je een
+    // beweeg-knop vasthoudt (op touch krijgt een 2e vinger geen 'click', alleen pointer-events).
+    this._tap($('ability-btn'), () => Game.useAbility(), { immediate: true });
     window.addEventListener('keydown', (e) => { if ((e.key === 'e' || e.key === 'E') && Game.state === 'versus') Game.useAbility(); });   // desktop-toets
     $('btn-journey-skip').onclick = () => Game.skipStory();
     $('btn-journey-next').onclick = () => Game.storyNext();
@@ -521,14 +524,14 @@ const UI = {
       title.textContent = 'VRIJGESPEELD!';
       const c = CHARACTERS[r.id] || CHARACTERS.ryan;
       ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
-      Sprites.drawCharacter(ctx, 0, 42, 1, c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: 'none' });
+      Sprites.drawCharacter(ctx, 0, 42, 1, c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: 'none', outfit: c.outfit });
       ctx.restore();
       nameEl.textContent = 'Nieuw character: ' + (r.name || c.name);
     } else if (r.type === 'hat') {
       title.textContent = 'VRIJGESPEELD!';
       const cc = CHARACTERS[Storage.data.equippedCharacter] || CHARACTERS.ryan;
       ctx.save(); ctx.translate(cv.width / 2, 8); ctx.scale(2.5, 2.5);
-      Sprites.drawCharacter(ctx, 0, 42, 1, cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: r.id });
+      Sprites.drawCharacter(ctx, 0, 42, 1, cc.palette, { weapon: cc.forcedMelee || 'bat', build: cc.build, hair: cc.hair, hat: r.id, outfit: cc.outfit });
       ctx.restore();
       nameEl.textContent = 'Nieuwe hoed: ' + (r.name || (HATS[r.id] && HATS[r.id].name) || '');
     } else if (r.type === 'pu') {   // power-up uit een kist
@@ -1634,6 +1637,22 @@ const UI = {
     this._galleryify(this.el.shopGrid, 'shop_' + tab);
   },
 
+  // robuuste tik-binding: gebruikt pointer-events i.p.v. 'click'. Op touch met touch-action:none
+  // + multitouch (bv. een vinger op een beweeg-knop) worden 'click'-events soms niet afgevuurd;
+  // pointerup werkt daar wél. immediate:true = direct op pointerdown vuren (voor de ability-knop).
+  _tap(el, fn, opts) {
+    if (!el) return;
+    opts = opts || {};
+    if (opts.immediate) {
+      el.addEventListener('pointerdown', (e) => { e.preventDefault(); fn(e); });
+      return;
+    }
+    let id = null, sx = 0, sy = 0, moved = false;
+    el.addEventListener('pointerdown', (e) => { id = e.pointerId; sx = e.clientX; sy = e.clientY; moved = false; });
+    el.addEventListener('pointermove', (e) => { if (e.pointerId === id && Math.hypot(e.clientX - sx, e.clientY - sy) > 12) moved = true; });
+    el.addEventListener('pointerup', (e) => { if (e.pointerId === id) { id = null; if (!moved) { e.preventDefault(); fn(e); } } });
+    el.addEventListener('pointercancel', () => { id = null; });
+  },
   // power-up-kaartjes: KOOP (meermaals) in de shop; in de inventaris = loadout aan/uit + aantal
   renderPowerupCards(grid, mode) {
     POWERUP_ORDER.forEach((id) => {
@@ -1655,11 +1674,11 @@ const UI = {
         const afford = Storage.data.coins >= pu.cost;
         btn.classList.add(afford ? 'buy' : 'cant');
         btn.textContent = 'KOOP — ' + pu.cost + ' ●';
-        btn.onclick = () => { if (Storage.buyPowerup(id)) this.renderShop(); };
+        this._tap(btn, () => { if (Storage.buyPowerup(id)) this.renderShop(); });
       } else {                              // inventaris: loadout-toggle
-        if (inLo) { btn.classList.add('equipped'); btn.innerHTML = count > 0 ? this._ic('check') + ' IN LOADOUT' : this._ic('x') + ' UIT LOADOUT'; card.classList.add('in-loadout'); if (count <= 0) card.classList.add('depleted'); btn.onclick = () => { Storage.toggleLoadout(id); this.renderInventory(); }; }
+        if (inLo) { btn.classList.add('equipped'); btn.innerHTML = count > 0 ? this._ic('check') + ' IN LOADOUT' : this._ic('x') + ' UIT LOADOUT'; card.classList.add('in-loadout'); if (count <= 0) card.classList.add('depleted'); this._tap(btn, () => { Storage.toggleLoadout(id); this.renderInventory(); }); }
         else if (count <= 0) { card.classList.add('locked'); btn.classList.add('cant'); btn.textContent = 'Koop in shop'; }
-        else { btn.classList.add('equip'); btn.textContent = 'KIES'; btn.onclick = () => { if (!Storage.toggleLoadout(id)) this.flashLoadoutFull(); this.renderInventory(); }; }
+        else { btn.classList.add('equip'); btn.textContent = 'KIES'; this._tap(btn, () => { if (!Storage.toggleLoadout(id)) this.flashLoadoutFull(); this.renderInventory(); }); }
       }
       card.appendChild(btn);
       grid.appendChild(card);
@@ -1873,10 +1892,10 @@ const UI = {
     CHARACTER_ORDER.forEach((cid) => {
       if (!Storage.ownsCharacter(cid)) return;
       const c = CHARACTERS[cid]; const equipped = Storage.data.equippedCharacter === cid;
-      const card = this._spriteCard(c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat }, '<div class="w-name">' + c.name + '</div>', true);
+      const card = this._spriteCard(c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }, '<div class="w-name">' + c.name + '</div>', true);
       const btn = document.createElement('button'); btn.className = 'shop-buy';
       if (equipped) { btn.classList.add('equipped'); btn.textContent = 'UITGERUST'; }
-      else { btn.classList.add('equip'); btn.textContent = 'UITRUSTEN'; btn.onclick = () => { Storage.equipCharacter(cid); this.renderInventory(); }; }
+      else { btn.classList.add('equip'); btn.textContent = 'UITRUSTEN'; this._tap(btn, () => { Storage.equipCharacter(cid); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     });
   },
@@ -1891,7 +1910,7 @@ const UI = {
       card.appendChild(info);
       const btn = document.createElement('button'); btn.className = 'shop-buy';
       if (equipped) { btn.classList.add('equipped'); btn.textContent = 'OP'; }
-      else { btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN'; btn.onclick = () => { Storage.equipHat(hid); this.renderInventory(); }; }
+      else { btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN'; this._tap(btn, () => { Storage.equipHat(hid); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     });
   },
@@ -2128,7 +2147,7 @@ const UI = {
 
       // preview-tekening van het character (2.5D met grondschaduw + idle, net als in de game)
       const canvas = this._charCanvas(c.palette, {
-        weapon: c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat,
+        weapon: c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit,
       });
 
       // stats t.o.v. Ryan

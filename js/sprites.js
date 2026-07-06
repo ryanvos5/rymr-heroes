@@ -354,6 +354,47 @@ const Sprites = {
       this.px(ctx, '#ff5a5a', cx - 1, headTop - 6, 2, 2);
     }
 
+    // --- outfit: ninja-masker / monniks-gewaad (over hoofd & romp) ---
+    if (pose.outfit === 'ninja') {
+      const hood = pal.hair, hoodDk = pal.hairDark, hoodLt = this._shade(hood, 0.22);
+      // volle donkere kap over het hele hoofd (dekt het haar)
+      this.px(ctx, hood, cx - hh - 1, headTop - 1, hh * 2 + 2, headH + 1);
+      this.px(ctx, hoodDk, cx - hh - 1, headTop - 1, 2, headH + 1);                 // schaduwkant
+      this.px(ctx, hoodLt, cx - hh, headTop - 1, hh * 2, 1);                        // highlight bovenop de kap
+      this.px(ctx, hoodDk, cx - hh - 1, headTop + headH - 1, hh * 2 + 2, 1);        // donkere onderrand
+      // oogspleet (lichte band) met felle rode ogen
+      const slitY = headTop + 3;
+      this.px(ctx, '#2b2f38', cx - hh, slitY, hh * 2, 2);
+      this.px(ctx, '#ff3a3a', cx + (dir > 0 ? 1 : -2), slitY, 2, 2);                // vooroog (fel)
+      this.px(ctx, '#a82424', cx + (dir > 0 ? -3 : 2), slitY, 1, 2);                // achteroog (dof)
+      // hoofdband-staarten die achter het hoofd wapperen
+      const backX = dir > 0 ? cx - hh - 1 : cx + hh + 1, tdir = dir > 0 ? -1 : 1;
+      for (let k = 0; k < 2; k++) {
+        const len = 6 - k * 2, wob = Math.round(Math.sin((pose.t || 0) / 130 + k) * 2);
+        const x0 = tdir > 0 ? backX : backX - len;
+        this.px(ctx, k ? hoodDk : hood, x0, headTop + 2 + k * 3 + wob, len, 2);
+      }
+      // sjaal om de nek
+      this.px(ctx, hoodDk, cx - hh, torsoTop - 1, hh * 2, 2);
+    } else if (pose.outfit === 'monk') {
+      const robe = pal.shirt, robeDk = pal.shirtDark, robeLt = this._shade(robe, 0.24);
+      // diagonale sjerp van schouder tot heup (klassieke kasaya-drapering)
+      const denom = Math.max(1, torsoH - 1);
+      for (let i = 0; i < torsoH; i++) {
+        const x = Math.round(cx - bh + 1 + (i / denom) * (bh * 1.5));
+        this.px(ctx, robeLt, x, torsoTop + i, 3, 1);
+        this.px(ctx, robeDk, x, torsoTop + i, 1, 1);
+      }
+      // één blote schouder (huid) — het gewaad laat de arm-kant vrij
+      const shX = cx + (dir > 0 ? bh - 3 : -bh);
+      this.px(ctx, pal.skin, shX, torsoTop, 3, 3);
+      this.px(ctx, pal.skinDark, shX, torsoTop, 1, 3);
+      // lichte zoom onderaan het gewaad
+      this.px(ctx, robeLt, cx - bh, torsoTop + torsoH - 3, bh * 2, 1);
+      // gebedskralen om de nek
+      for (let i = -2; i <= 2; i++) this.px(ctx, i % 2 ? '#3a2614' : '#7a5024', cx + i * 2, torsoTop, 1, 1);
+    }
+
     // --- hoed (cosmetisch) ---
     if (pose.hat && pose.hat !== 'none') this.drawHat(ctx, pose.hat, cx, headTop, hh, dir, pose.t || 0);
 
