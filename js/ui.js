@@ -55,8 +55,8 @@ const UI = {
     });
     // vlam-knop: op pointerdown vuren (niet 'click') — zo werkt de ability óók terwijl je een
     // beweeg-knop vasthoudt (op touch krijgt een 2e vinger geen 'click', alleen pointer-events).
-    this._tap($('ability-btn'), () => Game.useAbility(), { immediate: true });
-    window.addEventListener('keydown', (e) => { if ((e.key === 'e' || e.key === 'E') && Game.state === 'versus') Game.useAbility(); });   // desktop-toets
+    this._tap($('ability-btn'), () => Game.abilityButton(), { immediate: true });
+    window.addEventListener('keydown', (e) => { if ((e.key === 'e' || e.key === 'E') && Game.state === 'versus') Game.abilityButton(); });   // desktop-toets
     $('btn-journey-skip').onclick = () => Game.skipStory();
     $('btn-journey-next').onclick = () => Game.storyNext();
     const aa = $('btn-arena-again'); if (aa) aa.onclick = () => this.show('menu');   // oude arena-knop (mode is weg)
@@ -1941,9 +1941,28 @@ const UI = {
     const p = Game.player;
     if (!p || !p.ability || Game.state !== 'versus') { btn.classList.add('hidden'); return; }
     btn.classList.remove('hidden');
+    // Tempelbewaker met vallen-in-de-hand: knop wordt een "plaats val"-knop met resterend aantal
+    if (p._trapCharges > 0) {
+      btn.classList.add('ready');
+      this._drawTrapButton(document.getElementById('ability-ic'), p._trapCharges);
+      return;
+    }
     const ready = (p.abCharge || 0) >= 1;
     btn.classList.toggle('ready', ready);
     this._drawAbilityFlame(document.getElementById('ability-ic'), p.ability, p.abCharge || 0, ready);
+  },
+  // vallen-knop: teken een val + het aantal dat je nog kunt plaatsen
+  _drawTrapButton(cv, n) {
+    if (!cv) return;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H * 0.52;
+    ctx.clearRect(0, 0, W, H);
+    const px = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+    px('#5a4630', cx - 11, cy, 22, 5);                                  // houten voetplaat
+    px('#3f3020', cx - 11, cy, 22, 1);
+    for (let i = -9; i <= 8; i += 4) px('#e8edf2', cx + i, cy - 5, 2, 4);   // metalen tanden
+    px('#8a929c', cx - 11, cy - 1, 22, 1);
+    ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('x' + n, cx, H * 0.2);                                 // resterend aantal bovenin
   },
   _drawAbilityFlame(cv, ability, charge, ready) {
     if (!cv) return;

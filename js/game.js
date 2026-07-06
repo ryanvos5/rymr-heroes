@@ -2111,7 +2111,7 @@ const Game = {
     if (v.countdown > 0) { v.countdown -= dt; }       // korte aftelling vóór de start
     else {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
-      if (!this.player.dead) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op
+      if (!this.player.dead && !this.player._trapCharges) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op (niet terwijl je nog vallen in de hand hebt)
       if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op
       if (this._quakeUntil > this.time) this.updateEarthquake(dt);                                                // aardbeving-ability (bot)
       // online: de tegenstander gebruikte aardbeving op JOU -> jij wordt geschud
@@ -3215,6 +3215,35 @@ const Game = {
     if (owner === 'me' && !this.vsBot && window.Net) Net.versusSend('traps', { xs, y: gy });
     if (window.Sfx) Sfx.play('stomp');
   },
+  // Tempelbewaker: één val plaatsen op je huidige plek — alleen op de grond of een platform
+  placeOneTrap(placer, owner) {
+    if (this.state !== 'versus' || this.vsPaused) return false;
+    const p = placer; if (!p || p.dead || (p._trapCharges | 0) <= 0) return false;
+    if (this.vs && (this.vs.countdown > 0 || this.vs.roundFreezeUntil > this.time)) return false;
+    if (!p.onGround) {                                    // in de lucht -> hier kan geen val
+      this.addFloatText(p.x, p.y - 20, 'ALLEEN OP DE GROND', '#ff9a5a', false);
+      return false;
+    }
+    this.traps = this.traps || [];
+    const x = Math.max(20, Math.min(this.vsMapW - 20, Math.round(p.x))), y = Math.round(p.y);
+    this.traps.push({ x, y, owner, born: this.time });
+    for (let i = 0; i < 6; i++) this.particles.push(new Particle(x, y - 4, (Math.random() - 0.5) * 2, -Math.random() * 1.5, '#caa84a', 340, 2));
+    p._trapCharges--;
+    if (owner === 'me' && !this.vsBot && window.Net) Net.versusSend('traps', { xs: [x], y });
+    this.shake = Math.max(this.shake, 4);
+    if (window.Sfx) Sfx.play('stomp');
+    if (window.UI && UI.renderAbilityBtn) UI.renderAbilityBtn();
+    return true;
+  },
+  // doorschijnende voorbeeld-val op je voeten tijdens het plaatsen (goud = kan, rood = niet)
+  drawTrapPreview(ctx, x, y, ok) {
+    x = Math.round(x); y = Math.round(y);
+    ctx.globalAlpha = 0.5 + (ok ? Math.abs(Math.sin(this.time / 220)) * 0.2 : 0);
+    const base = ok ? '#caa84a' : '#c0392b', teeth = ok ? '#e8edf2' : '#e07a6a';
+    Sprites.px(ctx, base, x - 9, y - 3, 18, 4);
+    for (let i = -7; i <= 6; i += 3) Sprites.px(ctx, teeth, x + i, y - 6, 2, 3);
+    ctx.globalAlpha = 1;
+  },
   // sta je op een val van je tegenstander -> 8s vastgeklonken (wel slaan, niet bewegen/springen)
   updateTraps() {
     const root = (e) => { if (!e || e.dead) return; e._rootedUntil = this.time + 8000; e.knockVx = 0; this.shake = Math.max(this.shake, 6); for (let k = 0; k < 12; k++) this.particles.push(new Particle(e.x, e.y - 6, (Math.random() - 0.5) * 3, -Math.random() * 2, '#8a6a3a', 460, 2)); if (window.Sfx) Sfx.play('stomp'); };
@@ -3321,7 +3350,7 @@ const Game = {
       case 'earthquake': this.startEarthquake(); break;
       case 'knife': p._bladeRounds = 2; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
       case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000; this._abFx(p, '#f2f6fa'); break;
-      case 'traps': this.placeTraps(p, 'me'); this._abFx(p, '#caa84a'); break;
+      case 'traps': p._trapCharges = 3; this._abFx(p, '#caa84a'); this.addFloatText(p.x, p.y - 22, '3 VALLEN', '#ffd24a', false); break;   // 3 vallen in de hand — zelf plaatsen
       case 'stunstrike': p._stunStrikeUntil = now + 5000; this._abFx(p, '#8fd0ff'); break;
       case 'stunpulse': this.stunPulse(p, 'me'); break;
       case 'invisible': p._invisUntil = now + 6000; this._abFx(p, '#b06bff'); break;
@@ -3333,6 +3362,12 @@ const Game = {
     if (window.Sfx) Sfx.play('pickup');
     if (window.UI && UI.renderAbilityBtn) UI.renderAbilityBtn();
     return true;
+  },
+  // de vlam-knop (of E): met vallen-in-de-hand plaats je er één; anders zet je je ability in
+  abilityButton() {
+    const p = this.player;
+    if (p && !p.dead && (p._trapCharges | 0) > 0) return this.placeOneTrap(p, 'me');
+    return this.useAbility();
   },
   _abilityColor(ab) {
     return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', fireaura10: '#ff8a2a',
@@ -3676,7 +3711,7 @@ const Game = {
         if (sst) p._stunStrikeUntil = 0;                                                  // eenmalig
         if (this.vsBot) { this.applyHitToBot(kdir, kp, kvy, dmg, true); if (sst && this.bot && !this.bot.dead) this.bot.stunUntil = Math.max(this.bot.stunUntil || 0, this.time + sst); }   // bot wegslaan + schade; melee = parrybaar
         else { Net.versusSend('hit', { dir: p.dir, power: kp, vy: kvy, dmg: dmg, melee: 1, stun: sst }); this.addHitFeel(r.x, r.y - 16, kdir, dmg, kp, false, r); }
-        p.abCharge = Math.min(1, p.abCharge + (0.05 + 0.03 * Math.max(0, p.combo - 1)) / (p.abChargeMul || 1));   // ability laadt sneller op met combos
+        if (!p._trapCharges) p.abCharge = Math.min(1, p.abCharge + (0.05 + 0.03 * Math.max(0, p.combo - 1)) / (p.abChargeMul || 1));   // ability laadt sneller op met combos (niet terwijl je vallen vasthoudt)
         // combo-XP (alleen online — geen XP-farmen tegen de bot)
         const cx = comboXp(p.combo);
         p._lastComboXp = this.vsBot ? 0 : cx;
@@ -3846,7 +3881,7 @@ const Game = {
     const sp = this.vs.botSpawn;
     b.x = sp.x; b.y = sp.y; b.dir = sp.dir; b.vy = 0; b.knockVx = 0;
     b.onGround = true; b.dead = false; b.respawnInvuln = 1300; b.hp = b.maxHp; b.burnUntil = 0;
-    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._rootedUntil = 0; b._invisUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0; b.vine = null; b._caged = false;
+    b.swingWeapon = null; b.swingUntil = 0; b.stunUntil = 0; b.flatUntil = 0; b._rootedUntil = 0; b._invisUntil = 0; b._beamSafeUntil = 0; b.combo = 0; b.comboUntil = 0; b.vine = null; b._caged = false; b._trapCharges = 0;
     b.guard = GUARD_MAX; b._guardBroken = false; b._blockStart = 0;
     if (b.giant) { b.giant = false; if (b._baseMaxHp) b.maxHp = b._baseMaxHp; b.hp = b.maxHp; }
     b.heli = false; b.heliMinigun = 0; b.heliRockets = 0;
@@ -4061,7 +4096,7 @@ const Game = {
     this.player.vy = 0; this.player.knockVx = 0; this.player.onGround = true;
     this.player.dead = false; this.player.respawnInvuln = 1300;
     this.player.hp = this.player.maxHp; this.player.burnUntil = 0;   // fris (ook na burn-dood)
-    this.player.stunUntil = 0; this.player.flatUntil = 0; this.player._rootedUntil = 0; this.player._invisUntil = 0; this.player._beamSafeUntil = 0;
+    this.player.stunUntil = 0; this.player.flatUntil = 0; this.player._rootedUntil = 0; this.player._invisUntil = 0; this.player._beamSafeUntil = 0; this.player._trapCharges = 0;
     this.player.combo = 0; this.player.comboUntil = 0; this.player.vine = null; this.player._caged = false;
     this.player.guard = GUARD_MAX; this.player._guardBroken = false; this.player._blockStart = 0;
     this.player.swingWeapon = null; this.player.swingUntil = 0;       // geen lingerende mep-animatie
@@ -4403,6 +4438,7 @@ const Game = {
         if (p._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (p._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, p.dir, this._flashPal(p.pal), pOpts); ctx.globalAlpha = 1; }   // witte hit-flash
         ctx.restore();
         if (p._fireHandUntil && this.time < p._fireHandUntil) this.drawFireHand(ctx, p.x, p.y, p.dir, this.time);   // vuur-in-de-hand
+        if (p._trapCharges > 0) this.drawTrapPreview(ctx, p.x, p.y, p.onGround);   // voorbeeld-val tijdens plaatsen
         }
         if (p.ducking && p.onGround) this.drawBlockGuard(ctx, Math.round(p.x), Math.round(p.y), p.dir);
         if (p.stunUntil && this.time < p.stunUntil) this.drawStunAura(ctx, Math.round(p.x), Math.round(p.y));

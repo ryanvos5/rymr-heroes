@@ -275,7 +275,7 @@ const CHARACTERS = {
       eye: '#3a2a12',
       shirt: '#b8912e', shirtDark: '#7a5e18', pants: '#4a3a1e', shoe: '#241a0c',
     },
-    desc: 'Tempelbewaker: zet 3 vallen — sta je erop, dan zit je 8s vast. Versla hem in de Temple-wereld.'
+    desc: 'Tempelbewaker: krijgt 3 vallen die je zelf één voor één plaatst (grond/platform). Versla hem in de Temple-wereld.'
   },
   monnik: {
     id: 'monnik', name: 'Monnik', cost: 0, journeyOnly: true,
@@ -334,7 +334,7 @@ const ABILITIES = {
   ultrarage:  { name: 'Ultra Rage',  desc: 'Ultra rage 5s (4× schade).' },
   knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 2 rondes (snel + hard).' },
   katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
-  traps:      { name: 'Vallen',       desc: 'Zet 3 vallen neer: sta je erop, dan zit je 8s vast (wel slaan, niet bewegen).' },
+  traps:      { name: 'Vallen',       desc: 'Krijg 3 vallen — plaats ze zelf één voor één op de grond of een platform. Stapt je tegenstander erop: 8s vast.' },
   stunstrike: { name: 'Stun-slag',   desc: '5s lang: je volgende klap verdooft je tegenstander.' },
   stunpulse:  { name: 'Stun-pulse',  desc: 'Golf van energie: verdooft iedereen dichtbij 1,6s.' },
   invisible:  { name: 'Onzichtbaar', desc: '6s onzichtbaar — je tegenstander ziet je niet.' },
