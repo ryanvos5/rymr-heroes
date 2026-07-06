@@ -1070,8 +1070,8 @@ const Game = {
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 0.04);
 
     // opruimen (de baas wordt nooit weggecullt)
-    // in kill-all/arena blijven levende zombies bestaan (ze achtervolgen je), anders cull links buiten beeld
-    this.zombies = this.zombies.filter((z) => z.alive && (z === this.boss || this.level.killAll || this.level.arena || z.x > this.cam.x - 60));
+    // in kill-all/arena/Journey blijven levende zombies bestaan (vaste patrouille-plek!), anders cull links buiten beeld
+    this.zombies = this.zombies.filter((z) => z.alive && (z === this.boss || this.level.killAll || this.level.arena || this.jStage || z.x > this.cam.x - 60));
     this.bullets = this.bullets.filter((b) => b.alive);
     this.particles = this.particles.filter((p) => p.life > 0);
     this.coinFx = this.coinFx.filter((c) => c.life > 0);
