@@ -458,7 +458,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .inv-load { font-size: 11px; color: #bcd0e8; font-family: var(--body-font, inherit); font-weight: normal; }
 #inv-loadout-count.flash { color: #ff6a6a; }
 /* power-up-kaart: zelfde kolom-opmaak als de andere shop-kaarten (icoon boven) */
-.powerup-card .pu-ico { width: 72px; height: 72px; image-rendering: pixelated; background: #0d1018; border-radius: 6px; }
+.powerup-card .pu-ico { width: 72px; height: 72px; image-rendering: pixelated; background: transparent; }
 .pu-count { color: #7affa0; font-size: 12px; }
 .shop-card.in-loadout { outline: 2px solid #7affa0; outline-offset: -2px; }
 
@@ -1268,7 +1268,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 }
 
 .shop-card {
-  background: var(--panel-light);
+  background: #0d1018;
   border: 3px solid #3a4456;
   border-radius: 10px;
   padding: 14px;
@@ -1276,8 +1276,9 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  overflow: hidden;                 /* niets steekt door de (gouden) rand heen */
 }
-.shop-card canvas { image-rendering: pixelated; background: #0d1018; border-radius: 6px; }
+.shop-card canvas { image-rendering: pixelated; background: transparent; }
 .shop-card .w-name { font-size: 16px; font-weight: bold; }
 .shop-card .w-slot {
   font-size: 9px;
@@ -1359,7 +1360,6 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   box-shadow: 0 8px 26px rgba(0, 0, 0, .5);
   border-color: var(--gold);
 }
-.gal-slide.active .shop-card canvas { transform: scale(1.18); transform-origin: center bottom; }
 .gal-arrow {
   position: absolute;
   top: 42%;
