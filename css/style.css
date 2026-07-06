@@ -1468,3 +1468,66 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 
 /* alleen tonen op touch-apparaten in portret-stand tijdens het spelen */
 body.is-touch.portrait.in-game #rotate-hint { display: flex; }
+
+/* ===== Training Lobby ===== */
+.train-lobby-btn {
+  display: block; width: 100%; margin: 0 0 8px 0;
+  border-color: #3a7a4a !important;
+  background: linear-gradient(180deg, rgba(46,120,74,0.55), rgba(20,60,36,0.65)) !important;
+  color: #eafff0 !important; letter-spacing: 1px;
+}
+#train-hud { position: absolute; inset: 0; z-index: 24; pointer-events: none; }
+#train-hud > * { pointer-events: auto; }
+#train-topbar {
+  position: absolute; left: 50%; top: 4px; transform: translateX(-50%);
+  display: flex; gap: 10px; align-items: center; pointer-events: none;
+  font-family: var(--pixel-font); text-shadow: 0 2px 0 #000;
+}
+#train-title { color: var(--gold); font-size: 13px; letter-spacing: 1px; }
+.train-count { color: #bfe9ff; font-size: 12px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 8px; }
+#btn-train-quit {
+  position: absolute; right: max(10px, env(safe-area-inset-right)); top: 4px;
+  width: 34px; height: 34px; border-radius: 8px;
+  background: rgba(0,0,0,0.45); color: #fff; border: 2px solid #555; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#btn-train-quit .ic { width: 18px; height: 18px; }
+.train-computer-btn {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+  padding: 9px 16px; border-radius: 12px; border: 2px solid var(--gold);
+  background: rgba(16,20,28,0.92); color: #ffe9a0; font-family: var(--pixel-font);
+  font-size: 13px; letter-spacing: 1px; cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.5);
+  animation: trainPulse 1.1s ease-in-out infinite;
+}
+@keyframes trainPulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+#train-computer-panel {
+  position: absolute; inset: 0; z-index: 26; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+}
+.train-pu-box {
+  width: min(92vw, 560px); max-height: 84vh; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #1a2030, #10141d); border: 2px solid var(--gold);
+  border-radius: 14px; padding: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.train-pu-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--pixel-font); color: var(--gold); font-size: 14px; letter-spacing: 1px; margin-bottom: 8px;
+}
+.train-pu-close {
+  width: 28px; height: 28px; border-radius: 7px; border: 2px solid #555;
+  background: rgba(0,0,0,0.4); color: #fff; font-size: 14px; cursor: pointer;
+}
+.train-pu-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px;
+  overflow-y: auto; padding: 2px;
+}
+.train-pu {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: 10px; border: 2px solid #3a4456;
+  background: rgba(24,30,42,0.85); color: #e8edf2; cursor: pointer;
+  touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.train-pu:active { border-color: var(--gold); transform: scale(0.96); }
+.train-pu-ico { width: 44px; height: 44px; image-rendering: pixelated; pointer-events: none; }
+.train-pu-lbl { font-family: var(--pixel-font); font-size: 10px; text-align: center; line-height: 1.1; }
+.train-pu-hint { margin-top: 8px; font-size: 11px; color: #9fb0c4; text-align: center; }

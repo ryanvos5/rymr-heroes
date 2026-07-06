@@ -849,6 +849,22 @@ const VULCAN_SLIDE = 0.85;     // afglijsnelheid op schuine platforms (px/frame)
    Elke map past op één scherm (geen camera-scroll, beide spelers altijd in beeld).
    platform: { x, y, w, mv? } — mv = { axis:'x'|'y', amp, speed, phase } beweegt het platform.
    sky = [boven, onder] kleuren, void = afgrond-kleur onderin. */
+// ---- TRAINING LOBBY: grote online sandbox-map met dichte ondergrond (je valt er niet af) ----
+const TRAINING_MAP = {
+  id: 'training', name: 'Training Lobby', sky: ['#26314a', '#0e131f'], void: '#0a0e16',
+  plat: 'stone', stone: true, training: true, w: 1280, groundY: CONFIG.GROUND_Y,
+  spawn: { x: 640, y: CONFIG.GROUND_Y },
+  computer: { x: 96, y: CONFIG.GROUND_Y },       // computer in de linker hoek
+  platforms: [
+    { x: 300, y: 128, w: 96 }, { x: 520, y: 96, w: 84 }, { x: 760, y: 128, w: 96 },
+    { x: 980, y: 104, w: 84 }, { x: 640, y: 58, w: 72 },
+  ],
+  // respawn-plekken (verspreid over de map) — bij dood spawn je meteen op een willekeurige
+  spawns: [
+    { x: 220, y: CONFIG.GROUND_Y }, { x: 640, y: CONFIG.GROUND_Y }, { x: 1060, y: CONFIG.GROUND_Y },
+    { x: 420, y: CONFIG.GROUND_Y }, { x: 860, y: CONFIG.GROUND_Y },
+  ],
+};
 const VERSUS_MAPS = [
   {
     // Jungle: grootste map. Oerwoud-achtergrond + papegaaien, lianen om mee te slingeren.

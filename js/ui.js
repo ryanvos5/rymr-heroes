@@ -46,6 +46,11 @@ const UI = {
       if (!pn.classList.contains('hidden')) { this.ensurePresence(); this.renderCoopFriends(); }
     };
     $('btn-inventory').onclick = () => this.openInventory();
+    // ---- Training lobby ----
+    { const tb = $('btn-training'); if (tb) tb.onclick = () => this.openTraining(); }
+    { const q = $('btn-train-quit'); if (q) this._tap(q, () => Game.quitTraining(), { immediate: true }); }
+    { const cb = $('train-computer-btn'); if (cb) this._tap(cb, () => this.openTrainComputer(), { immediate: true }); }
+    { const cc = $('train-computer-close'); if (cc) this._tap(cc, () => this.closeTrainComputer(), { immediate: true }); }
     $('btn-inventory-back').onclick = () => this.show('menu');
     document.querySelectorAll('#inv-tabs .shop-tab').forEach((b) => { b.onclick = () => { this._invTab = b.dataset.invtab; this.renderInventory(); }; });
     document.querySelectorAll('.chest-slot').forEach((b) => { b.onclick = () => this.chestClick(+b.dataset.chest); });
@@ -147,6 +152,8 @@ const UI = {
     const diffSlider = document.getElementById('vs-diff-slider');
     if (diffSlider) diffSlider.oninput = () => this.setBotDiff(parseInt(diffSlider.value, 10));
     $('btn-vs-quit').onclick = () => {
+      // training-lobby verlaten
+      if (Game.state === 'training') { Game.quitTraining(); return; }
       // online tijdens een live match: bevestigen + verlaten = jij verliest, tegenstander wint
       if (Game.state === 'versus' && !Game.vsBot && window.Net && Net.versus) {
         if (confirm('Weet je zeker dat je de match wilt verlaten?')) Game.forfeitVersus();
@@ -1364,6 +1371,57 @@ const UI = {
     if (window.MenuBg) MenuBg.stop();                                   // geen vulkaan-bg tijdens een match
   },
 
+  // ---------- TRAINING LOBBY ----------
+  openTraining() {
+    if (!window.Net || !Net.ready) { alert('De training-lobby heeft internet nodig om andere spelers te zien.'); }
+    Game.startTraining();
+  },
+  showTraining() {
+    ['menu', 'level', 'shop', 'journey', 'arena', 'win', 'lose', 'versus', 'leaderboard', 'chat', 'inventory'].forEach((s) =>
+      this.el[s] && this.el[s].classList.add('hidden'));
+    document.body.classList.add('in-game');
+    this.el.hud.classList.add('hidden');
+    this.el.pause.classList.add('hidden');
+    this.el.banner.classList.add('hidden');
+    this.el.touch.classList.toggle('hidden', !Input.isTouch());
+    document.getElementById('versus-hud').classList.add('hidden');       // geen scores in training (eigen quit-knop in train-hud)
+    const th = document.getElementById('train-hud'); if (th) th.classList.remove('hidden');
+    const tp = document.getElementById('train-computer-panel'); if (tp) tp.classList.add('hidden');
+    const tb = document.getElementById('train-computer-btn'); if (tb) tb.classList.add('hidden');
+    document.getElementById('loadout-bar').classList.add('hidden');      // geen loadout-balk in training
+    this.renderAbilityBtn();
+    if (window.MenuBg) MenuBg.stop();
+  },
+  updateTrainingHud() {
+    const n = (Game && Game.trainPeers) ? Object.keys(Game.trainPeers).length : 0;
+    const el = document.getElementById('train-count'); if (el) el.textContent = (n + 1) + ' online';
+  },
+  trainSetNear(near) {
+    const btn = document.getElementById('train-computer-btn');
+    if (btn) btn.classList.toggle('hidden', !near);
+    if (!near) this.closeTrainComputer();
+  },
+  openTrainComputer() {
+    const panel = document.getElementById('train-computer-panel'); if (!panel) return;
+    panel.classList.remove('hidden');
+    this.renderTrainPowerups();
+  },
+  closeTrainComputer() { const p = document.getElementById('train-computer-panel'); if (p) p.classList.add('hidden'); },
+  renderTrainPowerups() {
+    const grid = document.getElementById('train-pu-grid'); if (!grid) return;
+    grid.innerHTML = '';
+    (typeof POWERUP_ORDER !== 'undefined' ? POWERUP_ORDER : []).forEach((id) => {
+      const pu = SHOP_POWERUPS[id]; if (!pu) return;
+      const b = document.createElement('button'); b.className = 'train-pu'; b.dataset.kind = pu.kind;
+      const cv = document.createElement('canvas'); cv.width = 44; cv.height = 44; cv.className = 'train-pu-ico';
+      this._puIcon(cv, pu.kind);
+      const lbl = document.createElement('span'); lbl.className = 'train-pu-lbl'; lbl.textContent = pu.name;
+      b.appendChild(cv); b.appendChild(lbl);
+      b.onclick = (e) => { const k = (e.currentTarget || b).dataset.kind; if (k) { Game.trainGivePowerup(k); this.closeTrainComputer(); } };
+      grid.appendChild(b);
+    });
+  },
+
   // touch-knoppen tonen het pixel-icoon van het actieve wapen/powerup (i.p.v. emoji)
   updateTouchIcons() {
     const p = Game.player; if (!p) return;
@@ -1939,7 +1997,7 @@ const UI = {
   renderAbilityBtn() {
     const btn = document.getElementById('ability-btn'); if (!btn) return;
     const p = Game.player;
-    if (!p || !p.ability || Game.state !== 'versus') { btn.classList.add('hidden'); return; }
+    if (!p || !p.ability || (Game.state !== 'versus' && Game.state !== 'training')) { btn.classList.add('hidden'); return; }
     btn.classList.remove('hidden');
     // Tempelbewaker met vallen-in-de-hand: knop wordt een "plaats val"-knop met resterend aantal
     if (p._trapCharges > 0) {

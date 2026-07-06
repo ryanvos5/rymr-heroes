@@ -575,6 +575,7 @@ const Game = {
     this.vsPaused = false;
     this.jStage = null;                                   // Journey-stage netjes loslaten
     if (this.coop) { this.coop = null; if (window.Net) Net.leaveVersus(); if (window.UI) UI.coopReset(); }   // co-op-kamer sluiten
+    if (this.state === 'training') { this.quitTraining(); return; }               // training-lobby netjes opruimen
     if (this.journey || this.state === 'versus') { this.quitVersus(); return; }   // Journey/versus netjes opruimen
     this.state = 'menu';
     Input.clear();
@@ -809,14 +810,26 @@ const Game = {
     }
     this.shake = Math.max(this.shake, 3);
   },
-  // vlam die je in de hand vasthoudt op het moment van afvuren
+  // vlammende bal die je in de hand vasthoudt (continu zolang je een vuurbal hebt)
   drawFireHand(ctx, x, y, dir, t) {
-    const hx = Math.round(x + dir * 13), hy = Math.round(y - 16);
-    const fl = Math.round(Math.sin(t / 45) * 2);
-    Sprites.px(ctx, '#ff5a1e', hx - 2, hy - 3 - fl, 5, 6);            // buitenvlam
-    Sprites.px(ctx, '#ff9a2a', hx - 1, hy - 4 - fl, 3, 6);            // middenvlam
-    Sprites.px(ctx, '#ffe27a', hx, hy - 5 - fl, 2, 4);               // hete kern
-    Sprites.px(ctx, '#fff3c0', hx, hy - 2, 1, 2);                    // glans op de handpalm
+    const hx = Math.round(x + dir * 13), hy = Math.round(y - 15);
+    const fl = Math.round(Math.sin(t / 60) * 2), fl2 = Math.round(Math.sin(t / 38 + 1.7) * 2);
+    // gloed rond de hand (donkeroranje halo)
+    Sprites.px(ctx, '#c0401a', hx - 3, hy - 2, 7, 6);
+    // vlamtongen die opflakkeren
+    Sprites.px(ctx, '#ff5a1e', hx - 2, hy - 4 - fl, 5, 8);            // buitenvlam
+    Sprites.px(ctx, '#ff9a2a', hx - 1, hy - 6 - fl, 3, 9);            // middenvlam
+    Sprites.px(ctx, '#ffd24a', hx, hy - 7 - fl2, 2, 8);              // hete kern
+    Sprites.px(ctx, '#fff3c0', hx, hy - 8 - fl2, 1, 4);             // wit-hete punt
+    // kleine losvliegende vonk
+    if (Math.sin(t / 90) > 0.6) Sprites.px(ctx, '#ffe27a', hx + 1, hy - 10 - fl2, 1, 1);
+  },
+  // vonkjes die van de vuurbal-in-de-hand omhoog dwarrelen (levendige "vlammende" look)
+  _fireHoldEmbers(e) {
+    if (!e || this.time < (e._fireEmberAt || 0)) return;
+    e._fireEmberAt = this.time + 90;
+    const hx = e.x + e.dir * 13, hy = e.y - 18;
+    this.particles.push(new Particle(hx + (Math.random() - 0.5) * 3, hy, (Math.random() - 0.5) * 0.6, -0.8 - Math.random() * 0.9, Math.random() < 0.5 ? '#ff8a2a' : '#ffd24a', 300, 2));
   },
   spawnBlood(x, y) {
     for (let i = 0; i < 6; i++)
@@ -2113,6 +2126,9 @@ const Game = {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       if (!this.player.dead && !this.player._trapCharges) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op (niet terwijl je nog vallen in de hand hebt)
       if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op
+      // vuurbal-in-de-hand: continu vonkjes zolang je 'm vasthoudt (speler + tegenstander/bot)
+      if (!this.player.dead && this.player.fireballs > 0) this._fireHoldEmbers(this.player);
+      if (this.vs && this.vs.remote && this.vs.remote.alive && this.vs.remote._fireHold) this._fireHoldEmbers(this.vs.remote);
       if (this._quakeUntil > this.time) this.updateEarthquake(dt);                                                // aardbeving-ability (bot)
       // online: de tegenstander gebruikte aardbeving op JOU -> jij wordt geschud
       if (this._selfQuakeUntil > this.time && !this.player.dead) {
@@ -3217,7 +3233,7 @@ const Game = {
   },
   // Tempelbewaker: één val plaatsen op je huidige plek — alleen op de grond of een platform
   placeOneTrap(placer, owner) {
-    if (this.state !== 'versus' || this.vsPaused) return false;
+    if ((this.state !== 'versus' && this.state !== 'training') || this.vsPaused) return false;
     const p = placer; if (!p || p.dead || (p._trapCharges | 0) <= 0) return false;
     if (this.vs && (this.vs.countdown > 0 || this.vs.roundFreezeUntil > this.time)) return false;
     if (!p.onGround) {                                    // in de lucht -> hier kan geen val
@@ -3331,7 +3347,7 @@ const Game = {
 
   // ===== CHARACTER-ABILITY activeren (vlam-knop, opgeladen) =====
   useAbility() {
-    if (this.state !== 'versus' || this.vsPaused) return false;
+    if ((this.state !== 'versus' && this.state !== 'training') || this.vsPaused) return false;
     const p = this.player; if (!p || p.dead || !p.ability) return false;
     if (this.vs && (this.vs.countdown > 0 || this.vs.roundFreezeUntil > this.time)) return false;
     if (p.abCharge < 1) return false;
@@ -3382,6 +3398,16 @@ const Game = {
     this.spawnStunPulseFx(src.x, src.y);              // zichtbare uitdijende ring
     this.shake = Math.max(this.shake, 8);
     if (window.Sfx) Sfx.play('stomp');
+    // training: verdoof ALLE spelers binnen bereik (stuur elk een thit met stun)
+    if (this.training && who === 'me') {
+      for (const id in this.trainPeers) {
+        const pe = this.trainPeers[id];
+        if (Math.abs(pe.x - src.x) <= STUN_PULSE_RANGE && Math.abs((pe.y || 0) - src.y) <= 70 && window.Net) {
+          Net.trainSend('thit', { to: id, from: Net.trainMyId(), dir: (pe.x >= src.x ? 1 : -1), power: 12, vy: -4, dmg: 0, stun: STUN_PULSE_MS });
+        }
+      }
+      return;
+    }
     // doelwit bepalen: bot (vsBot) of de online-tegenstander
     const opp = who === 'me' ? (this.vsBot ? this.bot : (this.vs ? this.vs.remote : null)) : this.player;
     if (!opp) return;
@@ -3529,7 +3555,7 @@ const Game = {
   // Ryan: zap-dash naar de tegenstander -> schade + knockback
   zapDash() {
     const p = this.player;
-    const opp = this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
+    const opp = this.training ? this.trainNearestPeer(260) : (this.vsBot ? this.bot : (this.vs ? this.vs.remote : null));
     if (!opp) return;
     const dir = (opp.x >= p.x) ? 1 : -1; p.dir = dir;
     const x0 = p.x;                                     // start van de dash
@@ -3549,7 +3575,8 @@ const Game = {
     this.shake = Math.max(this.shake, 6);
     // raak de tegenstander als 'ie binnen bereik is
     if (Math.abs(opp.x - p.x) < 40 && Math.abs((opp.y || p.y) - p.y) < 40) {
-      if (this.vsBot) this.applyHitToBot(dir, 26, -7, 22);
+      if (this.training) { if (opp.id && window.Net) Net.trainSend('thit', { to: opp.id, from: Net.trainMyId(), dir, power: 26, vy: -7, dmg: 22 }); }
+      else if (this.vsBot) this.applyHitToBot(dir, 26, -7, 22);
       else if (window.Net) Net.versusSend('hit', { dir, power: 26, vy: -7, dmg: 22 });
     }
   },
@@ -3747,6 +3774,7 @@ const Game = {
     r.x = r.tx = b.x; r.y = r.ty = b.y; r.dir = b.dir; r.onGround = b.onGround;
     r.attacking = this.time < b.attackAnimUntil; r.swingWeapon = (this.time < (b.swingUntil || 0)) ? b.swingWeapon : null;
     r.heldWeapon = b.weaponId || b.meleeId || 'bat';
+    r._fireHold = b.fireballs > 0;                       // vuurbal-in-de-hand mee-spiegelen
     r.stunned = b.stunUntil && this.time < b.stunUntil;
     r.flat = b.flatUntil && this.time < b.flatUntil;
     r.rage = b.hasBuff('rage', this.time); r.burn = b.burnUntil > this.time;
@@ -4156,6 +4184,7 @@ const Game = {
     r.heli = s.hl === 1;
     r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
     r.ducking = s.dk === 1; r.iv = s.iv === 1;   // tegenstander onzichtbaar
+    r._fireHold = s.fb === 1;                     // tegenstander houdt een vuurbal vast
     if (typeof s.h === 'number') r.hp = s.h;
     if (typeof s.mh === 'number') r.maxHp = s.mh;
     r.lastSeen = this.time;
@@ -4173,6 +4202,7 @@ const Game = {
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
       iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
+      fb: p.fireballs > 0 ? 1 : 0,
     });
   },
 
@@ -4405,7 +4435,7 @@ const Game = {
       Sprites.drawCharacter(ctx, 0, 0, r.dir, rc.palette, rOpts);
       if (r._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (r._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, r.dir, this._flashPal(rc.palette), rOpts); ctx.globalAlpha = 1; }   // witte hit-flash
       ctx.restore();
-      if (r._fireHandUntil && this.time < r._fireHandUntil) this.drawFireHand(ctx, r.x, r.y, r.dir, this.time);   // vuur-in-de-hand
+      if (r._fireHold || (r._fireHandUntil && this.time < r._fireHandUntil)) this.drawFireHand(ctx, r.x, r.y, r.dir, this.time);   // vuurbal continu in de hand
       }
       if (r.ducking) this.drawBlockGuard(ctx, Math.round(r.x), Math.round(r.y), r.dir);
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
@@ -4437,7 +4467,7 @@ const Game = {
         Sprites.drawCharacter(ctx, 0, 0, p.dir, p.pal, pOpts);
         if (p._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (p._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, p.dir, this._flashPal(p.pal), pOpts); ctx.globalAlpha = 1; }   // witte hit-flash
         ctx.restore();
-        if (p._fireHandUntil && this.time < p._fireHandUntil) this.drawFireHand(ctx, p.x, p.y, p.dir, this.time);   // vuur-in-de-hand
+        if (p.fireballs > 0 || (p._fireHandUntil && this.time < p._fireHandUntil)) this.drawFireHand(ctx, p.x, p.y, p.dir, this.time);   // vuurbal continu in de hand
         if (p._trapCharges > 0) this.drawTrapPreview(ctx, p.x, p.y, p.onGround);   // voorbeeld-val tijdens plaatsen
         }
         if (p.ducking && p.onGround) this.drawBlockGuard(ctx, Math.round(p.x), Math.round(p.y), p.dir);
@@ -5198,6 +5228,357 @@ const Game = {
     ctx.beginPath(); ctx.moveTo(x - 4, ty); ctx.lineTo(x + 4, ty); ctx.lineTo(x, ty + 5); ctx.closePath(); ctx.fill();
   },
 
+  // ================= TRAINING LOBBY (online sandbox, N spelers) =================
+  startTraining() {
+    const map = TRAINING_MAP;
+    this.state = 'training';
+    this.training = true;
+    this.vsMap = map; this.vsMode = 'smash'; this.vsMapW = map.w; this.vsBot = false; this.bot = null;
+    this.vsPaused = false;
+    this.time = 0; this.dtScale = 1; this.shake = 0;
+    this.vsCamX = 0; this.vsCamY = 0; this.vsCamZoom = 1;
+    this.vsFallY = 999999; this.worldId = -1;
+    // solide ondergrond over de hele map: geen parkour, geen gaten -> je kunt niet vallen
+    this.level = { versus: true, parkour: false, mode: 'versus', length: map.w, isBoss: false };
+    this.pits = null;
+    // effect-/laag-arrays resetten
+    this.zombies = []; this.bullets = []; this.particles = []; this.coinFx = []; this.ammoFx = [];
+    this.ammoDrops = []; this.healthDrops = []; this.corpses = []; this.pendingZombies = [];
+    this.powerUps = []; this.enemyShots = []; this.obstacles = []; this.rocketShots = []; this.platforms = [];
+    this.ghostBullets = []; this.botBullets = []; this.drops = []; this.traps = []; this.portals = []; this.dragons = [];
+    this.abilityFx = []; this.impacts = []; this.floatTexts = []; this.ambient = []; this.zapFx = null; this.ko = null;
+    this.hitStop = 0; this.hurtFlash = 0; this.smashFlash = 0; this._ambClock = 0;
+    this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null;
+    this.tentacle = null; this.vulcan = null; this.tide = null; this.nuke = null;
+    this.buildVersusPlatforms(map);
+    // veilige stub zodat gedeelde helpers (applyDrop/smashFire) geen null-this.vs raken
+    this.vs = { remote: { alive: false, x: -99999, y: 0, hp: 100, maxHp: 100 }, countdown: 0, roundFreezeUntil: 0, lastSwing: 0 };
+    // lokale speler
+    const baseMelee = (CHARACTERS[Storage.data.equippedCharacter] || {}).startMelee || 'bat';
+    this.player = new Player(baseMelee, null, Storage.data.equippedCharacter);
+    this.player.maxJumps = 2; this.player.jumps = 2;
+    this.player.baseMelee = baseMelee; this.player._baseMaxHp = this.player.maxHp;
+    this._trainClearWeapons(this.player);
+    const sp = map.spawn;
+    this.player.x = sp.x; this.player.y = sp.y; this.player.onGround = true; this.player.dir = 1;
+    this.player.dead = false; this.player.respawnInvuln = 1000; this.player.charId = Storage.data.equippedCharacter || 'ryan';
+    // peers + netwerk
+    this.trainPeers = {}; this._trainNetAt = 0; this._trainLastAtk = 0; this._trainHitSet = {}; this._trainNear = false;
+    this.trainOnline = false;
+    if (window.Net && Net.ready) {
+      Net.trainJoin({
+        onState: (pl) => this.onTrainState(pl),
+        onHit: (pl) => this.onTrainHit(pl),
+        onBye: (pl) => { if (pl && pl.id) delete this.trainPeers[pl.id]; },
+      }).then(() => { this.trainOnline = true; }).catch(() => { this.trainOnline = false; });
+    }
+    if (window.Sfx) Sfx.music('jungle');
+    if (window.UI && UI.showTraining) UI.showTraining();
+  },
+  _trainClearWeapons(p) {
+    p.fireballs = 0; p.smashRockets = 0; p.stars = 0; p.cannon = 0; p.gunAmmo = 0; p.rangedId = null;
+    p.beachball = 0; p.coco = 0; p.boomerang = 0; p.dart = 0; p.shieldHp = 0; p.giant = false;
+    p.weaponId = p.meleeId || p.baseMelee || 'bat'; p._weaponUntil = 0; p._fireCd = 0; p._trapCharges = 0;
+    if (p._baseMaxHp) { p.maxHp = p._baseMaxHp; }
+  },
+  quitTraining() {
+    this.training = false;
+    this.state = 'menu';
+    if (window.Net) Net.trainLeave();
+    this.vs = null; this.trainPeers = {};
+    Input.clear();
+    document.body.classList.remove('in-game');
+    const th = document.getElementById('train-hud'); if (th) th.classList.add('hidden');
+    if (window.UI) UI.show('menu');
+  },
+  trainNearestPeer(maxDist) {
+    let best = null, bd = (maxDist || 1e9);
+    for (const id in this.trainPeers) {
+      const pe = this.trainPeers[id]; const d = Math.abs(pe.x - this.player.x);
+      if (d < bd) { bd = d; best = pe; }
+    }
+    return best;
+  },
+  onTrainState(s) {
+    if (!s || !s.id || !window.Net || s.id === Net.trainMyId()) return;
+    let pe = this.trainPeers[s.id]; if (!pe) pe = this.trainPeers[s.id] = { id: s.id };
+    pe.nick = s.nick || 'Speler'; pe.x = s.x; pe.y = s.y; pe.dir = s.d || 1; pe.walkPhase = s.wp || 0;
+    pe.attacking = s.a === 1; pe.swingWeapon = s.sw || null; pe.heldWeapon = s.hw || 'bat';
+    pe.hp = (s.hp != null) ? s.hp : 100; pe.maxHp = s.mh || 100; pe.charId = s.ch || 'ryan'; pe.hat = s.ht || 'none';
+    pe.fireHold = s.fb === 1; pe.giant = s.gi === 1; pe.iv = s.iv === 1; pe.rage = s.rg === 1; pe.burn = s.bn === 1;
+    pe.lastSeen = this.time;
+  },
+  onTrainHit(h) {
+    if (!h || !window.Net || h.to !== Net.trainMyId()) return;
+    const p = this.player; if (!p || p.dead || p.respawnInvuln > 0) return;
+    p.hp -= (h.dmg || 0);
+    if (h.dir) { p.knockVx = h.dir * (h.power || 12); p.vy = Math.min(p.vy || 0, h.vy || -4); p.onGround = false; }
+    if (h.stun) p.stunUntil = Math.max(p.stunUntil || 0, this.time + h.stun);
+    this.hurtFlash = Math.max(this.hurtFlash, 150);
+    if (h.dmg > 0) this.addFloatText(p.x, p.y - 18, '-' + h.dmg, '#ff5a3a', h.dmg >= 26);
+    this.shake = Math.max(this.shake, 6);
+    if (p.hp <= 0) this.trainRespawn();
+  },
+  trainRespawn() {
+    const p = this.player, sps = TRAINING_MAP.spawns || [TRAINING_MAP.spawn];
+    const sp = sps[Math.floor(Math.abs(Math.sin(this.time * 0.13)) * sps.length) % sps.length] || TRAINING_MAP.spawn;
+    for (let i = 0; i < 18; i++) { const a = (i / 18) * 6.2832; this.particles.push(new Particle(p.x, p.y - 12, Math.cos(a) * 3, Math.sin(a) * 3 - 1, i % 2 ? '#ff5a5a' : '#ffffff', 480, 3)); }
+    this._trainClearWeapons(p);
+    p.x = sp.x; p.y = sp.y; p.vy = 0; p.knockVx = 0; p.onGround = true; p.dead = false;
+    p.hp = p.maxHp; p.respawnInvuln = 1500; p.combo = 0;
+    p.stunUntil = 0; p.flatUntil = 0; p._rootedUntil = 0; p._invisUntil = 0; p.jumpMul = 1;
+    if (window.Sfx) Sfx.play('explos');
+  },
+  trainBroadcast() {
+    if (!window.Net) return;
+    const p = this.player;
+    Net.trainSend('ts', {
+      id: Net.trainMyId(), nick: Net.trainMyNick(),
+      x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: +(p.walkPhase || 0).toFixed(2),
+      a: this.time < p.attackAnimUntil ? 1 : 0, sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
+      hw: p.weaponId || p.meleeId || 'bat', hp: Math.round(Math.max(0, p.hp)), mh: p.maxHp,
+      ch: p.charId || 'ryan', ht: Storage.data.equippedHat || 'none', fb: p.fireballs > 0 ? 1 : 0,
+      gi: p.giant ? 1 : 0, iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
+      rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: p.burnUntil > this.time ? 1 : 0,
+    });
+  },
+  // melee-treffers op andere spelers (1 mep = 1 treffer per speler)
+  trainingMeleeHits() {
+    const p = this.player; if (p.dead || p.giant || p.heli) return;
+    const sw = p.swingUntil || 0;
+    if (!sw || this.time >= sw) return;
+    if (sw !== this._trainLastAtk) { this._trainLastAtk = sw; this._trainHitSet = {}; }
+    const reach = 40;
+    for (const id in this.trainPeers) {
+      if (this._trainHitSet[id]) continue;
+      const pe = this.trainPeers[id];
+      const dx = (pe.x - p.x) * p.dir, close = Math.abs(pe.x - p.x) < 24;
+      if ((close || (dx > -16 && dx < reach)) && Math.abs((pe.y || p.y) - p.y) < 34) {
+        this._trainHitSet[id] = 1;
+        p.combo = (this.time < (p.comboUntil || 0)) ? Math.min(COMBO_MAX, (p.combo || 0) + 1) : 1;
+        p.comboUntil = this.time + COMBO_WINDOW;
+        const wd = (WEAPONS[p.meleeId] ? WEAPONS[p.meleeId].damage : 34) * (p.meleeMul || 1) * p.rageMul(this.time) * comboMul(p.combo);
+        const dmg = Math.round(wd * 0.45), kp = 15 + Math.max(0, p.combo - 1) * 8, kvy = -5.5 - Math.max(0, p.combo - 1) * 0.7;
+        const kdir = (pe.x >= p.x ? 1 : -1);
+        if (window.Net) Net.trainSend('thit', { to: id, from: Net.trainMyId(), dir: kdir, power: kp, vy: kvy, dmg: dmg });
+        this.addHitFeel(pe.x, pe.y - 16, kdir, dmg, kp, false, null);
+        if (!p._trapCharges) p.abCharge = Math.min(1, p.abCharge + (0.05 + 0.03 * Math.max(0, p.combo - 1)) / (p.abChargeMul || 1));
+        this.spawnBlood(pe.x, pe.y - 16);
+        if (window.Sfx) Sfx.play('hit');
+      }
+    }
+  },
+  // kogels/projectielen raken andere spelers
+  updateTrainingBullets(dt) {
+    if (!this.bullets.length) return;
+    for (const b of this.bullets) {
+      if (b.kind === 'coco') {
+        b.vy = (b.vy || 0) + 0.4 * this.dtScale; b.x += b.vx * this.dtScale; b.y += b.vy * this.dtScale; b.life += dt;
+        let land = b.y > CONFIG.GROUND_Y - 2;
+        if (!land && b.vy > 0) for (const pf of this.platforms) { if (!pf.mast && b.x > pf.x - pf.w / 2 && b.x < pf.x + pf.w / 2 && b.y > pf.y - 4 && b.y < pf.y + 10) { land = true; break; } }
+        if (land || b.life > 2600) this.explodeCoco(b);
+      } else if (b.kind === 'boom') {
+        if (!b._ret && b.life > 420) { b.vx = -b.vx; b._ret = true; } b.x += b.vx * this.dtScale; b.life += dt; if (b.life > 1500) b.alive = false;
+      } else { b.update(dt, this); }
+    }
+    for (const b of this.bullets) {
+      if (!b.alive || b.kind === 'coco') continue;
+      const rw = b.kind === 'rocket' ? 16 : (b.kind === 'cannon' ? 18 : 11), rh = b.kind === 'rocket' ? 20 : (b.kind === 'cannon' ? 22 : 16);
+      for (const id in this.trainPeers) {
+        const pe = this.trainPeers[id];
+        if (Math.abs(b.x - pe.x) < rw && Math.abs(b.y - (pe.y - 16)) < rh) {
+          b.alive = false;
+          const dmg = (b.hitDmg != null) ? b.hitDmg : Math.round((b.damage || 20) * 0.4);
+          const power = (b.power != null) ? b.power : 9, vy = b.kind === 'cannon' ? -8 : -3.5, kd = Math.sign(b.vx) || 1;
+          if (window.Net) Net.trainSend('thit', { to: id, from: Net.trainMyId(), dir: kd, power: power, vy: vy, dmg: dmg, stun: b._stun || 0 });
+          this.spawnBlood(b.x, b.y);
+          for (let i = 0; i < 8; i++) this.particles.push(new Particle(b.x, b.y, (Math.random() - 0.5) * 3, -Math.random() * 2, b.kind === 'rocket' ? '#ffd24a' : '#ff7a2a', 320, 2));
+          this.shake = Math.max(this.shake, b.kind === 'cannon' ? 8 : 4);
+          break;
+        }
+      }
+    }
+    this.bullets = this.bullets.filter((b) => b.alive);
+  },
+  // computer: geef de speler een power-up om uit te proberen
+  trainGivePowerup(kind) {
+    if (this.state !== 'training' || !this.player || this.player.dead) return;
+    this.applyDrop(this.player, { kind, x: this.player.x, y: this.player.y - 10, id: 0 });
+    this.addFloatText(this.player.x, this.player.y - 24, (SHOP_POWERUPS[kind] ? SHOP_POWERUPS[kind].name : kind).toUpperCase(), '#8fd0ff', false);
+  },
+
+  updateTraining(dt) {
+    if (!this.player) return;
+    this.time += dt;
+    this.dtScale = Math.min(3, dt / 16.6667);
+    if (this.abilityFx.length) this.abilityFx = this.abilityFx.filter((f) => this.time - f.born < f.dur);
+    if (this.impacts.length) this.impacts = this.impacts.filter((f) => this.time - f.born < f.dur);
+    if (this.floatTexts.length) { for (const ft of this.floatTexts) { ft.y += ft.vy * this.dtScale; ft.vy += 0.05 * this.dtScale; } this.floatTexts = this.floatTexts.filter((ft) => this.time - ft.born < ft.dur); }
+    if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dt);
+    if (this.smashFlash > 0) this.smashFlash = Math.max(0, this.smashFlash - dt);
+    if (this.zapFx && this.time - this.zapFx.born >= this.zapFx.dur) this.zapFx = null;
+    if (this.ko && this.time - this.ko.born > 1200) this.ko = null;
+    this._updateAmbient(dt);
+    this.updateVersusPlatforms();
+    const p = this.player;
+    if (p.respawnInvuln > 0) p.respawnInvuln -= dt;
+    if (!p.dead && !p._trapCharges) p.abCharge = Math.min(1, p.abCharge + dt / (ABILITY_CHARGE_MS * (p.abChargeMul || 1)));
+    if (!p.dead && p.fireballs > 0) this._fireHoldEmbers(p);
+    if (p.heli) this.updateHeli(dt);
+    else { this.smashFire(dt); p.update(dt, this); }
+    p.x = Math.max(8, Math.min(this.vsMapW - 8, p.x));
+    this.carryOnPlatform();
+    this.updateTrainingBullets(dt);
+    if (this.ball) this.updateBall(dt);
+    this.trainingMeleeHits();
+    if (this.traps && this.traps.length) this.traps = this.traps.filter((t) => this.time - t.born < 25000);
+    if (!p.dead && p.hp <= 0) this.trainRespawn();
+    for (const id in this.trainPeers) if (this.time - (this.trainPeers[id].lastSeen || 0) > 6000) delete this.trainPeers[id];
+    // nabijheid van de computer
+    const c = this.vsMap.computer;
+    const near = Math.abs(p.x - c.x) < 44 && Math.abs(p.y - c.y) < 44;
+    if (near !== this._trainNear) { this._trainNear = near; if (window.UI && UI.trainSetNear) UI.trainSetNear(near); }
+    // netwerk: broadcast ~20x/s
+    if (this.trainOnline && this.time >= this._trainNetAt) { this._trainNetAt = this.time + 50; this.trainBroadcast(); }
+    this.updateTrainingCamera();
+    if (window.UI && UI.updateTrainingHud) UI.updateTrainingHud();
+  },
+  updateTrainingCamera() {
+    const W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, GY = CONFIG.GROUND_Y, mapW = this.vsMapW;
+    const p = this.player, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const z = 1.05; this.vsCamZoom += (z - this.vsCamZoom) * 0.1;
+    const zz = this.vsCamZoom, visW = W / zz, visH = H / zz;
+    let tx = (mapW <= visW) ? (mapW - visW) / 2 : clamp(p.x - visW / 2, 0, mapW - visW);
+    const restTy = (GY + 28) - visH, followTy = p.y - visH * 0.34;
+    let ty = Math.max(Math.min(restTy, followTy), -220);
+    this.vsCamX += (tx - this.vsCamX) * 0.14;
+    this.vsCamY += (ty - this.vsCamY) * 0.16;
+  },
+  _drawTrainBullet(ctx, b) {
+    if (b.kind === 'fire') {
+      const d = Math.sign(b.vx) || 1, f = Math.floor(this.time / 45) % 2;
+      Sprites.px(ctx, '#ff5a1e', b.x - d * 6, b.y - 1, 4, 2); Sprites.px(ctx, '#ff8a2a', b.x - d * 3 - 1, b.y - 2, 3, 4 + f);
+      Sprites.px(ctx, '#ff7a2a', b.x - 2, b.y - 3, 5, 6); Sprites.px(ctx, '#ffd24a', b.x - 1, b.y - 2, 3, 4); Sprites.px(ctx, '#fff3c0', b.x, b.y - 1 - f, 1, 2);
+    } else if (b.kind === 'rocket') { Sprites.px(ctx, '#cfd6df', b.x - 3, b.y - 1, 6, 3); Sprites.px(ctx, '#ffd24a', b.x - (Math.sign(b.vx) || 1) * 3, b.y - 1, 2, 3); }
+    else if (b.kind === 'cannon') { Sprites.px(ctx, '#0e0e0e', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#666', b.x - 2, b.y - 3, 2, 2); }
+    else if (b.kind === 'coco') { Sprites.px(ctx, '#5e3f22', b.x - 4, b.y - 4, 8, 8); Sprites.px(ctx, '#8a5e36', b.x - 4, b.y - 4, 8, 3); }
+    else if (b.kind === 'star') { const f = Math.floor(this.time / 35) % 2, c = '#cfd6df'; if (f) { Sprites.px(ctx, c, b.x - 4, b.y - 1, 8, 2); Sprites.px(ctx, c, b.x - 1, b.y - 4, 2, 8); } else { Sprites.px(ctx, c, b.x - 3, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y - 3, 2, 2); Sprites.px(ctx, c, b.x - 3, b.y + 1, 2, 2); Sprites.px(ctx, c, b.x + 1, b.y + 1, 2, 2); } }
+    else if (b.kind === 'dart') { const d = Math.sign(b.vx) || 1; Sprites.px(ctx, '#2f7a3a', b.x - d * 4, b.y - 1, 8, 2); Sprites.px(ctx, '#cfd6df', b.x + d * 3, b.y - 1, 2, 2); }
+    else Sprites.px(ctx, '#ffe27a', b.x - 1, b.y - 1, 3, 2);
+  },
+  drawComputer(ctx, x, y) {
+    const on = Math.sin(this.time / 260) > -0.4;
+    Sprites.px(ctx, '#2a3140', x - 13, y - 26, 26, 20);           // behuizing
+    Sprites.px(ctx, '#0e1016', x - 11, y - 24, 22, 15);           // scherm-rand
+    Sprites.px(ctx, on ? '#5ad0ff' : '#245a72', x - 10, y - 23, 20, 13);   // scherm-gloed
+    Sprites.px(ctx, '#ffd24a', x - 3, y - 19, 6, 6);              // power-up-icoon op scherm
+    Sprites.px(ctx, '#ff8a2a', x - 2, y - 18, 4, 4);
+    Sprites.px(ctx, '#20242c', x - 4, y - 6, 8, 3);              // voet
+    Sprites.px(ctx, '#3a4150', x - 10, y - 3, 20, 3);           // basis/toetsenbord
+    Sprites.px(ctx, '#8a929c', x - 8, y - 3, 16, 1);
+    // "POWER-UPS"-label erboven
+    ctx.font = 'bold 6px "Courier New", monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#0a0e16'; ctx.fillText('POWER-UPS', x, y - 30);
+    ctx.fillStyle = '#ffd24a'; ctx.fillText('POWER-UPS', x, y - 31);
+    ctx.textAlign = 'left';
+  },
+  drawTrainPeer(ctx, pe) {
+    if (pe.iv) return;                                    // onzichtbare ninja: niet tekenen
+    const rc = CHARACTERS[pe.charId] || CHARACTERS.ryan;
+    const airborne = pe.y < CONFIG.GROUND_Y - 5;
+    if (!airborne) Sprites.shadow(ctx, pe.x, Math.min(pe.y + 1, CONFIG.GROUND_Y), pe.giant ? 11 : 7);
+    ctx.save(); ctx.translate(Math.round(pe.x), Math.round(pe.y)); const g = pe.giant ? 2.2 : 1; ctx.scale(g, g);
+    Sprites.drawCharacter(ctx, 0, 0, pe.dir, rc.palette, {
+      walkPhase: pe.walkPhase, airborne: airborne, attacking: pe.attacking,
+      weapon: pe.giant ? null : (pe.swingWeapon || pe.heldWeapon || 'bat'), build: rc.build, hair: rc.hair,
+      hat: pe.hat, t: this.time, rage: pe.rage, burning: pe.burn, outfit: rc.outfit,
+    });
+    ctx.restore();
+    if (pe.fireHold) this.drawFireHand(ctx, pe.x, pe.y, pe.dir, this.time);
+    // naam + hp-balk
+    const nm = (pe.nick || 'Speler').slice(0, 12);
+    ctx.font = 'bold 7px "Courier New", monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#000'; ctx.fillText(nm, pe.x + 0.5, pe.y - 39.5);
+    ctx.fillStyle = '#e8edf2'; ctx.fillText(nm, pe.x, pe.y - 40);
+    const hpW = 22, hpf = Math.max(0, Math.min(1, (pe.hp || 0) / (pe.maxHp || 100)));
+    ctx.fillStyle = '#20140f'; ctx.fillRect(pe.x - hpW / 2, pe.y - 36, hpW, 3);
+    ctx.fillStyle = hpf > 0.5 ? '#5aff7a' : (hpf > 0.25 ? '#ffd24a' : '#ff5a5a'); ctx.fillRect(pe.x - hpW / 2, pe.y - 36, hpW * hpf, 3);
+    ctx.textAlign = 'left';
+  },
+  renderTraining() {
+    if (!this.player || !this.vsMap) return;
+    const ctx = this.ctx, W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, GY = CONFIG.GROUND_Y, map = this.vsMap;
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, map.sky[0]); sky.addColorStop(1, map.sky[1]);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    const shx = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
+    const shy = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - this.dtScale * 0.5);
+    const z = this.vsCamZoom || 1, camX = this.vsCamX, camY = this.vsCamY, visW = W / z, visH = H / z;
+    ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
+    // verre sterren-achtergrond
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    for (let i = 0; i < 40; i++) { const sxp = (i * 137) % (map.w), syp = ((i * 71) % 120) - camY * 0.3; ctx.fillRect(sxp, syp, 1, 1); }
+    // dichte ondergrond over de hele map (je valt er niet af)
+    ctx.fillStyle = '#3a2f22'; ctx.fillRect(-40, GY, map.w + 80, visH + Math.abs(camY) + 260);
+    ctx.fillStyle = '#2c241a'; ctx.fillRect(-40, GY + 10, map.w + 80, visH + Math.abs(camY) + 260);
+    ctx.fillStyle = '#4a7a34'; ctx.fillRect(-40, GY - 3, map.w + 80, 4);     // grasrand
+    ctx.fillStyle = '#2f5a24'; ctx.fillRect(-40, GY + 1, map.w + 80, 1);
+    // zijmuren (visuele grens: je kunt niet van de map)
+    ctx.fillStyle = '#20242c'; ctx.fillRect(-40, -240, 40, GY + 500); ctx.fillRect(map.w, -240, 40, GY + 500);
+    // platforms
+    for (const pf of this.platforms) Sprites.drawPlatform(ctx, pf.x, pf.y, pf.w, 'stone');
+    // computer in de hoek
+    this.drawComputer(ctx, map.computer.x, map.computer.y);
+    // vallen
+    if (this.traps) for (const t of this.traps) this.drawTrap(ctx, t);
+    // kogels
+    for (const b of this.bullets) this._drawTrainBullet(ctx, b);
+    if (this.ball) this.drawBall(ctx);                        // strandbal
+    // andere spelers
+    for (const id in this.trainPeers) this.drawTrainPeer(ctx, this.trainPeers[id]);
+    // sfeer + partikels
+    if (this.ambient && this.ambient.length) { for (const a of this.ambient) { const life = 1 - (this.time - a.born) / a.dur; ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * 0.8; Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.s); } ctx.globalAlpha = 1; }
+    for (const pt of this.particles) { ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); Sprites.px(ctx, pt.color, pt.x, pt.y, pt.size, pt.size); }
+    ctx.globalAlpha = 1;
+    // lokale speler
+    const p = this.player;
+    const blink = p.respawnInvuln > 0 && Math.floor(this.time / 90) % 2 === 0;
+    const pInvis = p._invisUntil && this.time < p._invisUntil;
+    if (!blink) {
+      if (pInvis) ctx.globalAlpha = 0.35;
+      const airborne = !p.onGround;
+      if (!airborne && !pInvis) Sprites.shadow(ctx, p.x, Math.min(p.y + 1, GY), 7);
+      if (p.heli) { this.drawHeli(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal); }
+      else {
+        const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
+        ctx.save(); ctx.translate(Math.round(p.x), Math.round(p.y)); const pg = p.giant ? 2.2 : 1; ctx.scale(pg, pg);
+        const pSwing = this.time < p.attackAnimUntil ? Math.max(0, Math.min(1, 1 - (p.attackAnimUntil - this.time) / 150)) : 0;
+        const pOpts = {
+          walkPhase: p.walkPhase, airborne: airborne, ducking: p.ducking, attacking: this.time < p.attackAnimUntil, swing: pSwing,
+          weapon: p.giant ? null : (swinging ? p.swingWeapon : p.weaponId), build: p.build, hair: p.hairStyle,
+          hat: Storage.data.equippedHat, t: this.time, rage: p.hasBuff('rage', this.time), burning: p.burnUntil > this.time, outfit: p.outfit,
+        };
+        Sprites.drawCharacter(ctx, 0, 0, p.dir, p.pal, pOpts);
+        ctx.restore();
+        if (p.fireballs > 0 || (p._fireHandUntil && this.time < p._fireHandUntil)) this.drawFireHand(ctx, p.x, p.y, p.dir, this.time);
+        if (p._trapCharges > 0) this.drawTrapPreview(ctx, p.x, p.y, p.onGround);
+      }
+      ctx.globalAlpha = 1;
+      // groen naam-pijltje + "JIJ"
+      Sprites.px(ctx, '#5aff7a', Math.round(p.x) - 1, Math.round(p.y) - 44, 2, 4);
+    }
+    // ability-ring-effecten + zap-boog + impact-schokgolven
+    if (this.abilityFx) for (const fx of this.abilityFx) { const t = (this.time - fx.born) / fx.dur; if (t < 0 || t >= 1) continue; const cy = fx.y - 12, R = 8 + t * (fx.ring ? fx.ring - 8 : 30), a = 1 - t; ctx.strokeStyle = fx.color; ctx.lineWidth = 2.5; ctx.globalAlpha = a * 0.85; ctx.beginPath(); ctx.arc(fx.x, cy, R, 0, 6.2832); ctx.stroke(); ctx.globalAlpha = 1; }
+    if (this.zapFx) { const t = (this.time - this.zapFx.born) / this.zapFx.dur; if (t < 1) { ctx.strokeStyle = '#bfe6ff'; ctx.lineWidth = 2; ctx.globalAlpha = 1 - t; ctx.beginPath(); ctx.moveTo(this.zapFx.x0, this.zapFx.y0); ctx.lineTo(this.zapFx.x1, this.zapFx.y1); ctx.stroke(); ctx.globalAlpha = 1; } }
+    if (this.impacts) for (const im of this.impacts) { const t = (this.time - im.born) / im.dur; if (t < 0 || t >= 1) continue; const R = (im.big ? 6 : 4) + t * (im.big ? 34 : 22); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = im.big ? 2.4 : 1.6; ctx.globalAlpha = (1 - t) * 0.9; ctx.beginPath(); ctx.arc(im.x, im.y, R, 0, 6.2832); ctx.stroke(); ctx.globalAlpha = 1; }
+    // zwevende schade-cijfers
+    if (this.floatTexts) for (const ft of this.floatTexts) { ctx.globalAlpha = Math.max(0, 1 - (this.time - ft.born) / ft.dur); ctx.font = 'bold ' + Math.round(7 * (ft.scale || 1)) + 'px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(ft.text, ft.x + 0.5, ft.y + 0.5); ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+    ctx.restore();
+    // schermrand-flits als JIJ geraakt wordt
+    if (this.hurtFlash > 0) { ctx.globalAlpha = Math.min(0.45, this.hurtFlash / 240 * 0.45); ctx.fillStyle = '#c0392b'; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+  },
+
   // ---------- hoofdloop ----------
   loop(ts) {
     let dt = ts - this.lastTs;
@@ -5207,6 +5588,7 @@ const Game = {
     if (this.state === 'playing') this.update(dt);
     if (['playing', 'paused'].includes(this.state)) this.render();
     if (this.state === 'versus') { if (!this.vsPaused) this.updateVersus(dt); this.renderVersus(); }
+    if (this.state === 'training') { this.updateTraining(dt); this.renderTraining(); }
     if (this.state === 'story') {
       this._storyClock = (this._storyClock || 0) + dt;                                   // ambient (golven) loopt door
       if (!this._storyFrozen) this._storyElapsed = (this._storyElapsed || 0) + dt;       // segment-animatie; bevriest aan het eind

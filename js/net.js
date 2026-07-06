@@ -483,6 +483,40 @@ const Net = {
     return !!this.lobbyPeers[id];
   },
 
+  // ============ TRAINING LOBBY (gedeeld kanaal: N spelers in één sandbox) ============
+  train: null,
+  trainMyId() { return this.lobbyMyId(); },
+  trainMyNick() { return this.lobbyMyNick(); },
+
+  async trainJoin(cbs) {
+    if (!this.ready) throw new Error('Geen verbinding met de server.');
+    this.trainLeave();
+    const id = this.trainMyId(), nick = this.trainMyNick();
+    const ch = this.sb.channel('train-lobby-1', { config: { broadcast: { self: false } } });
+    const T = { channel: ch, cbs: cbs || {}, id, nick };
+    ch.on('broadcast', { event: 'ts' }, (m) => { if (T.cbs.onState) T.cbs.onState(m.payload); });     // speler-state
+    ch.on('broadcast', { event: 'thit' }, (m) => { if (T.cbs.onHit) T.cbs.onHit(m.payload); });        // treffer op iemand
+    ch.on('broadcast', { event: 'tbye' }, (m) => { if (T.cbs.onBye) T.cbs.onBye(m.payload); });        // iemand verliet de lobby
+    await new Promise((resolve, reject) => {
+      let done = false;
+      ch.subscribe((st) => {
+        if (st === 'SUBSCRIBED' && !done) { done = true; resolve(); }
+        else if ((st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') && !done) { done = true; reject(new Error('Kon de training-lobby niet verbinden.')); }
+      });
+      setTimeout(() => { if (!done) { done = true; reject(new Error('Time-out bij de training-lobby.')); } }, 8000);
+    });
+    this.train = T;
+    return { id, nick };
+  },
+  trainSend(event, payload) { if (this.train && this.train.channel) this.train.channel.send({ type: 'broadcast', event, payload }); },
+  trainLeave() {
+    if (this.train) {
+      try { this.train.channel.send({ type: 'broadcast', event: 'tbye', payload: { id: this.train.id } }); } catch (e) {}
+      try { this.sb.removeChannel(this.train.channel); } catch (e) {}
+    }
+    this.train = null;
+  },
+
   leaveVersus() {
     if (this.versus) {
       if (this.versus.joinTimer) { clearInterval(this.versus.joinTimer); }
