@@ -265,6 +265,40 @@ const CHARACTERS = {
     },
     desc: 'Gorillakoning: enorme kracht + rage. Versla hem in Journey om te unlocken.'
   },
+  // ---- TEMPLE-WERELD BOSSES (unlockbaar door ze te verslaan in Journey) ----
+  guardian: {
+    id: 'guardian', name: 'Tempelbewaker', cost: 0, journeyOnly: true,
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'stocky', hair: 'bald', ability: 'katanacombo', forcedMelee: 'katana',
+    palette: {
+      hair: '#c9a84a', hairDark: '#8a6f28',
+      skin: '#caa06a', skinDark: '#9a734a',
+      eye: '#3a2a12',
+      shirt: '#b8912e', shirtDark: '#7a5e18', pants: '#4a3a1e', shoe: '#241a0c',
+    },
+    desc: 'Tempelbewaker: katana-combo (2× snel slaan). Versla hem in de Temple-wereld.'
+  },
+  monnik: {
+    id: 'monnik', name: 'Monnik', cost: 0, journeyOnly: true,
+    maxHp: 120, speedMul: 0.9, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'stunstrike',
+    palette: {
+      hair: '#5a3a22', hairDark: '#3f2817',
+      skin: '#d8a878', skinDark: '#b8895e',
+      eye: '#3a2414',
+      shirt: '#e08a2a', shirtDark: '#a85e14', pants: '#8a4a1a', shoe: '#4a2a10',
+    },
+    desc: 'Monnik: taai + stun-slag. Versla hem in de Temple-wereld.'
+  },
+  ninja: {
+    id: 'ninja', name: 'Ninja', cost: 0, journeyOnly: true,
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', ninjaSalto: true,
+    palette: {
+      hair: '#1a1a1e', hairDark: '#0c0c0e',
+      skin: '#c99a6a', skinDark: '#9a7048',
+      eye: '#e83030',
+      shirt: '#1c1f26', shirtDark: '#0e1014', pants: '#141619', shoe: '#0a0b0d',
+    },
+    desc: 'Ninja: vooruit-salto-sprong + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
+  },
   // ---- vijand-mensapen (alleen als bot in Journey, niet in de shop / niet in CHARACTER_ORDER) ----
   aapje: {
     id: 'aapje', name: 'Aapje', maxHp: 70, speedMul: 1.1, meleeMul: 0.9, build: 'small', hair: 'natural',
@@ -275,7 +309,7 @@ const CHARACTERS = {
     palette: { hair: '#5a4030', hairDark: '#3a281c', skin: '#9a6a3a', skinDark: '#6e4824', eye: '#c83838', shirt: '#7a3a2a', shirtDark: '#4a1f14', pants: '#33240f', shoe: '#160d06' },
   },
 };
-const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'bonzo', 'koba', 'kong'];
+const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'bonzo', 'koba', 'kong', 'guardian', 'monnik', 'ninja'];
 
 // ---- CHARACTER-ABILITIES (oplaadbaar in een match: vlam-knop boven de melee-knop) ----
 const ABILITIES = {
@@ -289,6 +323,9 @@ const ABILITIES = {
   rage8:      { name: 'Rage',        desc: 'Rage 8s (2× schade).' },
   ultrarage:  { name: 'Ultra Rage',  desc: 'Ultra rage 5s (4× schade).' },
   knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 2 rondes (snel + hard).' },
+  katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
+  stunstrike: { name: 'Stun-slag',   desc: '5s lang: je volgende klap verdooft je tegenstander.' },
+  invisible:  { name: 'Onzichtbaar', desc: '6s onzichtbaar — je tegenstander ziet je niet.' },
 };
 const ABILITY_CHARGE_MS = 42000;   // basis-oplaadtijd van de ability (combos versnellen dit)
 // Journey-enemy-stats blijven ongewijzigd (online zijn koba/kong aangepast)
@@ -650,6 +687,27 @@ function buildJourneyIsland() {
       reward: 0,                                          // journey heeft eigen beloningen
     };
     if (bossInfo) Object.assign(lv, bossInfo, { bossFight: true });
+    else { lv.bot = (n % 2 ? 'aapje' : 'baviaan'); lv.diff = Math.round(2 + t * 7); lv.drops = ['coco']; }   // smash: elk level een bot-duel
+    levels.push(lv);
+  }
+  return levels;
+}
+// ---- TEMPLE-WERELD: 15 smash-duels, bosses op 5/10/15 (unlockbaar) ----
+function buildTempleWorld() {
+  const names = ['Poort', 'Binnenhof', 'Zuilengang', 'Altaar', 'TEMPELBEWAKER',
+    'Kloostergang', 'Meditatietuin', 'Klokkentoren', 'Verborgen kamer', 'MONNIK',
+    'Daktuinen', 'Schaduwpad', 'Val-gangen', 'Dojo', 'NINJA'];
+  const minions = ['jenze', 'tygo', 'timo', 'ricky', 'just', 'vince', 'yarno', 'bonzo', 'koba'];
+  const bosses = { 5: { bot: 'guardian', diff: 6 },
+                   10: { bot: 'monnik', diff: 8 },
+                   15: { bot: 'ninja', diff: 10, boss: true } };
+  const levels = [];
+  let mi = 0;
+  for (let n = 1; n <= 15; n++) {
+    const t = (n - 1) / 14;
+    const lv = { id: n, name: names[n - 1], temple: true, reward: 0, drops: ['ninjastar'] };
+    if (bosses[n]) Object.assign(lv, bosses[n], { bossFight: true, drops: ['ninjastar', 'dart', 'coco'] });
+    else { lv.bot = minions[mi++ % minions.length]; lv.diff = Math.round(3 + t * 6); }
     levels.push(lv);
   }
   return levels;
@@ -657,11 +715,17 @@ function buildJourneyIsland() {
 
 const JOURNEY = {
   1: {
-    name: 'Onbewoond Eiland',
+    id: 1, name: 'Onbewoond Eiland',
     levels: buildJourneyIsland(),
     unlocks: { 3: { hat: 'leafcrown' }, 5: { char: 'bonzo' }, 8: { hat: 'tikimask' }, 10: { char: 'koba' }, 12: { hat: 'bananahat' }, 15: { char: 'kong' } },
   },
+  2: {
+    id: 2, name: 'Verloren Tempel',
+    levels: buildTempleWorld(),
+    unlocks: { 5: { char: 'guardian' }, 10: { char: 'monnik' }, 15: { char: 'ninja' } },
+  },
 };
+const JOURNEY_ORDER = [1, 2];
 
 /* ---------- SHOP-POWERUPS (koop met munten -> inventaris; activeer 1 per keer in een match) ----------
    'kind' = welk drop-effect wordt toegepast (hergebruikt applyDrop). Meermaals te kopen (stapelt). */
@@ -808,7 +872,7 @@ const VERSUS_MAPS = [
     // Temple: stenen tempel-arena (net zo groot als Pirate Ship). Getrapte muur-blokken links/rechts
     // (langs lopen op de grond + erop springen), een GROOT GAT in het midden (val = eraf), 2 zwevende
     // platforms, en 2 deuren die je naar de overkant teleporteren. Géén portals op deze map.
-    id: 'temple', name: 'Temple', sky: ['#3a2f22', '#150e08'], void: '#0a0604', plat: 'stone', stone: true, temple: true, noPortals: true,
+    id: 'temple', name: 'Temple', sky: ['#f2b96a', '#9a5a4a'], void: '#0a0604', plat: 'stone', stone: true, temple: true, noPortals: true,
     w: 720, fallY: 232, camTop: -20, camBottom: 30,
     spawnL: { x: 90, y: 178 }, spawnR: { x: 630, y: 178 },
     platforms: [

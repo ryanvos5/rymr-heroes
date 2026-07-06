@@ -338,14 +338,15 @@ const Storage = {
     return rw;
   },
 
-  // ---- Journey (singleplayer) ----
-  journeyCleared(level) { return (this.data.journey1 || 0) >= level; },                  // wereld 1
-  journeyUnlocked(level) { return level <= (this.data.journey1 || 0) + 1; },             // volgende is speelbaar
+  // ---- Journey (singleplayer) — per wereld (world 1 = eiland, 2 = tempel) ----
+  journeyCleared(level, world) { return (this.data['journey' + (world || 1)] || 0) >= level; },
+  journeyUnlocked(level, world) { return level <= (this.data['journey' + (world || 1)] || 0) + 1; },
   // markeer een level als gehaald + ken de unlocks toe; geeft een lijst met nieuwe items terug
-  clearJourneyLevel(level) {
-    const got = [];
-    if (level > (this.data.journey1 || 0)) this.data.journey1 = level;
-    const unl = (JOURNEY[1] && JOURNEY[1].unlocks && JOURNEY[1].unlocks[level]) || null;
+  clearJourneyLevel(level, world) {
+    world = world || 1;
+    const got = [], key = 'journey' + world;
+    if (level > (this.data[key] || 0)) this.data[key] = level;
+    const unl = (JOURNEY[world] && JOURNEY[world].unlocks && JOURNEY[world].unlocks[level]) || null;
     if (unl) {
       if (unl.char && !this.ownsCharacter(unl.char)) { this.data.ownedCharacters.push(unl.char); got.push({ type: 'char', id: unl.char, name: (CHARACTERS[unl.char] || {}).name }); }
       if (unl.hat && !this.ownsHat(unl.hat)) { (this.data.ownedHats = this.data.ownedHats || ['none']).push(unl.hat); got.push({ type: 'hat', id: unl.hat, name: (HATS[unl.hat] || {}).name }); }

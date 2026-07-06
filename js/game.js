@@ -1686,11 +1686,20 @@ const Game = {
 
   // ============ 1 vs 1 VERSUS ============
   // Journey-level starten (singleplayer tegen een mensaap-bot, Power Smash)
-  startJourney(idx) {
-    const world = JOURNEY[1]; if (!world) return;
+  startJourney(idx, worldId) {
+    worldId = worldId || 1;
+    const world = JOURNEY[worldId]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
-    // vanaf level 10 gaat het het oerwoud in -> jungle-maps (baas op level 15 met troonzaal)
+    // ---- Temple-wereld: speel op de Temple-map ----
     let mapObj;
+    if (worldId === 2) {
+      mapObj = VERSUS_MAPS.find((m) => m.id === 'temple') || null;
+      this.journey = { world: worldId, idx, lv };
+      this.startVersus('host', { mapObj, mapId: 'temple', mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot, swapSides: Math.random() < 0.5 });
+      this.journey = { world: worldId, idx, lv };
+      return;
+    }
+    // vanaf level 10 gaat het het oerwoud in -> jungle-maps (baas op level 15 met troonzaal)
     if (idx >= 10) {
       const layout = JUNGLE_LAYOUTS[(idx - 10) % JUNGLE_LAYOUTS.length];
       mapObj = {
@@ -3231,6 +3240,9 @@ const Game = {
       case 'ultrarage': p.buffs.rage = now + 5000; p._ultraUntil = now + 5000; this._abFx(p, '#ff2a2a'); break;
       case 'earthquake': this.startEarthquake(); break;
       case 'knife': p._bladeRounds = 2; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
+      case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000; this._abFx(p, '#f2f6fa'); break;
+      case 'stunstrike': p._stunStrikeUntil = now + 5000; this._abFx(p, '#8fd0ff'); break;
+      case 'invisible': p._invisUntil = now + 6000; this._abFx(p, '#b06bff'); break;
       default: break;
     }
     // magisch effect om de speler heen + online zichtbaar maken voor de tegenstander
@@ -3243,7 +3255,7 @@ const Game = {
   _abilityColor(ab) {
     return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', fireaura10: '#ff8a2a',
       rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', zapdash: '#ffe27a',
-      earthquake: '#c8a060', knife: '#bfe6ff' })[ab] || '#c9a6ff';
+      earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', invisible: '#b06bff' })[ab] || '#c9a6ff';
   },
   // magische ring + sprankels rond een positie (moment van ability-inzet)
   spawnAbilityFx(x, y, color) {
@@ -3336,6 +3348,9 @@ const Game = {
       case 'ultrarage': b.buffs.rage = now + 5000; b._ultraUntil = now + 5000; this._abFx(b, '#ff2a2a'); break;
       case 'earthquake': this.botEarthquake(); break;
       case 'knife': b._bladeRounds = 2; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
+      case 'katanacombo': b.meleeId = 'katana'; b.weaponId = 'katana'; b._fastMeleeUntil = now + 5000; this._abFx(b, '#f2f6fa'); break;
+      case 'stunstrike': b._stunStrikeUntil = now + 5000; this._abFx(b, '#8fd0ff'); break;
+      case 'invisible': b._invisUntil = now + 6000; this._abFx(b, '#b06bff'); break;
       default: break;
     }
     this.spawnAbilityFx(b.x, b.y, this._abilityColor(b.ability));
@@ -3543,8 +3558,10 @@ const Game = {
         const dmg = Math.round(wd * 0.45);                            // versus-melee-schade
         const kp = 15 + Math.max(0, p.combo - 1) * 8;                 // vanaf x2 fors meer knockback (x1=15 .. x5=47)
         const kvy = -5.5 - Math.max(0, p.combo - 1) * 0.7;            // en iets meer omhoog
-        if (this.vsBot) this.applyHitToBot(kdir, kp, kvy, dmg, true);       // bot wegslaan + schade (juice zit in applyHitToBot); melee = parrybaar
-        else { Net.versusSend('hit', { dir: p.dir, power: kp, vy: kvy, dmg: dmg, melee: 1 }); this.addHitFeel(r.x, r.y - 16, kdir, dmg, kp, false, r); }
+        const sst = (p._stunStrikeUntil && this.time < p._stunStrikeUntil) ? 1000 : 0;   // stun-slag: verdoof de tegenstander
+        if (sst) p._stunStrikeUntil = 0;                                                  // eenmalig
+        if (this.vsBot) { this.applyHitToBot(kdir, kp, kvy, dmg, true); if (sst && this.bot && !this.bot.dead) this.bot.stunUntil = Math.max(this.bot.stunUntil || 0, this.time + sst); }   // bot wegslaan + schade; melee = parrybaar
+        else { Net.versusSend('hit', { dir: p.dir, power: kp, vy: kvy, dmg: dmg, melee: 1, stun: sst }); this.addHitFeel(r.x, r.y - 16, kdir, dmg, kp, false, r); }
         p.abCharge = Math.min(1, p.abCharge + (0.05 + 0.03 * Math.max(0, p.combo - 1)) / (p.abChargeMul || 1));   // ability laadt sneller op met combos
         // combo-XP (alleen online — geen XP-farmen tegen de bot)
         const cx = comboXp(p.combo);
@@ -3587,6 +3604,7 @@ const Game = {
     r.shieldHp = b.shieldHp || 0; r.giant = !!b.giant; r.heli = !!b.heli;
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
     r.hp = b.hp; r.maxHp = b.maxHp; r.ducking = b.ducking;
+    r.iv = !!(b._invisUntil && this.time < b._invisUntil);   // ninja onzichtbaar -> jij ziet 'm niet
     r._flashUntil = b._flashUntil || 0;                 // witte hit-flash mee-spiegelen
 
     // bot schiet: vuurwapen (beide-wapens) of fireball/rocket (smash)
@@ -3666,7 +3684,8 @@ const Game = {
         b.comboUntil = this.time + COMBO_WINDOW;
         const wd = (WEAPONS[b.meleeId] ? WEAPONS[b.meleeId].damage : 34) * (b.meleeMul || 1) * (b.hasBuff('rage', this.time) ? 1.6 : 1) * comboMul(b.combo);
         const kp = 15 + Math.max(0, b.combo - 1) * 8;                 // bot: vanaf x2 ook fors meer knockback
-        this.onVersusHit({ dir: kd, power: kp, vy: -5.5 - Math.max(0, b.combo - 1) * 0.7, dmg: Math.round(wd * 0.45), melee: 1 });
+        const bsst = (b._stunStrikeUntil && this.time < b._stunStrikeUntil) ? 1000 : 0; if (bsst) b._stunStrikeUntil = 0;   // Monnik-boss: stun-slag
+        this.onVersusHit({ dir: kd, power: kp, vy: -5.5 - Math.max(0, b.combo - 1) * 0.7, dmg: Math.round(wd * 0.45), melee: 1, stun: bsst });
         if (b.ability) b.abCharge = Math.min(1, b.abCharge + (0.05 + 0.03 * Math.max(0, b.combo - 1)) / (b.abChargeMul || 1));   // combo's laden de bot-ability sneller
         this.shake = Math.max(this.shake, 6);
       }
@@ -3985,7 +4004,7 @@ const Game = {
     r.giant = s.gi === 1;
     r.heli = s.hl === 1;
     r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
-    r.ducking = s.dk === 1;
+    r.ducking = s.dk === 1; r.iv = s.iv === 1;   // tegenstander onzichtbaar
     if (typeof s.h === 'number') r.hp = s.h;
     if (typeof s.mh === 'number') r.maxHp = s.mh;
     r.lastSeen = this.time;
@@ -4002,6 +4021,7 @@ const Game = {
       rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0, shp: Math.round(p.shieldHp || 0), gi: p.giant ? 1 : 0, hl: p.heli ? 1 : 0,
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
+      iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
     });
   },
 
@@ -4012,11 +4032,11 @@ const Game = {
     const isBot = this.vsBot;
     // ----- JOURNEY: eigen afhandeling (level halen, unlocks, eigen uitslag) -----
     if (this.journey) {
-      const jr = this.journey, idx = jr.idx;
+      const jr = this.journey, idx = jr.idx, jworld = jr.world || 1;
       let unlocks = [], rewards = [];
       if (won) {
-        const first = !Storage.journeyCleared(idx);
-        unlocks = Storage.clearJourneyLevel(idx);
+        const first = !Storage.journeyCleared(idx, jworld);
+        unlocks = Storage.clearJourneyLevel(idx, jworld);
         // eerste keer: volledige beloning; opnieuw spelen: 50 munten (geen xp)
         const coins = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 150 : 40) : 50;
         const xp = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 60 : 20) : 0;
@@ -4027,10 +4047,11 @@ const Game = {
         for (const u of unlocks) rewards.push({ type: u.type, id: u.id, name: u.name });   // unlock-kaartjes
       }
       if (window.Sfx) Sfx.play(won ? 'win' : 'lose');
-      const self = this, name = won ? 'JIJ' : ((jr.lv && jr.lv.boss) ? 'GORILLA KING' : 'BOT');
+      const foeName = (jr.lv && jr.lv.bot && CHARACTERS[jr.lv.bot]) ? CHARACTERS[jr.lv.bot].name.toUpperCase() : 'BOT';
+      const self = this, name = won ? 'JIJ' : foeName;
       const myScore = this.vs ? this.vs.myScore : 0, oppScore = this.vs ? this.vs.oppScore : 0;
       UI.showWinCelebration(name, won);
-      setTimeout(function () { if (self.state === 'versusOver') UI.showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore); }, 2600);
+      setTimeout(function () { if (self.state === 'versusOver') UI.showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore, jworld); }, 2600);
       return;
     }
     // betrouwbaar de uitslag naar de tegenstander sturen (paar keer tegen pakketverlies)
@@ -4205,9 +4226,9 @@ const Game = {
     }
     ctx.globalAlpha = 1;
 
-    // tegenstander (ghost) — ROOD pijltje erboven
+    // tegenstander (ghost) — ROOD pijltje erboven; onzichtbare ninja tekenen we niet (jij ziet 'm niet)
     const r = this.vs.remote;
-    if (r.alive) {
+    if (r.alive && !r.iv) {
       const rc = (CHARACTERS[r.charId] || CHARACTERS.ryan);
       if (r.onGround) Sprites.shadow(ctx, r.x, r.y + 1, r.giant ? 11 : 7);
       if (r.heli) { this.drawHeli(ctx, Math.round(r.x), Math.round(r.y), r.dir, rc.palette); }
@@ -4233,9 +4254,11 @@ const Game = {
     // eigen speler — GROEN pijltje erboven (knippert tijdens respawn)
     const p = this.player;
     const blink = p.respawnInvuln > 0 && Math.floor(this.time / 90) % 2 === 0;
+    const pInvis = p._invisUntil && this.time < p._invisUntil;   // onzichtbaar -> jij ziet jezelf doorzichtig
     if (!p.dead) {
+      if (pInvis) ctx.globalAlpha = 0.35;
       if (!blink) {
-        if (p.onGround) Sprites.shadow(ctx, p.x, p.y + 1, p.giant ? 11 : 7);
+        if (p.onGround && !pInvis) Sprites.shadow(ctx, p.x, p.y + 1, p.giant ? 11 : 7);
         const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
         if (p.heli) { this.drawHeli(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal); }
         else {
@@ -4258,6 +4281,7 @@ const Game = {
       }
       this.drawVsMarker(ctx, Math.round(p.x), Math.round(p.y), p.build, '#5aff7a');
     }
+    ctx.globalAlpha = 1;   // onzichtbaar-alpha resetten
 
     if (map.cave && this.caveWall) this.drawCaveWall(ctx);   // de muur sweept over de spelers heen
     if (map.vulcan) this.drawVulcanJet(ctx);                 // borrel-waarschuwing + lavastraal
@@ -4629,29 +4653,37 @@ const Game = {
       ctx.globalAlpha = 1;
     }
   },
-  // tempel-achtergrond: verre stenen pilaren + twee fakkels met warme gloed
+  // BUITEN-tempel-achtergrond: avondlucht + zon, grote getrapte stenen tempel-piramide, jungle-treeline
   drawTempleBg(ctx) {
-    const W = this.vsMapW;
-    ctx.globalAlpha = 0.45;
-    for (let i = 0; i < 6; i++) {                                        // verre pilaren-rij
-      const px = 40 + i * ((W - 60) / 5);
-      Sprites.px(ctx, '#2b2418', Math.round(px), -20, 22, 210);
-      Sprites.px(ctx, '#352c1d', Math.round(px), -20, 22, 4);
-      Sprites.px(ctx, '#201a11', Math.round(px) + 18, -20, 4, 210);
-      Sprites.px(ctx, '#352c1d', Math.round(px) - 3, -22, 28, 3);       // kapiteel bovenop
+    const W = this.vsMapW, cx = Math.round(W / 2);
+    // avondzon laag achter de tempel
+    const sg = ctx.createRadialGradient(cx, 60, 6, cx, 60, 70);
+    sg.addColorStop(0, 'rgba(255,236,170,0.9)'); sg.addColorStop(1, 'rgba(255,200,110,0)');
+    ctx.fillStyle = sg; ctx.fillRect(cx - 80, -30, 160, 130);
+    Sprites.px(ctx, '#ffe9a0', cx - 8, 44, 16, 16);                     // zonschijf
+    // grote getrapte tempel-piramide in het midden op de achtergrond
+    const baseY = 172, tiers = 6;
+    for (let i = 0; i < tiers; i++) {
+      const tw = 190 - i * 26, ty = baseY - i * 18;
+      const col = i % 2 ? '#7a6a4e' : '#8a7a5a';
+      Sprites.px(ctx, col, cx - tw / 2, ty - 18, tw, 18);
+      Sprites.px(ctx, '#9a8a68', cx - tw / 2, ty - 18, tw, 3);         // lichte bovenrand per trede
+      Sprites.px(ctx, '#5f5238', cx - tw / 2, ty - 2, tw, 2);          // schaduw onderrand
+    }
+    // trap in het midden van de piramide
+    for (let i = 0; i < tiers * 3; i++) Sprites.px(ctx, '#6a5c40', cx - 6, baseY - i * 6, 12, 3);
+    // tempel-ingang bovenop
+    Sprites.px(ctx, '#2a2016', cx - 9, baseY - tiers * 18 - 16, 18, 16);
+    Sprites.px(ctx, '#3a2e1e', cx - 11, baseY - tiers * 18 - 18, 22, 3);
+    // jungle-treeline links en rechts (silhouet)
+    ctx.globalAlpha = 0.9;
+    for (let i = 0; i < 10; i++) {
+      const tx = i < 5 ? 8 + i * 26 : W - (8 + (i - 5) * 26);
+      const th = 30 + ((i * 37) % 22);
+      Sprites.px(ctx, '#173a22', tx - 8, 172 - th, 16, th);           // struik-kruin
+      Sprites.px(ctx, '#0e2716', tx - 8, 172 - th, 16, 4);
     }
     ctx.globalAlpha = 1;
-    // twee fakkels (bij de muur-blokken) met flakkerende gloed
-    const flick = 0.6 + Math.sin(this.time / 90) * 0.2 + Math.sin(this.time / 37) * 0.15;
-    for (const fx of [70, W - 70]) {
-      Sprites.px(ctx, '#3a2a16', fx, 120, 3, 14);                       // steel
-      ctx.globalAlpha = Math.max(0.2, flick);
-      const g = ctx.createRadialGradient(fx + 1, 116, 2, fx + 1, 116, 26);
-      g.addColorStop(0, 'rgba(255,180,60,0.7)'); g.addColorStop(1, 'rgba(255,120,20,0)');
-      ctx.fillStyle = g; ctx.fillRect(fx - 25, 90, 52, 52);
-      ctx.globalAlpha = 1;
-      Sprites.px(ctx, '#ffd24a', fx, 112, 3, 4); Sprites.px(ctx, '#ff8a2a', fx, 110, 3, 3);   // vlam
-    }
   },
 
   // piratenschip-achtergrond: water + zeil + (langzaam opkomend) zeemonster op de achtergrond

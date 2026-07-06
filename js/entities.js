@@ -52,6 +52,7 @@ class Player {
     this.jumping = false; // bezig met een (variabele) sprong
     // Vince: vuuraura — elke 30s, 5s lang; aanraking geeft 3s burn
     this.fireAura = !!ch.fireAura;
+    this.ninjaSalto = !!ch.ninjaSalto;   // Ninja: dubbeljump = vooruit-salto
     this.auraNextAt = 30000;   // eerste aura na 30s spelen
     this.auraUntil = 0;
     this._auraOn = false;
@@ -247,6 +248,9 @@ class Player {
         this.onGround = false;
         this.jumps--;
         this.jumping = true;     // variabele spronghoogte: actief
+        if (this.ninjaSalto && air) {            // Ninja: dubbeljump = snelle vooruit-salto
+          this.knockVx = this.dir * 10; this.vy *= 0.82; this._saltoUntil = game.time + 420;
+        }
         if (window.Sfx && this === game.player) Sfx.play('jump');
       } else if (this.extraJumpLeft > 0 && this.maxJumps >= 2) {
         this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * 0.7;   // extra dubbel-jump
@@ -345,7 +349,8 @@ class Player {
 
   useMelee(game, w) {
     const key = 'lastMelee_' + w.id;
-    if (game.time - (this[key] || -9999) < w.cooldown) return;
+    const cd = (this._fastMeleeUntil && game.time < this._fastMeleeUntil) ? w.cooldown * 0.5 : w.cooldown;   // katana-combo: 2× sneller slaan
+    if (game.time - (this[key] || -9999) < cd) return;
     this[key] = game.time;
     if (window.Sfx && this === game.player) Sfx.play('swing');   // mep-zwiep
     this.attackAnimUntil = game.time + 140;

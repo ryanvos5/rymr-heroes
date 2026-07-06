@@ -292,14 +292,29 @@ const UI = {
     const pn = document.getElementById('coop-panel'); if (pn) pn.classList.add('hidden');
   },
   renderJourney() {
+    const world = this._journeyWorld = this._journeyWorld || 1;
+    // wereld-tabs (Eiland / Tempel)
+    const tabs = document.getElementById('journey-worlds');
+    if (tabs) {
+      tabs.innerHTML = '';
+      JOURNEY_ORDER.forEach((w) => {
+        const b = document.createElement('button');
+        b.className = 'shop-tab' + (w === world ? ' active' : '');
+        b.textContent = JOURNEY[w].name;
+        b.onclick = () => { this._journeyWorld = w; this.renderJourney(); };
+        tabs.appendChild(b);
+      });
+    }
+    const sub = document.getElementById('journey-world');
+    if (sub) sub.textContent = 'Wereld ' + world + ' — ' + JOURNEY[world].name;
+    const cb = document.getElementById('coop-bar'); if (cb) cb.classList.add('hidden');   // journey = singleplayer smash-duels
     const grid = document.getElementById('journey-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    const levels = JOURNEY[1].levels;
-    levels.forEach((lv, i) => {
+    JOURNEY[world].levels.forEach((lv, i) => {
       const n = i + 1;
-      const cleared = Storage.journeyCleared(n);
-      const open = Storage.journeyUnlocked(n);
+      const cleared = Storage.journeyCleared(n, world);
+      const open = Storage.journeyUnlocked(n, world);
       const cell = document.createElement('button');
       cell.className = 'level-cell' + (cleared ? ' cleared' : '') + (open ? '' : ' locked');
       const isBoss = lv.bossFight || lv.boss;
@@ -308,20 +323,7 @@ const UI = {
       grid.appendChild(cell);
     });
   },
-  pickJourneyLevel(n) {
-    // CO-OP actief: de host kiest, allebei starten samen (zonder cutscene)
-    if (this._coopRole && window.Net && Net.versus) {
-      if (this._coopRole !== 'host') return;             // de gast wacht op de keuze van de host
-      if (!this._coopConnected) { const st = document.getElementById('coop-status'); if (st) st.textContent = 'Wacht tot je maat meedoet…'; return; }
-      Net.versusSend('jstart', { n });
-      this.beginCoopStage(n);
-      return;
-    }
-    // alleen de intro speelt vóór het level; boss-verhalen (5/10/15) spelen nú pas
-    // NÁ het platform-level, vlak vóór het boss-duel (zie finishJourneyStage -> playBossStory)
-    if (n === 1 && !Storage.journeyCleared(1)) { this.playStory('intro', n); return; }
-    this.startJourneyLevel(n);
-  },
+  pickJourneyLevel(n) { this.startJourneyLevel(n); },   // journey = direct het 1v1-smash-duel (geen Mario/cutscene meer)
   // welk verhaaltje hoort bij dit level? (intro vóór lvl 1, confrontatie bij elke nieuwe aap)
   // speelt nu elke keer dat je het level start — ook bij herhalen (te skippen met "Overslaan")
   _journeyStoryFor(n) {
@@ -340,15 +342,7 @@ const UI = {
   },
   startJourneyLevel(n) {
     document.getElementById('versus-result').classList.add('hidden');
-    const lv = JOURNEY[1].levels[n - 1];
-    if (lv && lv.mario) {                // NIEUW: Mario-stijl side-scroller-level (adventure-engine)
-      const vh = document.getElementById('versus-hud'); if (vh) vh.classList.add('hidden');
-      document.getElementById('loadout-bar').classList.add('hidden');
-      document.getElementById('ability-btn').classList.add('hidden');
-      Game.startJourneyStage(n);         // regelt zelf UI.show('game') + HUD/touch
-      return;
-    }
-    this.startJourneyBossFight(n);       // (vangnet: niet-mario levels = direct het duel)
+    this.startJourneyBossFight(n);       // elk journey-level = een 1v1-smash-duel
   },
   // boss-fase (na de level-stage van 5/10/15): het bestaande 1v1-smash-duel
   // eerst het boss-verhaaltje afspelen (na de finish van het platform-level), dán het duel
@@ -364,7 +358,7 @@ const UI = {
   startJourneyBossFight(n) {
     document.getElementById('versus-result').classList.add('hidden');
     this.showVersus();                  // juiste HUD/touch-setup, alle schermen weg
-    Game.startJourney(n);
+    Game.startJourney(n, this._journeyWorld || 1);
     this.el.pause.classList.remove('hidden');                       // Journey heeft een pauzeknop (singleplayer)
     document.getElementById('btn-vs-quit').classList.add('hidden'); // pauzeknop vervangt de kruis-knop
   },
@@ -389,8 +383,9 @@ const UI = {
     Game.state = 'playing';
     if (window.Input) Input.clear();
   },
-  showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore) {
-    const levels = JOURNEY[1].levels, total = levels.length, hasNext = won && idx < total;
+  showJourneyResult(won, idx, unlocks, rewards, myScore, oppScore, world) {
+    world = world || this._journeyWorld || 1; this._journeyWorld = world;
+    const levels = JOURNEY[world].levels, total = levels.length, hasNext = won && idx < total;
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');   // win-celebratie weg
     const rb = document.getElementById('vs-round-banner'); if (rb) rb.classList.add('hidden');
     this.el.touch.classList.add('hidden'); document.body.classList.remove('in-game');
@@ -399,7 +394,7 @@ const UI = {
     document.getElementById('ability-btn').classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    if (won && idx >= total) t.innerHTML = 'EILAND VERSLAGEN! ' + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : 'VERLOREN';
+    if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + ' VERSLAGEN! ' + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : 'VERLOREN';
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = (myScore || 0) + ' – ' + (oppScore || 0);
     const xpEl = document.getElementById('vs-result-xp');
