@@ -1411,6 +1411,9 @@ const UI = {
   renderTrainPowerups() {
     const grid = document.getElementById('train-pu-grid'); if (!grid) return;
     grid.innerHTML = '';
+    const divider = (txt) => { const d = document.createElement('div'); d.className = 'train-pu-divider'; d.textContent = txt; grid.appendChild(d); };
+    // --- power-ups ---
+    divider('POWER-UPS');
     const order = (typeof TRAINING_POWERUP_ORDER !== 'undefined') ? TRAINING_POWERUP_ORDER : POWERUP_ORDER;
     order.forEach((id) => {
       const pu = SHOP_POWERUPS[id]; if (!pu) return;
@@ -1422,6 +1425,28 @@ const UI = {
       b.onclick = (e) => { const k = (e.currentTarget || b).dataset.kind; if (k) { Game.trainGivePowerup(k); this.closeTrainComputer(); } };
       grid.appendChild(b);
     });
+    // --- melee-wapens ---
+    divider('MELEE WAPENS');
+    const melee = (typeof TRAINING_MELEE_ORDER !== 'undefined') ? TRAINING_MELEE_ORDER : [];
+    melee.forEach((wid) => {
+      const w = WEAPONS[wid]; if (!w) return;
+      const b = document.createElement('button'); b.className = 'train-pu'; b.dataset.melee = wid;
+      const cv = document.createElement('canvas'); cv.width = 44; cv.height = 44; cv.className = 'train-pu-ico';
+      this._weaponIcon(cv, wid);
+      const lbl = document.createElement('span'); lbl.className = 'train-pu-lbl'; lbl.textContent = w.name;
+      b.appendChild(cv); b.appendChild(lbl);
+      b.onclick = (e) => { const k = (e.currentTarget || b).dataset.melee; if (k) { Game.trainGiveMelee(k); this.closeTrainComputer(); } };
+      grid.appendChild(b);
+    });
+  },
+  // wapen-icoon gecentreerd op een klein canvas tekenen
+  _weaponIcon(canvas, wid) {
+    const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const s = 0.82;
+    ctx.save(); ctx.translate(canvas.width / 2 - 26 * s, canvas.height / 2 - 24 * s);
+    if (Sprites.drawWeaponIcon) Sprites.drawWeaponIcon(ctx, wid, s);
+    ctx.restore();
   },
 
   // touch-knoppen tonen het pixel-icoon van het actieve wapen/powerup (i.p.v. emoji)

@@ -1519,7 +1519,13 @@ body.is-touch.portrait.in-game #rotate-hint { display: flex; }
 }
 .train-pu-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px;
-  overflow-y: auto; padding: 2px;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 2px;
+  -webkit-overflow-scrolling: touch; touch-action: pan-y;
+}
+.train-pu-divider {
+  grid-column: 1 / -1; font-family: var(--pixel-font); color: var(--gold);
+  font-size: 11px; letter-spacing: 1px; padding: 4px 2px 2px; margin-top: 2px;
+  border-bottom: 1px solid rgba(230,184,80,0.35);
 }
 .train-pu {
   display: flex; flex-direction: column; align-items: center; gap: 3px;

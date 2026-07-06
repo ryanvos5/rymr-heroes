@@ -5296,6 +5296,15 @@ const Game = {
     p.weaponId = p.meleeId; p._weaponUntil = 0; p._fireCd = 0; p._trapCharges = 0;
     if (p._baseMaxHp) { p.maxHp = p._baseMaxHp; if (p.hp > p.maxHp) p.hp = p.maxHp; }
   },
+  // Training: een melee-wapen kiezen (blijft ook na respawn = wordt je basis-melee)
+  trainGiveMelee(id) {
+    if (this.state !== 'training' || !this.player || this.player.dead || !WEAPONS[id]) return;
+    const p = this.player;
+    p.meleeId = id; p.baseMelee = id;
+    if (!p.rangedId) p.weaponId = id;                    // niet vervangen als je net een geweer vasthoudt
+    this.addFloatText(p.x, p.y - 24, (WEAPONS[id].name || id).toUpperCase(), '#e8edf2', false);
+    if (window.Sfx) Sfx.play('pickup');
+  },
   // Training: alle opgepakte power-ups weer weghalen (bv. reus terugzetten)
   trainClearPowerups() {
     if (this.state !== 'training' || !this.player) return;

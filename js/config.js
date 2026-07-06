@@ -797,7 +797,9 @@ const SHOP_POWERUPS = {
 };
 const POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'rocket', 'cannon', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
 // volgorde in de Training-lobby-computer: alles wat je kunt uitproberen (incl. training-only wapens)
-const TRAINING_POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'deagle', 'crossbow', 'rocket', 'cannon', 'ninjastar', 'chainsaw', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
+const TRAINING_POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'deagle', 'crossbow', 'rocket', 'cannon', 'ninjastar', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
+// melee-wapens die je in de Training-lobby-computer kunt kiezen (blijven na respawn)
+const TRAINING_MELEE_ORDER = ['bat', 'club', 'machete', 'sword', 'dagger', 'axe', 'spear', 'mace', 'flail', 'bostaff', 'katana', 'halberd', 'chainsaw'];
 
 /* ---------- KISTEN (loot uit online matches, Clash-stijl met unlock-timers) ---------- */
 const CHEST_TYPES = {
