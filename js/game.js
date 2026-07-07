@@ -1946,6 +1946,7 @@ const Game = {
     this.nuke = null; this._nukeUsed = false;            // nuke-powerup: max 1x per match
     this.traps = [];                                     // Tempelbewaker-vallen
     this.portals = []; this._portalTimer = SMASH_PORTAL_EVERY;
+    this._dragonUsed = false;                                        // max 1 draak per match
     this.dragons = [];
     // Cave: knoppen + muur + sfeer (bats/druppels)
     this.caveWall = null; this._caveArmAt = this.time + CAVE_ARM_MS; this.caveArmed = -1;
@@ -2157,7 +2158,7 @@ const Game = {
       if (this.ball) this.updateBall(dt);                           // strandbal
       if (this.vsMap && this.vsMap.jungle2) this.updateJungleApe(dt);  // wilde aap: springt + mept je van de map
       if (this.vsMap && this.vsMap.airplane) this.updateAirplane(dt);  // Airplane: wolk-timers + vogels
-      if (this.player.giant) this.giantContact(dt);     // reus: bots iemand weg / stamp
+      if (this.player.giant) { if (this.time >= (this.player._giantUntil || 0)) this._endGiant(this.player); else this.giantContact(dt); }   // reus: 8s, dan terug
       if (this.vsBot) this.updateBot(dt);              // de AI-tegenstander
       this.checkVersusHit();
       // Just: stamp-schade op de tegenstander bij de landing
@@ -2762,6 +2763,7 @@ const Game = {
   spawnDragon(owner) {
     this.dragons = this.dragons || [];
     this.dragons = this.dragons.filter((d) => d.owner !== owner);   // max 1 per eigenaar
+    this._dragonUsed = true;                                          // max 1 draak per match
     const W = CONFIG.VIEW_W;
     this.dragons.push({ owner, until: this.time + DRAGON_DUR, x: owner === 'me' ? -36 : W + 36, dir: owner === 'me' ? 1 : -1, nextSpit: this.time + 500, beam: null });
   },
@@ -3178,6 +3180,15 @@ const Game = {
     }
   },
   // de reus (Giant): bots iemand weg of stampt 'm (op iemand springen = schade)
+  // reus-timer afgelopen -> terug naar normaal formaat (HP klemt op je basis-max)
+  _endGiant(e) {
+    if (!e || !e.giant) return;
+    e.giant = false;
+    if (e._baseMaxHp) e.maxHp = e._baseMaxHp;
+    e.hp = Math.min(e.hp, e.maxHp);
+    for (let i = 0; i < 12; i++) this.particles.push(new Particle(e.x, e.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 2.5, '#7affa0', 380, 2));
+    if (window.Sfx) Sfx.play('pickup');
+  },
   giantContact(dt) {
     const p = this.player; if (!p.giant || p.dead) return;
     const opp = this.vsBot ? this.bot : this.vs.remote;
@@ -3433,6 +3444,7 @@ const Game = {
         pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 });
       }
     }
+    if (this._dragonUsed) pool = pool.filter((d) => d.kind !== 'dragon');   // max 1 draak per match
     // nuke: zeldzaam, alleen in smash, maximaal 1x per match (en niet als er al eentje ligt)
     if (!this.journeyDrops && !this._nukeUsed && !this.drops.some((d) => !d.taken && d.kind === 'nuke')) pool.push({ kind: 'nuke', w: 6 });
     let tot = 0; for (const d of pool) tot += d.w;
@@ -3480,7 +3492,7 @@ const Game = {
       case 'rage8': p.buffs.rage = now + 8000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'ultrarage': p.buffs.rage = now + 5000 * dm; p._ultraUntil = now + 5000 * dm; this._abFx(p, '#ff2a2a'); break;
       case 'earthquake': this.startEarthquake(); break;
-      case 'knife': p._bladeRounds = 2; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
+      case 'knife': p._bladeRounds = 1; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
       case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000 * dm; this._abFx(p, '#f2f6fa'); break;
       case 'traps': p._trapCharges = 3; this._abFx(p, '#caa84a'); this.addFloatText(p.x, p.y - 22, '3 VALLEN', '#ffd24a', false); break;   // 3 vallen in de hand — zelf plaatsen
       case 'stunstrike': p._stunStrikeUntil = now + 5000 * dm; this._abFx(p, '#8fd0ff'); break;
@@ -3646,7 +3658,7 @@ const Game = {
       case 'rage8': b.buffs.rage = now + 8000; this._abFx(b, '#ff5a3a'); break;
       case 'ultrarage': b.buffs.rage = now + 5000; b._ultraUntil = now + 5000; this._abFx(b, '#ff2a2a'); break;
       case 'earthquake': this.botEarthquake(); break;
-      case 'knife': b._bladeRounds = 2; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
+      case 'knife': b._bladeRounds = 1; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
       case 'katanacombo': b.meleeId = 'katana'; b.weaponId = 'katana'; b._fastMeleeUntil = now + 5000; this._abFx(b, '#f2f6fa'); break;
       case 'traps': this.placeTraps(b, 'bot'); this._abFx(b, '#caa84a'); break;
       case 'stunstrike': b._stunStrikeUntil = now + 5000; this._abFx(b, '#8fd0ff'); break;
@@ -3729,13 +3741,13 @@ const Game = {
     // een ander vuurwapen pakken vervangt het vorige geweer (AK47/Deagle/Kruisboog)
     if (['fireball', 'rocket', 'cannon', 'giant', 'ninjastar', 'deagle', 'crossbow'].includes(d.kind)) { pl.gunAmmo = 0; if (pl.rangedId === 'ak47' || pl.rangedId === 'deagle' || pl.rangedId === 'crossbow') pl.rangedId = null; }
     if (d.kind === 'weapon') { pl.meleeId = d.wid; pl.weaponId = pl.rangedId || d.wid; pl._weaponUntil = this.time + SMASH_WEAPON_TIME; }
-    else if (d.kind === 'giant') {                                    // REUS: gigantisch, dubbel leven, kan niet aanvallen
+    else if (d.kind === 'giant') {                                    // REUS: gigantisch, 300 HP, 8s, kan niet aanvallen (wel schade krijgen)
       pl._baseMaxHp = pl._baseMaxHp || pl.maxHp;
-      pl.giant = true; pl.maxHp = pl._baseMaxHp * 2; pl.hp = pl.maxHp;
+      pl.giant = true; pl.maxHp = GIANT_HP; pl.hp = GIANT_HP; pl._giantUntil = this.time + GIANT_MS;
       pl.fireballs = 0; pl.smashRockets = 0; pl.cannon = 0; pl.gunAmmo = 0; pl.rangedId = null;
       for (let i = 0; i < 14; i++) this.particles.push(new Particle(pl.x, pl.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, '#7affa0', 420, 3));
     }
-    else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = 50; pl.weaponId = 'ak47'; }   // AK47 met 50 kogels
+    else if (d.kind === 'ak47') { pl.rangedId = 'ak47'; pl.gunAmmo = SMASH_AK_AMMO; pl.weaponId = 'ak47'; }   // AK47 met 30 kogels
     else if (d.kind === 'deagle') { pl.rangedId = 'deagle'; pl.gunAmmo = 3; pl.weaponId = 'deagle'; }       // Desert Eagle: 3 kogels
     else if (d.kind === 'crossbow') { pl.rangedId = 'crossbow'; pl.gunAmmo = 7; pl.weaponId = 'crossbow'; }  // Kruisboog: 7 pijlen
     else if (d.kind === 'chainsaw') { pl.meleeId = 'chainsaw'; pl.weaponId = 'chainsaw'; }                   // Kettingzaag: melee-wapen
@@ -3746,8 +3758,10 @@ const Game = {
     else if (d.kind === 'rage') pl.buffs.rage = this.time + POWERUPS.rage.dur;
     else if (d.kind === 'speed') pl.buffs.speed = this.time + POWERUPS.speed.dur;
     else if (d.kind === 'dragon') {
-      if (pl === this.player) { this.spawnDragon('me'); if (window.Net && !this.vsBot) Net.versusSend('dragon', {}); }
-      else { this.spawnDragon('bot'); }
+      if (!this._dragonUsed) {                                        // max 1 draak per match
+        if (pl === this.player) { this.spawnDragon('me'); if (window.Net && !this.vsBot) Net.versusSend('dragon', {}); }
+        else { this.spawnDragon('bot'); }
+      }
     }
     else if (d.kind === 'lightning') {
       if (pl === this.player) {
@@ -3892,6 +3906,7 @@ const Game = {
   updateBot(dt) {
     const b = this.bot, v = this.vs;
     if (b.respawnInvuln > 0) b.respawnInvuln -= dt;
+    if (b.giant && this.time >= (b._giantUntil || 0)) this._endGiant(b);   // reus-timer bot
     const inp = this.botThink();
     b.update(dt, this, inp);
     // bot meebewegen op een horizontaal platform

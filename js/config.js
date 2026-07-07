@@ -354,7 +354,7 @@ const ABILITIES = {
   rage10:     { name: 'Rage',        desc: 'Rage 10s (2× schade).' },
   rage8:      { name: 'Rage',        desc: 'Rage 8s (2× schade).' },
   ultrarage:  { name: 'Ultra Rage',  desc: 'Ultra rage 5s (4× schade).' },
-  knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 2 rondes (snel + hard).' },
+  knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 1 ronde (snel + hard).' },
   katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
   traps:      { name: 'Vallen',       desc: 'Krijg 3 vallen — plaats ze zelf één voor één op de grond of een platform. Stapt je tegenstander erop: 8s vast.' },
   stunstrike: { name: 'Stun-slag',   desc: '5s lang: je volgende klap verdooft je tegenstander.' },
@@ -579,6 +579,9 @@ const SMASH_WEAPON_TIME = 13000;     // opgepakt melee-wapen ben je na ~13s weer
 const SMASH_FIREBALL_SHOTS = 3;      // aantal vuurballen
 const SMASH_ROCKETS = 3;             // raketten bij een RPG-drop
 const SMASH_STARS = 3;               // ninja-sterren bij een ster-drop
+const SMASH_AK_AMMO = 30;            // kogels bij een AK47-drop
+const GIANT_MS = 8000;               // reus-powerup duurt 8s
+const GIANT_HP = 300;                // reus heeft 300 HP (en kan gewoon schade krijgen)
 const SMASH_STAR_DMG = 26;           // veel schade per ster
 const SMASH_STAR_CD = 200;           // snel achter elkaar gooien
 const SMASH_PORTAL_EVERY = 22000;    // ms tussen portalen (host bepaalt) — minder vaak
@@ -937,7 +940,7 @@ const VERSUS_MAPS = [
   {
     // Dohyo: kleine Japanse sumo-ring. Eén klein rond platform -> je wordt er makkelijk afgeslagen.
     // Alle power-ups vallen hier.
-    id: 'dohyo', name: 'Dohyo', sky: ['#caa066', '#7a5a36'], void: '#140a06', plat: 'dohyo', dohyo: true, w: 360,
+    id: 'dohyo', name: 'Dohyo', sky: ['#caa066', '#7a5a36'], void: '#140a06', plat: 'dohyo', dohyo: true, noPortals: true, w: 360,
     spawnL: { x: 145, y: 150 }, spawnR: { x: 215, y: 150 },
     platforms: [
       { x: 180, y: 150, w: 138 },   // de ring (midden, onder)
