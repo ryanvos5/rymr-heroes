@@ -1117,7 +1117,12 @@ const UI = {
     document.getElementById('vs-bot-diff').classList.add('hidden');
     document.getElementById('vs-peer-status').innerHTML = this._ic('bot') + ' Geen online speler gevonden — Bot Lv ' + this._mmBotLevel;
     this.show('versus');
-    // map-roulette, dan tegen de bot starten op die willekeurige map
+    this._mmBotRoulette();               // map-roulette -> willekeurige map -> bot-match
+  },
+  // matchmaking-bot: draai de roulette en start op een willekeurige map (ook bij rematch)
+  _mmBotRoulette() {
+    this._vsStarted = false;
+    document.getElementById('vs-lobby-opts').classList.add('hidden');
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.remove('hidden');
     const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = 'Willekeurige map wordt gekozen…';
     this._renderRoulette();
@@ -1125,6 +1130,7 @@ const UI = {
     setTimeout(() => {
       if (this._vsStarted) return;
       const map = VERSUS_MAPS[Math.floor(Math.random() * VERSUS_MAPS.length)].id;
+      this._myVote = this._myVote || { mode: 'smash', rounds: SMASH_ROUNDS };
       this._myVote.map = map;
       this._landRoulette(map, () => this.startBotMatch());
     }, 1200);
@@ -1193,8 +1199,9 @@ const UI = {
   openBotSetup() {
     this.leaveLobby();
     this._botSetup = true;
+    this._matchType = 'bot';             // oefen-bot: zelf map kiezen (rematch = zelfde map)
     this._mmBotLevel = 0;                 // oefen-bot: geen echte inzet (geen XP/munten/kisten)
-    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash' };
+    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-lobby').classList.add('hidden');
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
@@ -1733,9 +1740,18 @@ const UI = {
 
   // ---- REMATCH ----
   doRematch() {
-    if (this._isBotResult) {                 // bot: meteen opnieuw, zelfde map/modus
+    if (this._isBotResult) {                 // tegen de bot: meteen opnieuw
       document.getElementById('versus-result').classList.add('hidden');
-      this.startBotMatch();
+      if (this._matchType === 'mm') {        // matchmaking-bot: opnieuw een WILLEKEURIGE map (roulette)
+        document.getElementById('versus-wait').classList.remove('hidden');
+        document.querySelector('.vs-wait-label').classList.add('hidden');
+        document.getElementById('vs-bot-diff').classList.add('hidden');
+        document.getElementById('vs-peer-status').innerHTML = this._ic('bot') + ' Bot Lv ' + (this._mmBotLevel || 10);
+        this.show('versus');
+        this._mmBotRoulette();
+      } else {                               // oefen-bot: zelfde gekozen map
+        this.startBotMatch();
+      }
       return;
     }
     // online: handshake (beiden ready)
