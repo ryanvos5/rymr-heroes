@@ -1989,11 +1989,46 @@ const UI = {
       if (!Storage.ownsCharacter(cid)) return;
       const c = CHARACTERS[cid]; const equipped = Storage.data.equippedCharacter === cid;
       const card = this._spriteCard(c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }, '<div class="w-name">' + c.name + '</div>', true);
+      card.appendChild(this._charLevelBlock(cid));      // level + XP-balk + upgrade + stats
       const btn = document.createElement('button'); btn.className = 'shop-buy';
       if (equipped) { btn.classList.add('equipped'); btn.textContent = 'UITGERUST'; }
       else { btn.classList.add('equip'); btn.textContent = 'UITRUSTEN'; this._tap(btn, () => { Storage.equipCharacter(cid); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     });
+  },
+  // level-blok voor een character-kaart: Lv x/20, XP-balk, upgrade-knop + stat-bonussen
+  _charLevelBlock(cid) {
+    const lvl = Storage.charLevelOf(cid), maxed = lvl >= CHAR_MAX_LEVEL;
+    const wrap = document.createElement('div'); wrap.className = 'char-lvl';
+    // kop: Lv x/20 + stat-bonussen
+    const st = Storage.charStats(cid);
+    const bonus = [];
+    if (st.hpBonus > 0) bonus.push('+' + st.hpBonus + ' HP');
+    if (st.speedMul > 1) bonus.push('+' + Math.round((st.speedMul - 1) * 100) + '% snelheid');
+    if (st.abilityDurMul > 1 && CHARACTERS[cid].ability) bonus.push('+' + Math.round((st.abilityDurMul - 1) * 100) + '% ability');
+    wrap.innerHTML = '<div class="char-lvl-top"><span class="char-lvl-num">Lv ' + lvl + '<span class="char-lvl-max">/' + CHAR_MAX_LEVEL + '</span></span>' +
+      (bonus.length ? '<span class="char-lvl-bonus">' + bonus.join(' · ') + '</span>' : '') + '</div>';
+    // XP-balk
+    const need = maxed ? 1 : charXpNeeded(lvl), cur = maxed ? 1 : Storage.charXpOf(cid);
+    const barBg = document.createElement('div'); barBg.className = 'char-xp-bar';
+    const fill = document.createElement('div'); fill.className = 'char-xp-fill'; fill.style.width = Math.round(Math.min(1, cur / need) * 100) + '%';
+    barBg.appendChild(fill);
+    const xpLbl = document.createElement('span'); xpLbl.className = 'char-xp-lbl';
+    xpLbl.textContent = maxed ? 'MAX' : (cur + ' / ' + need + ' XP');
+    barBg.appendChild(xpLbl); wrap.appendChild(barBg);
+    // upgrade-knop
+    const up = document.createElement('button'); up.className = 'char-upgrade';
+    if (maxed) { up.classList.add('maxed'); up.textContent = 'MAX LEVEL'; up.disabled = true; }
+    else if (!Storage.charXpFull(cid)) { up.classList.add('locked'); up.textContent = 'XP-balk vullen'; up.disabled = true; }
+    else {
+      const cost = Storage.charUpgradeCost(cid), afford = (Storage.data.coins || 0) >= cost;
+      up.classList.add(afford ? 'ready' : 'cant');
+      up.innerHTML = 'UPGRADE — ' + cost + ' <span class="coin-dot">●</span>';
+      if (afford) this._tap(up, () => { if (Storage.upgradeChar(cid)) { if (window.Sfx) Sfx.play('pickup'); this.syncCoins && this.syncCoins(); this.renderInventory(); } });
+      else up.disabled = true;
+    }
+    wrap.appendChild(up);
+    return wrap;
   },
   renderOwnedHats(grid) {
     grid.innerHTML = '';

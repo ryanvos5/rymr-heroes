@@ -27,6 +27,8 @@ const DEFAULT_SAVE = {
   level: 1,                     // laatst-uitgekeerde level (voor de level-up-popup + beloning)
   mpWins: 0,                    // gewonnen 1v1-duels
   mpLosses: 0,                  // verloren 1v1-duels
+  charXp: {},                   // XP per character (voor de level-balk): { id: xp }
+  charLevel: {},                // level per character (1..20): { id: lvl }
 };
 
 const Storage = {
@@ -54,6 +56,8 @@ const Storage = {
       if (typeof this.data.level !== 'number') this.data.level = (typeof playerLevel === 'function') ? playerLevel(this.data.xp || 0) : 1;
       if (typeof this.data.mpWins !== 'number') this.data.mpWins = 0;
       if (typeof this.data.mpLosses !== 'number') this.data.mpLosses = 0;
+      if (!this.data.charXp || typeof this.data.charXp !== 'object') this.data.charXp = {};
+      if (!this.data.charLevel || typeof this.data.charLevel !== 'object') this.data.charLevel = {};
       if (!this.data.arenaPlays) this.data.arenaPlays = { date: '', count: 0 };
       // migratie van oude opslag (één slot -> twee slots)
       if (this.data.equippedMelee === undefined) this.data.equippedMelee = 'bat';
@@ -102,6 +106,11 @@ const Storage = {
     if (cloud.equippedHat && (!d.equippedHat || d.equippedHat === 'none')) d.equippedHat = cloud.equippedHat;
     const cp = cloud.progress || {};
     for (const k of Object.keys(cp)) d.progress[k] = Math.max(d.progress[k] || 0, cp[k] || 0);
+    // character-levels: neem per character het hoogste level (+ bijbehorende XP)
+    d.charLevel = d.charLevel || {}; d.charXp = d.charXp || {};
+    const clv = cloud.charLevel || {}, cxp = cloud.charXp || {};
+    for (const k of Object.keys(clv)) if ((clv[k] || 0) > (d.charLevel[k] || 0)) { d.charLevel[k] = clv[k]; d.charXp[k] = cxp[k] || 0; }
+    for (const k of Object.keys(cxp)) if ((clv[k] || 1) === (d.charLevel[k] || 1)) d.charXp[k] = Math.max(d.charXp[k] || 0, cxp[k] || 0);
     this.save();
   },
 
@@ -212,6 +221,39 @@ const Storage = {
   equipCharacter(id) {
     if (!this.ownsCharacter(id)) return false;
     this.data.equippedCharacter = id; this.save(); return true;
+  },
+
+  // ---- character-leveling (per character tot lvl 20) ----
+  charLevelOf(id) { return Math.max(1, Math.min(CHAR_MAX_LEVEL, (this.data.charLevel && this.data.charLevel[id]) || 1)); },
+  charXpOf(id) { return (this.data.charXp && this.data.charXp[id]) || 0; },
+  charStats(id) {
+    const lvl = this.charLevelOf(id);
+    return { lvl, hpBonus: charHpBonus(lvl), speedMul: charSpeedMul(lvl), abilityDurMul: charAbilityDurMul(lvl) };
+  },
+  // XP toevoegen aan een character (balk vult tot vol; bij max level niets meer)
+  addCharXp(id, amount) {
+    if (!id || !(amount > 0)) return;
+    const lvl = this.charLevelOf(id);
+    if (lvl >= CHAR_MAX_LEVEL) return;
+    this.data.charXp = this.data.charXp || {};
+    const need = charXpNeeded(lvl);
+    this.data.charXp[id] = Math.min(need, (this.data.charXp[id] || 0) + amount);
+    this.save();
+  },
+  charXpFull(id) {
+    const lvl = this.charLevelOf(id);
+    return lvl < CHAR_MAX_LEVEL && this.charXpOf(id) >= charXpNeeded(lvl);
+  },
+  charUpgradeCost(id) { return charUpgradeCost(CHARACTERS[id], this.charLevelOf(id)); },
+  canUpgradeChar(id) { return this.charXpFull(id) && (this.data.coins || 0) >= this.charUpgradeCost(id); },
+  upgradeChar(id) {
+    if (!this.canUpgradeChar(id)) return false;
+    this.data.coins -= this.charUpgradeCost(id);
+    this.data.charLevel = this.data.charLevel || {};
+    this.data.charLevel[id] = this.charLevelOf(id) + 1;
+    this.data.charXp = this.data.charXp || {}; this.data.charXp[id] = 0;   // balk reset na upgrade
+    this.save();
+    return true;
   },
 
   // ---- hoeden (cosmetisch) ----

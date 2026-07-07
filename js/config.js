@@ -856,6 +856,26 @@ function playerLevel(xp) {
 }
 function xpForLevel(L) { return 75 * L * (L - 1); }   // totale XP nodig voor level L
 
+/* ---------- CHARACTER-LEVELING (per character, tot lvl 20) ----------
+   Je character verzamelt XP door ermee te spelen. Is de XP-balk vol, dan kun je
+   'm upgraden voor munten (1000, 2500, 4500, 7000, ...). Betere characters kosten meer.
+   Elke level: +2 HP; vanaf lvl 10 ook wat sneller; vanaf lvl 5 duren abilities langer. */
+const CHAR_MAX_LEVEL = 20;
+function charXpNeeded(lvl) { return 100 * lvl; }                 // XP voor de balk van lvl -> lvl+1
+function charTierMul(ch) {
+  if (!ch) return 1;
+  if (ch.journeyOnly) return 1.5;                                // boss-characters (monnik/ninja/bewaker)
+  const c = ch.cost || 0;
+  if (c === 0) return 1.0;
+  if (c < 2000) return 1.25;
+  if (c < 8000) return 1.6;
+  return 2.0;
+}
+function charUpgradeCost(ch, lvl) { return Math.round(250 * lvl * (lvl + 3) * charTierMul(ch)); }   // L1->2:1000, L2->3:2500, ...
+function charHpBonus(lvl) { return (lvl - 1) * 2; }                          // +2 HP per level
+function charSpeedMul(lvl) { return 1 + Math.max(0, lvl - 10) * 0.01; }      // vanaf lvl 10: tot +10% snelheid
+function charAbilityDurMul(lvl) { return 1 + Math.max(0, lvl - 5) * 0.05; }  // vanaf lvl 5: tot +75% ability-duur
+
 /* ---------- Jungle: gorilla in de kooi ---------- */
 const GORILLA_HP = 280;            // sterk, maar te verslaan
 const GORILLA_RESPAWN = 16000;     // komt na ~16s terug

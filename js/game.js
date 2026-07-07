@@ -1933,6 +1933,7 @@ const Game = {
     const baseMelee = mode === 'smash' ? (myChar.startMelee || 'bat') : Storage.data.equippedMelee;
     const rangedId = mode === 'both' ? Storage.data.equippedRanged : null;
     this.player = new Player(baseMelee, rangedId, Storage.data.equippedCharacter);
+    this._applyCharLevel(this.player);                 // per-character level-bonussen (+HP/+speed/langere abilities)
     this.player.maxJumps = 2; this.player.jumps = 2;
     this.player.knockVx = 0; this.player.dead = false; this.player.respawnInvuln = 0;
     this.player.baseMelee = baseMelee; this.player.fireballs = 0; this.player.smashRockets = 0;
@@ -3468,22 +3469,23 @@ const Game = {
     p.abCharge = 0;
     const opp = this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
     const now = this.time;
+    const dm = p.abilityDurMul || 1;                    // character-level: langere ability-duur
     switch (p.ability) {
       case 'zapdash': this.zapDash(); break;
       case 'heal': p.hp = p.maxHp; this._abFx(p, '#5aff7a'); break;
       case 'highjump': p.jumpMul = 1.4; this._abFx(p, '#8fd0ff'); break;
-      case 'fireaura10': p.fireAura = true; p.auraUntil = now + 10000; this._abFx(p, '#ff8a2a'); break;
+      case 'fireaura10': p.fireAura = true; p.auraUntil = now + 10000 * dm; this._abFx(p, '#ff8a2a'); break;
       case 'triplejump': p.maxJumps = Math.max(p.maxJumps, 2) + 1; p.jumps = p.maxJumps; this._abFx(p, '#8fd0ff'); break;
-      case 'rage10': p.buffs.rage = now + 10000; this._abFx(p, '#ff5a3a'); break;
-      case 'rage8': p.buffs.rage = now + 8000; this._abFx(p, '#ff5a3a'); break;
-      case 'ultrarage': p.buffs.rage = now + 5000; p._ultraUntil = now + 5000; this._abFx(p, '#ff2a2a'); break;
+      case 'rage10': p.buffs.rage = now + 10000 * dm; this._abFx(p, '#ff5a3a'); break;
+      case 'rage8': p.buffs.rage = now + 8000 * dm; this._abFx(p, '#ff5a3a'); break;
+      case 'ultrarage': p.buffs.rage = now + 5000 * dm; p._ultraUntil = now + 5000 * dm; this._abFx(p, '#ff2a2a'); break;
       case 'earthquake': this.startEarthquake(); break;
       case 'knife': p._bladeRounds = 2; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
-      case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000; this._abFx(p, '#f2f6fa'); break;
+      case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000 * dm; this._abFx(p, '#f2f6fa'); break;
       case 'traps': p._trapCharges = 3; this._abFx(p, '#caa84a'); this.addFloatText(p.x, p.y - 22, '3 VALLEN', '#ffd24a', false); break;   // 3 vallen in de hand — zelf plaatsen
-      case 'stunstrike': p._stunStrikeUntil = now + 5000; this._abFx(p, '#8fd0ff'); break;
+      case 'stunstrike': p._stunStrikeUntil = now + 5000 * dm; this._abFx(p, '#8fd0ff'); break;
       case 'stunpulse': this.stunPulse(p, 'me'); break;
-      case 'invisible': p._invisUntil = now + 6000; this._abFx(p, '#b06bff'); break;
+      case 'invisible': p._invisUntil = now + 6000 * dm; this._abFx(p, '#b06bff'); break;
       default: break;
     }
     // magisch effect om de speler heen + online zichtbaar maken voor de tegenstander
@@ -3492,6 +3494,15 @@ const Game = {
     if (window.Sfx) Sfx.play('pickup');
     if (window.UI && UI.renderAbilityBtn) UI.renderAbilityBtn();
     return true;
+  },
+  // character-level-bonussen op de lokale speler zetten (+HP, +speed, langere abilities)
+  _applyCharLevel(p) {
+    if (!p || !p.charId || !Storage.charStats) return;
+    const st = Storage.charStats(p.charId);
+    p.maxHp += st.hpBonus; p.hp = p.maxHp;
+    p.speed *= st.speedMul;
+    p.abilityDurMul = st.abilityDurMul;
+    p.charLvl = st.lvl;
   },
   // de vlam-knop (of E): met vallen-in-de-hand plaats je er één; anders zet je je ability in
   abilityButton() {
@@ -3508,6 +3519,7 @@ const Game = {
   stunPulse(src, who) {
     if (!src) return;
     const now = this.time;
+    const stunMs = Math.round(STUN_PULSE_MS * ((src.abilityDurMul) || 1));   // character-level: langere verdoving
     this._abFx(src, '#8fd0ff');
     this.spawnStunPulseFx(src.x, src.y);              // zichtbare uitdijende ring
     this.shake = Math.max(this.shake, 8);
@@ -3517,7 +3529,7 @@ const Game = {
       for (const id in this.trainPeers) {
         const pe = this.trainPeers[id];
         if (Math.abs(pe.x - src.x) <= STUN_PULSE_RANGE && Math.abs((pe.y || 0) - src.y) <= 70 && window.Net) {
-          Net.trainSend('thit', { to: id, from: Net.trainMyId(), dir: (pe.x >= src.x ? 1 : -1), power: 12, vy: -4, dmg: 0, stun: STUN_PULSE_MS });
+          Net.trainSend('thit', { to: id, from: Net.trainMyId(), dir: (pe.x >= src.x ? 1 : -1), power: 12, vy: -4, dmg: 0, stun: stunMs });
         }
       }
       return;
@@ -3529,12 +3541,12 @@ const Game = {
     const kdir = (opp.x >= src.x) ? 1 : -1;
     if (who === 'me' && !this.vsBot) {
       // online: stuur een treffer met verdoving (geen schade) mee — de tegenstander verwerkt de stun
-      if (inRange && window.Net) Net.versusSend('hit', { dir: kdir, power: 12, vy: -4, dmg: 0, stun: STUN_PULSE_MS });
+      if (inRange && window.Net) Net.versusSend('hit', { dir: kdir, power: 12, vy: -4, dmg: 0, stun: stunMs });
       return;
     }
     // lokaal (speler vs bot, of bot vs speler): pas de verdoving direct toe
     if (inRange && !opp.dead && (opp.respawnInvuln == null || opp.respawnInvuln <= 0)) {
-      opp.stunUntil = Math.max(opp.stunUntil || 0, now + STUN_PULSE_MS);
+      opp.stunUntil = Math.max(opp.stunUntil || 0, now + stunMs);
       opp.knockVx = kdir * 12; opp.vy = Math.min(opp.vy || 0, -4); opp.onGround = false; opp.combo = 0;
     }
   },
@@ -4341,6 +4353,7 @@ const Game = {
         Storage.data.coins = (Storage.data.coins || 0) + coins;
         if (xp) Storage.data.xp = (Storage.data.xp || 0) + xp;
         Storage.save();
+        if (won) Storage.addCharXp(Storage.data.equippedCharacter, first ? 20 : 8);   // character-XP door Journey te spelen
         rewards.push({ type: 'earn', coins, xp });
         for (const u of unlocks) rewards.push({ type: u.type, id: u.id, name: u.name });   // unlock-kaartjes
       }
@@ -4378,6 +4391,8 @@ const Game = {
       Storage.data.coins = (Storage.data.coins || 0) + coinsEarned;
       Storage.save();
     }
+    // je character krijgt óók XP door mee te spelen (ook tegen de oefenbot, langzaam)
+    Storage.addCharXp(Storage.data.equippedCharacter, realStakes ? Math.max(25, Math.round(gained * 0.6)) : (won ? 20 : 8));
     const myScore = this.vs ? this.vs.myScore : 0, oppScore = this.vs ? this.vs.oppScore : 0;
     if (peerLeft) { UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft, chestDrop, this._mmBot); return; }
     // korte win-celebratie met de naam van de winnaar, dan pas het uitslagscherm
@@ -5377,6 +5392,7 @@ const Game = {
     // lokale speler
     const baseMelee = (CHARACTERS[Storage.data.equippedCharacter] || {}).startMelee || 'bat';
     this.player = new Player(baseMelee, null, Storage.data.equippedCharacter);
+    this._applyCharLevel(this.player);                 // per-character level-bonussen
     this.player.maxJumps = 2; this.player.jumps = 2;
     this.player.baseMelee = baseMelee; this.player._baseMaxHp = this.player.maxHp;
     this._trainClearWeapons(this.player);
