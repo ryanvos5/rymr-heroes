@@ -1915,26 +1915,26 @@ const Game = {
           this._storyApe(c, P(0.5) + 40, gy - 2, -1, 0); this._storyApe(c, P(0.5) + 62, gy - 2, -1, 0);
         } },
         // ===== Scène 3 – De achtervolging =====
-        { theme: 'jungle', dur: 2000, cap: 'De leider brult luid en wijst naar jou!', draw: () => {
+        { theme: 'jungle', dur: 2000, cap: 'De leider — de GORILLA KING — brult luid en wijst naar jou!', draw: () => {
           const c = this.ctx, bob = Math.abs(Math.sin(clk() / 110)) * 3;
-          Sprites.drawCharacter(c, P(0.22), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
-          this._storyFighter(c, 'baviaan', W * 0.68, gy - 2 - bob, -1, 0, 1.4);
-          shout(c, W * 0.68 - 16, gy - 32); shout(c, W * 0.68 + 12, gy - 32);
-          c.fillStyle = '#ff5a5a'; c.font = 'bold 14px "Courier New",monospace'; c.fillText('!', P(0.5), gy - 26);
+          Sprites.drawCharacter(c, P(0.20), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          this._storyFighter(c, 'kong', W * 0.66, gy - 2 - bob, -1, 0, 1.6);
+          shout(c, W * 0.66 - 22, gy - 46); shout(c, W * 0.66 + 16, gy - 46);
+          c.fillStyle = '#ff5a5a'; c.font = 'bold 14px "Courier New",monospace'; c.fillText('!', P(0.46), gy - 30);
         } },
-        { theme: 'jungle', dur: 2200, cap: 'De hele groep zet de achtervolging in!', draw: (t) => {
-          const c = this.ctx, p = Math.min(1, t / 2200), px2 = (W * 0.7) - p * (W * 0.5);
+        { theme: 'jungle', dur: 2200, cap: 'De GORILLA KING en de hele groep zetten de achtervolging in!', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2200), px2 = (W * 0.72) - p * (W * 0.52);
           Sprites.drawCharacter(c, Math.round(px2), Math.round(gy - 2), -1, ch.palette, Object.assign({ walkPhase: clk() / 40, weapon: null }, pose0));
-          this._storyFighter(c, 'baviaan', px2 + 40, gy - 2, -1, clk() / 50, 1.3);
-          this._storyApe(c, px2 + 66, gy - 2, -1, clk() / 45); this._storyApe(c, px2 + 86, gy - 2, -1, clk() / 45 + 2); this._storyApe(c, px2 + 104, gy - 2, -1, clk() / 45 + 1);
-          for (let k = 0; k < 3; k++) Sprites.px(c, '#caa860', Math.round(px2 + 50 + k * 10), gy - 1 - (k % 2) * 2, 3, 3);
+          this._storyFighter(c, 'kong', px2 + 46, gy - 2, -1, clk() / 50, 1.5);
+          this._storyApe(c, px2 + 74, gy - 2, -1, clk() / 45); this._storyApe(c, px2 + 94, gy - 2, -1, clk() / 45 + 2); this._storyApe(c, px2 + 112, gy - 2, -1, clk() / 45 + 1);
+          for (let k = 0; k < 3; k++) Sprites.px(c, '#caa860', Math.round(px2 + 56 + k * 10), gy - 1 - (k % 2) * 2, 3, 3);
         } },
         { theme: 'jungle', dur: 1600, cap: 'Er is maar één optie: VECHT!', draw: () => {
           const c = this.ctx, bob = Math.abs(Math.sin(clk() / 90)) * 2;
-          Sprites.drawCharacter(c, P(0.34), Math.round(gy - 2), 1, ch.palette, Object.assign({ attacking: true, weapon: null }, pose0));
-          this._storyFighter(c, 'baviaan', W * 0.66, gy - 2 - bob, -1, 0, 1.4);
-          this._storyApe(c, W * 0.66 + 24, gy - 2, -1, clk() / 50); this._storyApe(c, W * 0.66 + 44, gy - 2, -1, clk() / 50 + 2);
-          c.fillStyle = '#ffef9a'; c.font = 'bold 16px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('VS', P(0.5), gy - 42); c.textAlign = 'left';
+          Sprites.drawCharacter(c, P(0.30), Math.round(gy - 2), 1, ch.palette, Object.assign({ attacking: true, weapon: null }, pose0));
+          this._storyFighter(c, 'kong', W * 0.66, gy - 2 - bob, -1, 0, 1.6);
+          this._storyApe(c, W * 0.66 + 30, gy - 2, -1, clk() / 50); this._storyApe(c, W * 0.66 + 50, gy - 2, -1, clk() / 50 + 2);
+          c.fillStyle = '#ffef9a'; c.font = 'bold 16px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('VS', P(0.48), gy - 48); c.textAlign = 'left';
         } },
       ];
     }
