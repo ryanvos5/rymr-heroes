@@ -2666,6 +2666,8 @@ const Game = {
     this.parrots = [];
     // Airplane: vogels die vanaf de voorkant (links) langs scheren
     this.birds = []; this._birdAt = map.airplane ? this.time + 2600 : 0;
+    // Jungle: stun-darts die af en toe door de map schieten
+    this.darts = []; this._dartAt = map.darts ? this.time + 3500 : 0;
     this.ammo = mode === 'both' ? 999 : 0;
     this.rockets = 0;
     this.boss = null; this.shake = 0; this.cam.x = 0; this.time = 0; this.dtScale = 1;
@@ -2849,7 +2851,7 @@ const Game = {
       if (this.vsMap && this.vsMap.pirate) this.updatePirate(dt);   // zeemonster-tentakel
       if (this.vsMap && this.vsMap.beach) this.updateTide(dt);      // strand: getij/vloed
       if (this.ball) this.updateBall(dt);                           // strandbal
-      if (this.vsMap && this.vsMap.jungle2) this.updateJungleApe(dt);  // wilde aap: springt + mept je van de map
+      if (this.vsMap && this.vsMap.darts) this.updateStunDarts(dt);    // Jungle: stun-darts schieten door de map
       if (this.vsMap && this.vsMap.airplane) this.updateAirplane(dt);  // Airplane: wolk-timers + vogels
       if (this.player.giant) { if (this.time >= (this.player._giantUntil || 0)) this._endGiant(this.player); else this.giantContact(dt); }   // reus: 8s, dan terug
       if (this.vsBot) this.updateBot(dt);              // de AI-tegenstander
@@ -3434,7 +3436,7 @@ const Game = {
     if (!this.portals) this.portals = [];
     if ((this.vsBot || this.vs.role === 'host') && !(this.vsMap && this.vsMap.noPortals)) {
       this._portalTimer -= dt;
-      if (this._portalTimer <= 0 && this.portals.length === 0) { this._portalTimer = SMASH_PORTAL_EVERY; this.spawnPortal(); }
+      if (this._portalTimer <= 0 && this.portals.length === 0) { this._portalTimer = SMASH_PORTAL_EVERY * ((this.vsMap && this.vsMap.portalMul) || 1); this.spawnPortal(); }
     }
     this.checkPortal(this.player);
     if (this.vsBot && this.bot && !this.bot.dead) this.checkPortal(this.bot);
@@ -3722,6 +3724,44 @@ const Game = {
       if (!b.hitB && this.vsBot && hit(this.bot)) { b.hitB = true; this._birdHit(this.bot); }
     }
     this.birds = this.birds.filter((b) => b.x < (this.vsCamX + CONFIG.VIEW_W / (this.vsCamZoom || 1) + 40));
+  },
+  // ---- Jungle: stun-darts die af en toe door de map schieten (niet te vaak) ----
+  updateStunDarts(dt) {
+    const dts = this.dtScale;
+    if (!this.darts) this.darts = [];
+    if (this._dartAt && this.time >= this._dartAt) {
+      this._dartAt = this.time + 5200 + Math.random() * 4800;               // ~5–10s tussen darts
+      const fromLeft = Math.random() < 0.5;
+      const visW = CONFIG.VIEW_W / (this.vsCamZoom || 1);
+      const topY = (this.vsMap.camTop || 0) + 30, botY = (this.vsMap.fallY || 240) - 30;
+      const y = Math.round(topY + Math.random() * Math.max(20, botY - topY));
+      const sp = 4.4 + Math.random() * 1.8;
+      const x = fromLeft ? (this.vsCamX - 30) : (this.vsCamX + visW + 30);
+      this.darts.push({ x, y, vx: fromLeft ? sp : -sp, born: this.time, hitP: false, hitB: false });
+    }
+    for (const d of this.darts) {
+      d.x += d.vx * dts;
+      const hit = (e) => e && !e.dead && e.respawnInvuln <= 0 && Math.abs(e.x - d.x) < 12 && Math.abs((e.y - 12) - d.y) < 12;
+      if (!d.hitP && hit(this.player)) { d.hitP = true; this._dartHit(this.player, d); }
+      if (!d.hitB && this.vsBot && hit(this.bot)) { d.hitB = true; this._dartHit(this.bot, d); }
+    }
+    const visW = CONFIG.VIEW_W / (this.vsCamZoom || 1);
+    this.darts = this.darts.filter((d) => d.x > this.vsCamX - 60 && d.x < this.vsCamX + visW + 60 && !(d.hitP && (!this.vsBot || d.hitB)));
+  },
+  // stun-dart raakt je -> korte verdoving + klein duwtje mee
+  _dartHit(e, d) {
+    e.stunUntil = this.time + 1000; e.combo = 0; e.knockVx = (d.vx > 0 ? 1 : -1) * 6;
+    this.shake = Math.max(this.shake, 4); if (window.Sfx) Sfx.play('zap');
+    for (let i = 0; i < 8; i++) this.particles.push(new Particle(e.x, e.y - 12, (Math.random() - 0.5) * 2.5, -Math.random() * 2, i % 2 ? '#8fd0ff' : '#b06bff', 320, 2));
+    if (e === this.player) this.hurtFlash = Math.max(this.hurtFlash, 120);
+  },
+  drawStunDart(ctx, d) {
+    const x = Math.round(d.x), y = Math.round(d.y), dir = d.vx > 0 ? 1 : -1;
+    ctx.globalAlpha = 0.35; Sprites.px(ctx, '#8fd0ff', x - dir * 9, y, 18, 1); ctx.globalAlpha = 1;   // spoor
+    Sprites.px(ctx, '#6b4a2a', x - dir * 6, y, 10, 2);                                                // schacht
+    Sprites.px(ctx, '#2f7a3a', x - dir * 7, y - 2, 2, 6);                                             // groene veren
+    Sprites.px(ctx, '#b06bff', x + dir * 4, y - 1, 3, 4);                                             // paarse stun-punt
+    Sprites.px(ctx, '#e6d8ff', x + dir * 5, y, 1, 2);
   },
   // vogel raakt je -> MEGA knockback naar achter (rechts, weg van de voorkant)
   _birdHit(e) {
@@ -4131,7 +4171,7 @@ const Game = {
       }
       if (mid === 'beach') pool.push({ kind: 'beachball', w: 10 });                     // strandbal op Beach
       if (mid === 'temple') pool.push({ kind: 'ninjastar', w: 12 });                    // ninja-sterren op Temple
-      if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); }  // Giant + AK47 op Jungle
+      if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); pool.push({ kind: 'crossbow', w: 9 }); }  // Giant + AK47 + Kruisboog op Jungle
       if (mid === 'dohyo') {                                                          // Dohyo: ALLE power-ups
         pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'rock', w: 8 }); pool.push({ kind: 'cannon', w: 9 });
         pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 });
@@ -5356,6 +5396,7 @@ const Game = {
     if (map.pirate && this.tentacle) this.drawTentacle(ctx); // zeemonster-tentakel
     if (map.jungle2 && this.jungleApe) this.drawJungleApe(ctx);  // wilde aap in het midden (vóór de spelers)
     if (map.airplane && this.birds) for (const b of this.birds) this.drawBird(ctx, b);   // vogels vóór de spelers
+    if (map.darts && this.darts) for (const d of this.darts) this.drawStunDart(ctx, d);  // Jungle: stun-darts vóór de spelers
     if (this.ball) this.drawBall(ctx);                       // strandbal
     if (map.beach && this.tide) this.drawTideWater(ctx);     // vloed-water over de spelers
     // Ryan zap-dash: bliksemboog van start -> eind
@@ -6184,7 +6225,7 @@ const Game = {
     this.ghostBullets = []; this.botBullets = []; this.drops = []; this.traps = []; this.portals = []; this.dragons = [];
     this.abilityFx = []; this.impacts = []; this.floatTexts = []; this.ambient = []; this.zapFx = null; this.ko = null;
     this.hitStop = 0; this.hurtFlash = 0; this.smashFlash = 0; this._ambClock = 0;
-    this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null; this.birds = []; this._birdAt = 0;
+    this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null; this.birds = []; this._birdAt = 0; this.darts = []; this._dartAt = 0;
     this.tentacle = null; this.vulcan = null; this.tide = null; this.nuke = null;
     this.buildVersusPlatforms(map);
     // veilige stub zodat gedeelde helpers (applyDrop/smashFire) geen null-this.vs raken

@@ -982,19 +982,17 @@ const TRAINING_MAP = {
 };
 const VERSUS_MAPS = [
   {
-    // Jungle: grootste map. Oerwoud-achtergrond + papegaaien, lianen om mee te slingeren.
-    // In het midden staat een wilde aap die af en toe omhoog springt en je van de map mept als 'ie je raakt.
+    // Jungle: grootste map. Oerwoud-achtergrond + papegaaien.
+    // Af en toe schieten er stun-darts door de map (verdoven kort wie ze raken). Portalen komen hier minder vaak.
     id: 'jungle', name: 'Jungle', sky: ['#163a24', '#08160e'], void: '#06120a', plat: 'leaf', jungle2: true,
-    w: 960, fallY: 240, camTop: -60, camBottom: 30,
+    w: 960, fallY: 240, camTop: -60, camBottom: 30, darts: true, portalMul: 2.4,
     spawnL: { x: 120, y: 176 }, spawnR: { x: 840, y: 176 },
     platforms: [
       { x: 120, y: 176, w: 170 }, { x: 840, y: 176, w: 170 },   // grond links/rechts
-      { x: 480, y: 176, w: 150 },                                // midden-grond (waar de aap staat)
+      { x: 480, y: 176, w: 150 },                                // midden-grond
       { x: 300, y: 120, w: 76 }, { x: 660, y: 120, w: 76 },      // midden
       { x: 160, y: 66, w: 52 }, { x: 800, y: 66, w: 52 },       // hoog
     ],
-    vines: [{ x: 360, ay: -38, len: 150 }, { x: 600, ay: -38, len: 150 }],   // lianen om mee te slingeren
-    ape: { x: 480, floorY: 176 },                                // wilde aap in het midden (springt + mept je eraf)
   },
   {
     // Dohyo: kleine Japanse sumo-ring. Eén klein rond platform -> je wordt er makkelijk afgeslagen.
