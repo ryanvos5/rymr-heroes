@@ -1130,6 +1130,21 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 }
 .shop-tab.active { border-color: #d2622e; color: #ffe9c0; background: linear-gradient(180deg, #7a3418, #4a1c0c); box-shadow: 0 0 8px rgba(255,90,25,.5); }
 .shop-back { margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
+/* kleine ronde terug-knop linksboven (shop / inventaris / blacksmith) */
+#shop-screen .screen-inner, #inventory-screen .screen-inner, #blacksmith-screen .screen-inner { position: relative; }
+.corner-back {
+  position: absolute; left: 8px; top: 8px; z-index: 6;
+  width: 34px; height: 34px; padding: 0; margin: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer; color: #f0d8b8;
+  border: 2px solid #6a3a22;
+  background: linear-gradient(180deg, #3a1c10, #180b06);
+  box-shadow: 0 2px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,150,90,.25);
+}
+.corner-back .ic { width: 18px; height: 18px; }
+.corner-back:hover { border-color: #b04e2a; }
+.corner-back:active { transform: scale(.92); }
+@media (max-height: 520px) { .corner-back { width: 30px; height: 30px; left: 6px; top: 6px; } .corner-back .ic { width: 16px; height: 16px; } }
 
 /* ====== Splash bij opstarten (logo, fadet vanzelf weg — geen JS nodig) ====== */
 #splash {

@@ -111,7 +111,7 @@ const UI = {
     }
     // klikgeluid op menu-knoppen
     document.addEventListener('pointerdown', (e) => {
-      if (window.Sfx && e.target && e.target.closest && e.target.closest('.stone-btn,.stone-tile,.stone-icon,.big-btn,.shop-tab,.world-tab,.back-btn')) Sfx.play('click');
+      if (window.Sfx && e.target && e.target.closest && e.target.closest('.stone-btn,.stone-tile,.stone-icon,.big-btn,.shop-tab,.world-tab,.back-btn,.corner-back')) Sfx.play('click');
     });
 
     // ---- account (inloggen / registreren) ----
