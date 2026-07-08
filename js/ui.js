@@ -503,7 +503,7 @@ const UI = {
       else { Game.journey = null; this.openJourney(); }
     };
     const again = document.getElementById('btn-vs-again');
-    again.textContent = t('world_map');
+    again.textContent = I18N.t('world_map');
     again.onclick = () => { document.getElementById('versus-result').classList.add('hidden'); Game.journey = null; if (window.Net) Net.leaveVersus(); this.openJourney(); };
     document.getElementById('btn-vs-menu').onclick = () => { document.getElementById('versus-result').classList.add('hidden'); Game.journey = null; this.show('menu'); };
     document.getElementById('versus-result').classList.remove('hidden');
@@ -2490,7 +2490,7 @@ const UI = {
       const cv = document.createElement('canvas'); cv.width = 48; cv.height = 40; cv.className = 'chest-ico';
       this._drawChestIcon(cv, c.r, ready);
       const lbl = document.createElement('span'); lbl.className = 'chest-lbl';
-      lbl.textContent = ready ? t('collect_ready') : (c.u <= 0 ? t.name : this._fmtChestTime(Storage.chestSecondsLeft(i)));
+      lbl.textContent = ready ? I18N.t('collect_ready') : (c.u <= 0 ? t.name : this._fmtChestTime(Storage.chestSecondsLeft(i)));
       slot.appendChild(cv); slot.appendChild(lbl);
       // bezig met openen -> robijn-knop om de wachttijd te skippen
       if (!ready && c.u > 0) {
