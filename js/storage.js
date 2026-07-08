@@ -335,18 +335,27 @@ const Storage = {
   equippedArmor() { return this.data.equippedArmor || (this.data.equippedArmor = { hat: null, chest: null, bottom: null, feet: null }); },
   equipArmor(id) {   // aan/uit (per slot)
     const p = ARMOR_PIECES[id]; if (!p || !this.hasArmor(id)) return false;
-    const eq = this.equippedArmor(); eq[p.slot] = (eq[p.slot] === id) ? null : id; this.save(); return true;
+    const eq = this.equippedArmor();
+    if (eq[p.slot] === id) { eq[p.slot] = null; this.save(); return true; }   // uitdoen mag altijd
+    if (this.armorDur(id) <= 0) return false;                                  // kapot -> niet aan te doen
+    eq[p.slot] = id; this.save(); return true;
   },
-  // som van HP-bonus van de uitgeruste, niet-kapotte stukken
+  // effectieve HP van een stuk: schaalt mee met de duurzaamheid (meer schade = minder HP)
+  armorEffHp(id) {
+    const p = ARMOR_PIECES[id]; if (!p) return 0;
+    const dur = this.armorDur(id); if (dur <= 0) return 0;
+    return Math.max(1, Math.round(p.hp * dur / p.maxDur));
+  },
+  // som van de (met duurzaamheid geschaalde) HP-bonus van de uitgeruste, niet-kapotte stukken
   armorHpBonus() {
     const eq = this.equippedArmor(); let hp = 0;
-    for (const slot of ARMOR_SLOTS) { const id = eq[slot]; if (id && this.armorDur(id) > 0) hp += ARMOR_PIECES[id].hp; }
+    for (const slot of ARMOR_SLOTS) { const id = eq[slot]; if (id && this.armorDur(id) > 0) hp += this.armorEffHp(id); }
     return hp;
   },
-  // uitgeruste stukken (voor HUD/rendering): { slot: {id, piece, dur, maxDur, broken} }
+  // uitgeruste stukken (voor HUD/rendering): { slot: {id, piece, dur, maxDur, broken, effHp} }
   equippedArmorInfo() {
     const eq = this.equippedArmor(), out = {};
-    for (const slot of ARMOR_SLOTS) { const id = eq[slot]; if (id && this.hasArmor(id)) { const p = ARMOR_PIECES[id]; out[slot] = { id, piece: p, set: p.set, dur: this.armorDur(id), maxDur: p.maxDur, broken: this.armorDur(id) <= 0 }; } }
+    for (const slot of ARMOR_SLOTS) { const id = eq[slot]; if (id && this.hasArmor(id)) { const p = ARMOR_PIECES[id]; const dur = this.armorDur(id); out[slot] = { id, piece: p, set: p.set, dur: dur, maxDur: p.maxDur, broken: dur <= 0, effHp: this.armorEffHp(id) }; } }
     return out;
   },
   craftCost(id, repair) {
@@ -388,7 +397,10 @@ const Storage = {
     if (!ids.length) return;
     const wear = Math.max(1, Math.round(absorbed * 0.14 / ids.length));   // slechts ~14% van de opgevangen schade -> gaat lang mee
     const a = this.ownedArmor();
-    for (const id of ids) a[id].dur = Math.max(0, a[id].dur - wear);
+    for (const id of ids) {
+      a[id].dur = Math.max(0, a[id].dur - wear);
+      if (a[id].dur <= 0) { const p = ARMOR_PIECES[id]; if (p && eq[p.slot] === id) eq[p.slot] = null; }   // kapot -> automatisch afgedaan
+    }
     this.save();
   },
 

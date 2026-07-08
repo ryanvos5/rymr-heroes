@@ -910,6 +910,10 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .armor-card .armor-dur { height: 5px; border-radius: 3px; background: #2a2018; overflow: hidden; margin-top: 3px; }
 .armor-card .armor-dur > span { display: block; height: 100%; background: linear-gradient(180deg, #d6dde4, #8b949e); }
 .armor-card .armor-dur.low > span { background: linear-gradient(180deg, #ff8a6a, #c0392b); }
+.armor-card .armor-dur-lbl { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #b9c6d4; margin-top: 4px; font-weight: bold; }
+.armor-card .armor-dur-lbl .ic { width: 11px; height: 11px; color: #7bd67a; }
+.armor-card .armor-dur-lbl.low { color: #ffb36a; } .armor-card .armor-dur-lbl.low .ic { color: #ffb36a; }
+.armor-card .armor-dur-lbl.broken { color: #ff7a6a; } .armor-card .armor-dur-lbl.broken .ic { color: #ff7a6a; }
 .armor-cost { font-size: 11px; color: #d8c9a8; margin-top: 2px; }
 .armor-cost .short { color: #ff8a7a; }
 /* FORGE-knop: een steen met de tekst erin geslagen */

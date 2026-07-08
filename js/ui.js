@@ -2086,15 +2086,17 @@ const UI = {
       const id = set + '_' + slot; if (!Storage.hasArmor(id)) continue;
       any = true;
       const p = ARMOR_PIECES[id], dur = Storage.armorDur(id), broken = dur <= 0, equipped = eq[slot] === id;
+      const durPct = Math.round(100 * dur / p.maxDur), eff = Storage.armorEffHp(id);
       const card = document.createElement('div'); card.className = 'shop-card armor-card' + (equipped ? ' equipped' : '') + (broken ? ' depleted' : '');
       const cv = this._armorPieceCanvas(id); card.appendChild(cv);
       const nm = document.createElement('div'); nm.className = 'shop-card-name'; nm.textContent = p.name; card.appendChild(nm);
-      const hp = document.createElement('div'); hp.className = 'armor-hp'; hp.innerHTML = '+' + p.hp + ' HP · ' + ARMOR_SLOT_NAME[slot]; card.appendChild(hp);
-      const durw = document.createElement('div'); durw.className = 'armor-dur' + (dur / p.maxDur < 0.34 ? ' low' : ''); const dspan = document.createElement('span'); dspan.style.width = Math.round(100 * dur / p.maxDur) + '%'; durw.appendChild(dspan); card.appendChild(durw);
-      const btn = document.createElement('button'); btn.className = 'shop-card-btn';
-      if (broken) { btn.className += ' equip'; btn.textContent = t('repair_btn'); this._tap(btn, () => { this.openBlacksmith(); this._bsTab = set; this.renderBlacksmith(); }); }
-      else if (equipped) { btn.className += ' equipped'; btn.innerHTML = this._ic('check') + ' AAN'; this._tap(btn, () => { Storage.equipArmor(id); this.renderInventory(); }); }
-      else { btn.className += ' equip'; btn.textContent = t('equip'); this._tap(btn, () => { Storage.equipArmor(id); this.renderInventory(); }); }
+      const hp = document.createElement('div'); hp.className = 'armor-hp'; hp.innerHTML = '+' + eff + (eff < p.hp ? '/' + p.hp : '') + ' HP · ' + ARMOR_SLOT_NAME[slot]; card.appendChild(hp);
+      const durLbl = document.createElement('div'); durLbl.className = 'armor-dur-lbl' + (broken ? ' broken' : (durPct < 34 ? ' low' : '')); durLbl.innerHTML = this._ic('heart') + ' ' + (broken ? t('broken') : durPct + '%'); card.appendChild(durLbl);
+      const durw = document.createElement('div'); durw.className = 'armor-dur' + (durPct < 34 ? ' low' : ''); const dspan = document.createElement('span'); dspan.style.width = durPct + '%'; durw.appendChild(dspan); card.appendChild(durw);
+      const btn = document.createElement('button'); btn.className = 'shop-buy';
+      if (broken) { btn.classList.add('buy'); btn.innerHTML = this._ic('hammer') + ' ' + t('repair_btn'); this._tap(btn, () => { this.openBlacksmith(); this._bsTab = set; this.renderBlacksmith(); }); }
+      else if (equipped) { btn.classList.add('equipped'); btn.innerHTML = this._ic('check') + ' ' + t('equipped'); this._tap(btn, () => { Storage.equipArmor(id); this.renderInventory(); }); }
+      else { btn.classList.add('equip'); btn.textContent = t('equip'); this._tap(btn, () => { Storage.equipArmor(id); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     }
     if (!any) { const e = document.createElement('p'); e.className = 'screen-sub'; e.textContent = tl('Nog geen harnas. Smeed er een bij de Blacksmith.'); grid.appendChild(e); }
@@ -2167,8 +2169,13 @@ const UI = {
       const card = document.createElement('div'); card.className = 'shop-card armor-card';
       card.appendChild(this._armorPieceCanvas(id));
       const nm = document.createElement('div'); nm.className = 'shop-card-name'; nm.textContent = p.name; card.appendChild(nm);
-      const hp = document.createElement('div'); hp.className = 'armor-hp'; hp.textContent = '+' + p.hp + ' HP · ' + ARMOR_SLOT_NAME[slot]; card.appendChild(hp);
-      if (repair) { const dw = document.createElement('div'); dw.className = 'armor-dur' + (dur / p.maxDur < 0.34 ? ' low' : ''); const ds = document.createElement('span'); ds.style.width = Math.round(100 * dur / p.maxDur) + '%'; dw.appendChild(ds); card.appendChild(dw); }
+      const eff = owned ? Storage.armorEffHp(id) : p.hp;
+      const hp = document.createElement('div'); hp.className = 'armor-hp'; hp.innerHTML = '+' + eff + (owned && eff < p.hp ? '/' + p.hp : '') + ' HP · ' + ARMOR_SLOT_NAME[slot]; card.appendChild(hp);
+      if (owned) {
+        const durPct = Math.round(100 * dur / p.maxDur), broken = dur <= 0;
+        const dl = document.createElement('div'); dl.className = 'armor-dur-lbl' + (broken ? ' broken' : (durPct < 34 ? ' low' : '')); dl.innerHTML = this._ic('heart') + ' ' + (broken ? t('broken') : durPct + '%'); card.appendChild(dl);
+        const dw = document.createElement('div'); dw.className = 'armor-dur' + (durPct < 34 ? ' low' : ''); const ds = document.createElement('span'); ds.style.width = durPct + '%'; dw.appendChild(ds); card.appendChild(dw);
+      }
       const cost = Storage.craftCost(id, repair), ms = Storage.craftMs(id, repair);
       const cl = document.createElement('div'); cl.className = 'armor-cost';
       cl.innerHTML = Object.keys(cost).map((k) => { const short = (Storage.materials()[k] || 0) < cost[k]; return '<span' + (short ? ' class="short"' : '') + '>' + cost[k] + ' ' + MATERIALS[k].name + '</span>'; }).join(' · ') + ' · ' + this._fmtDur(ms);
@@ -2388,8 +2395,8 @@ const UI = {
       const info = document.createElement('div'); info.innerHTML = '<div class="w-name">' + h.name + '</div>';
       card.appendChild(info);
       const btn = document.createElement('button'); btn.className = 'shop-buy';
-      if (equipped) { btn.classList.add('equipped'); btn.textContent = 'OP'; }
-      else { btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN'; this._tap(btn, () => { Storage.equipHat(hid); this.renderInventory(); }); }
+      if (equipped) { btn.classList.add('equipped'); btn.textContent = t('equipped'); }
+      else { btn.classList.add('equip'); btn.textContent = hid === 'none' ? t('take_off') : t('put_on'); this._tap(btn, () => { Storage.equipHat(hid); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     });
   },
@@ -2727,9 +2734,9 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
       if (equipped) {
-        btn.classList.add('equipped'); btn.textContent = 'OP';
+        btn.classList.add('equipped'); btn.textContent = t('equipped');
       } else if (owned) {
-        btn.classList.add('equip'); btn.textContent = hid === 'none' ? 'AF' : 'OPZETTEN';
+        btn.classList.add('equip'); btn.textContent = hid === 'none' ? t('take_off') : t('put_on');
         btn.onclick = () => { Storage.equipHat(hid); this.renderShop(); };
       } else if (h.journeyOnly) {
         card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Journey';
