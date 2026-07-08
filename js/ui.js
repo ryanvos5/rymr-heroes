@@ -21,7 +21,7 @@ const UI = {
       ammoCount: $('ammo-count'), ammoNum: $('ammo-num'),
       banner: $('game-banner'), bannerMain: $('banner-main'), bannerSub: $('banner-sub'),
       bossHpWrap: $('boss-hp-wrap'), bossHpFill: $('boss-hp-fill'), tutorialBox: $('tutorial-box'),
-      menuCoins: $('menu-coin-count'), shopCoins: $('shop-coin-count'),
+      menuCoins: $('menu-coin-count'), shopCoins: $('shop-coin-count'), menuRubies: $('menu-ruby-count'),
       levelGrid: $('level-grid'), shopGrid: $('shop-grid'),
       arena: $('arena-screen'), versus: $('versus-screen'),
       inventory: $('inventory-screen'),
@@ -628,31 +628,41 @@ const UI = {
       ctx.fillStyle = '#7a5600'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(r.level, cv.width / 2, cv.height / 2 - 4);
       nameEl.textContent = 'Level ' + r.level + '  ·  +' + r.coins + ' munten';
-    } else { // 'earn' — munten + xp
+    } else { // 'earn' — munten + xp (+ robijnen)
       title.innerHTML = this._ic('trophy') + ' BELONING';
-      this._drawCoinXp(ctx, cv, r.coins || 0, r.xp || 0);
+      this._drawCoinXp(ctx, cv, r.coins || 0, r.xp || 0, r.rubies || 0);
       const parts = [];
       if (r.xp) parts.push('+' + r.xp + ' XP');
       if (r.coins) parts.push('+' + r.coins + ' munten');
+      if (r.rubies) parts.push('+' + r.rubies + ' robijnen');
       nameEl.textContent = parts.join('   ·   ');
     }
   },
-  _drawCoinXp(ctx, cv, coins, xp) {
+  _drawCoinXp(ctx, cv, coins, xp, rubies) {
     const cx = cv.width / 2, cy = 54;
-    const both = coins && xp;
-    const coinX = both ? cx - 38 : cx, xpX = both ? cx + 38 : cx;
-    if (coins) {                                            // gouden munt (zelf getekend, geen glyph)
-      ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.arc(coinX, cy, 26, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(coinX, cy, 22, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = '#a9760a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(coinX, cy, 13, 0, 6.2832); ctx.stroke();   // binnenring
-      ctx.fillStyle = '#a9760a'; ctx.fillRect(coinX - 2, cy - 8, 4, 16);                                                   // munt-teken "I"
-      ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(coinX - 6, cy - 6, 6, 0, 6.2832); ctx.fill();
-    }
-    if (xp) {                                               // blauwe ster
-      ctx.fillStyle = '#1e7fc0'; this._star(ctx, xpX, cy, 26, 5);
-      ctx.fillStyle = '#46c0ff'; this._star(ctx, xpX, cy, 21, 5);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('XP', xpX, cy + 1);
-    }
+    const items = []; if (coins) items.push('coin'); if (xp) items.push('xp'); if (rubies) items.push('ruby');
+    const n = items.length || 1, spread = 78;
+    const xAt = (i) => (n <= 1) ? cx : (cx - spread / 2 + spread * (i / (n - 1)));
+    items.forEach((it, i) => {
+      const X = xAt(i);
+      if (it === 'coin') {                                  // gouden munt
+        ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.arc(X, cy, 26, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(X, cy, 22, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = '#a9760a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(X, cy, 13, 0, 6.2832); ctx.stroke();
+        ctx.fillStyle = '#a9760a'; ctx.fillRect(X - 2, cy - 8, 4, 16);
+        ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(X - 6, cy - 6, 6, 0, 6.2832); ctx.fill();
+      } else if (it === 'xp') {                             // blauwe ster
+        ctx.fillStyle = '#1e7fc0'; this._star(ctx, X, cy, 26, 5);
+        ctx.fillStyle = '#46c0ff'; this._star(ctx, X, cy, 21, 5);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('XP', X, cy + 1);
+      } else {                                              // robijn (rode edelsteen)
+        const gem = (fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(X, cy + 22); ctx.lineTo(X - 20, cy - 3); ctx.lineTo(X - 10, cy - 17); ctx.lineTo(X + 10, cy - 17); ctx.lineTo(X + 20, cy - 3); ctx.closePath(); ctx.fill(); };
+        gem('#e0364f');
+        ctx.fillStyle = '#ff6f88'; ctx.beginPath(); ctx.moveTo(X - 10, cy - 17); ctx.lineTo(X - 20, cy - 3); ctx.lineTo(X - 3, cy - 3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffd0da'; ctx.beginPath(); ctx.moveTo(X - 6, cy - 17); ctx.lineTo(X + 2, cy - 17); ctx.lineTo(X - 2, cy - 4); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#a81e33'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X, cy + 22); ctx.lineTo(X - 20, cy - 3); ctx.lineTo(X - 10, cy - 17); ctx.lineTo(X + 10, cy - 17); ctx.lineTo(X + 20, cy - 3); ctx.closePath(); ctx.stroke();
+      }
+    });
   },
   _star(ctx, cx, cy, r, pts) {
     ctx.beginPath();
@@ -699,6 +709,7 @@ const UI = {
   syncCoins() {
     if (this.el.menuCoins) this.el.menuCoins.textContent = Storage.data.coins;
     if (this.el.shopCoins) this.el.shopCoins.textContent = Storage.data.coins;
+    if (this.el.menuRubies) this.el.menuRubies.textContent = Storage.rubies();
   },
 
   refreshAuthUI() {
@@ -1884,8 +1895,9 @@ const UI = {
     if (name === 'menu') { this.renderChests(); this._startChestTimer(); } else this._stopChestTimer();
     if (name !== 'versus') this._stopMatchmaking();   // buiten het versus-scherm nooit blijven zoeken
 
-    // muntentellers bijwerken
+    // munten- en robijntellers bijwerken
     this.el.menuCoins.textContent = Storage.data.coins;
+    if (this.el.menuRubies) this.el.menuRubies.textContent = Storage.rubies();
     if (name === 'menu') { this.updateArenaButton(); this.refreshAuthUI(); this.ensurePresence(); if (window.Sfx) Sfx.music('menu'); }
     else if (name === 'game') { this.leavePresence(); }   // tijdens het spelen niet online in de lobby
   },
@@ -2349,7 +2361,28 @@ const UI = {
       const lbl = document.createElement('span'); lbl.className = 'chest-lbl';
       lbl.textContent = ready ? 'OPHALEN!' : (c.u <= 0 ? t.name : this._fmtChestTime(Storage.chestSecondsLeft(i)));
       slot.appendChild(cv); slot.appendChild(lbl);
+      // bezig met openen -> robijn-knop om de wachttijd te skippen
+      if (!ready && c.u > 0) {
+        const cost = Storage.chestSkipCost(i);
+        const skip = document.createElement('span'); skip.className = 'chest-skip'; skip.setAttribute('role', 'button');
+        skip.innerHTML = '<svg class="px-icon" viewBox="0 0 8 8" width="11" height="11" shape-rendering="crispEdges"><rect x="2" y="1" width="4" height="1" fill="#ff9db0"/><rect x="1" y="2" width="6" height="1" fill="#f24d68"/><rect x="1" y="3" width="6" height="1" fill="#e0364f"/><rect x="2" y="4" width="4" height="1" fill="#c72740"/><rect x="3" y="5" width="2" height="1" fill="#a81e33"/></svg> ' + cost;
+        skip.onclick = (e) => { e.stopPropagation(); this.chestSkip(i); };
+        slot.appendChild(skip);
+      }
     });
+  },
+  chestSkip(i) {
+    const cost = Storage.chestSkipCost(i);
+    if (Storage.rubies() < cost) {   // te weinig robijnen -> korte schud + foutgeluid
+      const slot = document.querySelector('.chest-slot[data-chest="' + i + '"]');
+      if (slot) { slot.classList.remove('shake'); void slot.offsetWidth; slot.classList.add('shake'); }
+      if (window.Sfx) Sfx.play('roundlose');
+      return;
+    }
+    if (Storage.skipChest(i)) {
+      if (window.Sfx) Sfx.play('coin');
+      this.syncCoins(); this.renderChests();
+    }
   },
   _fmtChestTime(s) {
     if (s == null || s < 0) return 'Open';

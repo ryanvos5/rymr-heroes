@@ -2493,6 +2493,81 @@ const Game = {
         } },
       ];
     }
+    // ===== OUTRO na de Ninja -> Wereld 2 VOLTOOID (schatkamer -> geheime uitgang -> wordt vervolgd) =====
+    if (script === 'ninjawin') {
+      const P = (x) => Math.round(W * x), H = CONFIG.VIEW_H;
+      const vault = (c) => {
+        c.fillStyle = '#1e1610'; c.fillRect(0, 0, W, gy);
+        for (let y = 4; y < gy; y += 16) { const off = ((y / 16) % 2) * 16; for (let x = -off; x < W; x += 32) Sprites.px(c, '#271c13', x + 1, y, 30, 14); }
+        const gold = (x) => { for (let r = 0; r < 5; r++) { const rw = 32 - r * 6; Sprites.px(c, '#e8b431', x - rw / 2, gy - 6 - r * 4, rw, 4); } Sprites.px(c, '#fff0a0', x - 12, gy - 6, 4, 2); };
+        gold(52); gold(150); gold(306);
+        const gem = (x, y, col) => { c.fillStyle = col; c.fillRect(x, y, 4, 4); c.fillStyle = '#fff'; c.fillRect(x + 1, y, 1, 1); };
+        gem(92, gy - 4, '#e8425a'); gem(120, gy - 3, '#e8425a'); gem(210, gy - 5, '#42a0e8'); gem(258, gy - 4, '#e8425a'); gem(330, gy - 4, '#57e08a');
+        Sprites.px(c, '#b89440', Math.round(W * 0.5) - 8, gy - 42, 16, 38); Sprites.px(c, '#d8b048', Math.round(W * 0.5) - 10, gy - 46, 20, 6);   // afgodsbeeld
+      };
+      const torch = (c, tx, ty) => { Sprites.px(c, '#3a2a18', tx - 1, ty, 3, 12); const fl = 3 + Math.round(Math.sin(clk() / 90 + tx) * 1.6); c.globalAlpha = 0.3; c.fillStyle = '#ff9a2a'; c.beginPath(); c.arc(tx, ty - 4, fl + 6, 0, 6.2832); c.fill(); c.globalAlpha = 1; c.fillStyle = '#ffb23a'; c.beginPath(); c.arc(tx, ty - 6, fl, 0, 6.2832); c.fill(); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(tx, ty - 6, fl * 0.5, 0, 6.2832); c.fill(); };
+      const torches = (c) => { torch(c, 108, 66); torch(c, 250, 68); };
+      const sparkle = (c) => { for (let i = 0; i < 6; i++) { const sx = (i * 61 + 30) % W, ph = (clk() / 240 + i) % 3; if (ph < 1) Sprites.px(c, '#fff6c8', sx, gy - 10 - (i % 3) * 4, 2, 2); } };
+      return [
+        // ===== Scène 1 – De Overwinning =====
+        { theme: 'temple', dur: 2400, cap: 'De ninja valt op de grond en verdwijnt langzaam in de schaduwen…', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2400); vault(c); torches(c);
+          c.globalAlpha = 1 - p * 0.8; this._storyFighter(c, 'ninja', W * 0.64, gy - 2, 1, 0, 1.1, { squash: true }); c.globalAlpha = 1;
+          Sprites.drawCharacter(c, P(0.34), Math.round(gy - 2), 1, ch.palette, Object.assign({ attacking: true, weapon: null }, pose0));
+        } },
+        { theme: 'temple', dur: 2200, cap: 'De schatkamer is eindelijk veilig.', draw: () => {
+          const c = this.ctx; vault(c); torches(c); sparkle(c);
+          Sprites.drawCharacter(c, P(0.4), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+        } },
+        { theme: 'temple', dur: 2200, cap: 'Het goud en de robijnen liggen voor het oprapen.', draw: () => {
+          const c = this.ctx; vault(c); torches(c); sparkle(c);
+          Sprites.drawCharacter(c, P(0.3), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          const gem = (x, y, col) => { c.fillStyle = col; c.fillRect(x, y, 5, 5); c.fillStyle = '#fff'; c.fillRect(x + 1, y + 1, 1, 1); };
+          gem(P(0.5), gy - 12, '#e8425a'); gem(P(0.58), gy - 8, '#e8425a'); gem(P(0.44), gy - 7, '#42a0e8');
+        } },
+        // ===== Scène 2 – De Schat =====
+        { theme: 'temple', dur: 2300, cap: 'Je vult je tas met zoveel goud en robijnen als je kunt dragen.', draw: () => {
+          const c = this.ctx; vault(c); torches(c); sparkle(c);
+          Sprites.drawCharacter(c, P(0.44), Math.round(gy - 2), -1, ch.palette, Object.assign({ ducking: true, weapon: null }, pose0));
+          for (let k = 0; k < 4; k++) Sprites.px(c, '#ffe27a', Math.round(P(0.4) + Math.sin(clk() / 120 + k) * 4), gy - 20 - k * 4, 3, 3);   // opdwarrelend goud
+        } },
+        { theme: 'temple', dur: 2300, cap: 'Tussen de schatten ontdek je een oude kaart en een verborgen hendel.', draw: () => {
+          const c = this.ctx; vault(c); torches(c);
+          Sprites.drawCharacter(c, P(0.34), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          Sprites.px(c, '#e8d8a8', W * 0.6, gy - 30, 16, 12); Sprites.px(c, '#b89050', W * 0.6, gy - 30, 16, 2); Sprites.px(c, '#8a5a2a', W * 0.6 + 4, gy - 26, 8, 1);   // oude kaart
+          Sprites.px(c, '#6a6f78', W * 0.76, gy - 26, 3, 14); Sprites.px(c, '#c0303a', W * 0.76 - 2, gy - 28, 7, 4);   // hendel
+        } },
+        { theme: 'temple', dur: 2300, cap: 'Met een zwaar gerommel schuift een geheime doorgang open…', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2300), jit = Math.round(Math.sin(clk() / 24) * 1.2); vault(c); torches(c);
+          const ow = 44, ox = Math.round(W * 0.72) - ow / 2, oy = gy - 46;
+          c.fillStyle = '#080604'; c.fillRect(ox, oy, ow, 46);                                  // duistere doorgang
+          const slide = Math.round(p * (ow / 2));
+          c.fillStyle = '#3a2c1c'; c.fillRect(ox, oy, ow / 2 - slide, 46); c.fillRect(ox + ow / 2 + slide, oy, ow / 2 - slide, 46);   // schuifsteen
+          Sprites.drawCharacter(c, P(0.3) + jit, Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+        } },
+        // ===== Scène 3 – De Uitgang =====
+        { theme: 'temple', dur: 2200, cap: 'Je volgt de geheime tunnel en laat de tempel achter je.', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2200); c.fillStyle = '#140f0a'; c.fillRect(0, 0, W, gy);   // donkere tunnel
+          for (let x = 0; x < W; x += 40) { c.fillStyle = '#0d0a07'; Sprites.px(c, '#0d0a07', x, 20, 22, gy - 20); }   // tunnel-ribbels
+          Sprites.drawCharacter(c, P(0.28) + Math.round(p * 30), Math.round(gy - 2), 1, ch.palette, Object.assign({ walkPhase: clk() / 60, weapon: null }, pose0));
+        } },
+        { theme: 'temple', dur: 2400, cap: 'Het daglicht schijnt je tegemoet terwijl je de uitgang bereikt.', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2400); c.fillStyle = '#140f0a'; c.fillRect(0, 0, W, gy);
+          const lightX = W * (0.9 - p * 0.2); const lg = c.createLinearGradient(lightX - 60, 0, W, 0); lg.addColorStop(0, 'rgba(255,244,200,0)'); lg.addColorStop(1, 'rgba(255,250,225,0.95)'); c.fillStyle = lg; c.fillRect(lightX - 60, 0, W - (lightX - 60), gy);
+          Sprites.drawCharacter(c, P(0.4), Math.round(gy - 2), 1, ch.palette, Object.assign({ walkPhase: clk() / 60, weapon: null }, pose0));
+        } },
+        { theme: 'beach', dur: 2400, cap: 'Met de schat op zak begin je aan je volgende avontuur.', draw: () => {
+          const c = this.ctx;   // buiten in het daglicht (beach-bg is al getekend)
+          Sprites.drawCharacter(c, P(0.42), Math.round(gy - 2), 1, ch.palette, Object.assign({ walkPhase: clk() / 60, weapon: null }, pose0));
+          Sprites.px(c, '#e8b431', P(0.42) - 10, gy - 16, 6, 8); Sprites.px(c, '#ffd24a', P(0.42) - 10, gy - 16, 6, 2);   // zak met goud op de rug
+        } },
+        // ===== Scène 4 – Zwart scherm: wordt vervolgd =====
+        { theme: 'temple', dur: 3000, cap: 'Wordt vervolgd…', draw: (t) => {
+          const c = this.ctx; c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+          const a = Math.min(1, t / 900); c.globalAlpha = a; c.fillStyle = '#f4e8c0'; c.font = 'bold 17px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('WORDT VERVOLGD…', W / 2, H / 2); c.textAlign = 'left'; c.globalAlpha = 1;
+        } },
+      ];
+    }
     const sc = this._storyData; if (!sc) return [];
     const px = Math.round(W * 0.30), fxT = W * 0.68;
     return [
@@ -4979,14 +5054,18 @@ const Game = {
       if (won) {
         const first = !Storage.journeyCleared(idx, jworld);
         unlocks = Storage.clearJourneyLevel(idx, jworld);
-        // eerste keer: volledige beloning; opnieuw spelen: 50 munten (geen xp)
-        const coins = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 150 : 40) : 50;
-        const xp = first ? ((jr.lv && (jr.lv.boss || jr.lv.bossFight)) ? 60 : 20) : 0;
+        const isBossLv = jr.lv && (jr.lv.boss || jr.lv.bossFight);
+        const worldEnd = JOURNEY[jworld] && idx >= JOURNEY[jworld].levels.length;   // laatste level van de wereld
+        // eerste keer: volledige beloning; opnieuw spelen: 50 munten (geen xp). Wereld 2 uitgespeeld: extra + robijnen.
+        let coins, xp, rubies = 0;
+        if (first && jworld === 2 && worldEnd) { coins = 350; xp = 80; rubies = 5; }   // De Ninja verslagen -> Wereld 2 voltooid
+        else { coins = first ? (isBossLv ? 150 : 40) : 50; xp = first ? (isBossLv ? 60 : 20) : 0; }
         Storage.data.coins = (Storage.data.coins || 0) + coins;
+        if (rubies) Storage.data.rubies = (Storage.data.rubies || 0) + rubies;
         if (xp) Storage.data.xp = (Storage.data.xp || 0) + xp;
         Storage.save();
         if (won) Storage.addCharXp(Storage.data.equippedCharacter, first ? 12 : 5);   // character-XP door Journey te spelen (langzaam)
-        rewards.push({ type: 'earn', coins, xp });
+        rewards.push({ type: 'earn', coins, xp, rubies });
         for (const u of unlocks) rewards.push({ type: u.type, id: u.id, name: u.name });   // unlock-kaartjes
       }
       if (window.Sfx) Sfx.play(won ? 'win' : 'lose');
@@ -4999,6 +5078,7 @@ const Game = {
         if (self.state !== 'versusOver') return;
         // Gorilla King (Wereld 1, laatste level) verslagen -> outro-cutscene naar Wereld 2, dán de uitslag
         if (won && jworld === 1 && idx >= JOURNEY[1].levels.length) UI.playEndStory('kongwin', showRes);
+        else if (won && jworld === 2 && idx >= JOURNEY[2].levels.length) UI.playEndStory('ninjawin', showRes);   // Wereld 2 voltooid-cutscene
         else showRes();
       }, 2600);
       return;

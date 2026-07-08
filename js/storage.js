@@ -6,6 +6,7 @@ const SAVE_KEY = 'zombiedash_save_v1';
 
 const DEFAULT_SAVE = {
   coins: 0,
+  rubies: 0,                // premium-munt (robijnen): kist-wachttijd skippen (binnenkort meer)
   ammo: 100,                // blijvende kogelvoorraad (carry-over tussen levels)
   rockets: 0,               // blijvende raket-voorraad (Rocket Launcher)
   ownedWeapons: ['bat'],
@@ -85,6 +86,7 @@ const Storage = {
     if (!cloud) return;
     const d = this.data;
     d.coins = Math.max(d.coins || 0, cloud.coins || 0);
+    d.rubies = Math.max(d.rubies || 0, cloud.rubies || 0);
     d.ammo = Math.max(d.ammo || 0, cloud.ammo || 0);
     d.rockets = Math.max(d.rockets || 0, cloud.rockets || 0);
     d.arenaBest = Math.max(d.arenaBest || 0, cloud.arenaBest || 0);
@@ -159,6 +161,9 @@ const Storage = {
 
   // ---- munten ----
   addCoins(n) { this.data.coins += n; this.save(); },
+  rubies() { return this.data.rubies || 0; },
+  addRubies(n) { this.data.rubies = (this.data.rubies || 0) + n; this.save(); },
+  spendRubies(n) { if ((this.data.rubies || 0) < n) return false; this.data.rubies -= n; this.save(); return true; },
   spendCoins(n) {
     if (this.data.coins < n) return false;
     this.data.coins -= n; this.save(); return true;
@@ -332,6 +337,13 @@ const Storage = {
     return Math.max(0, Math.ceil((c.u - this.now()) / 1000));
   },
   chestReady(i) { const c = this.chests()[i]; return !!(c && c.u > 0 && this.now() >= c.u); },
+  // robijnen-kosten om de resterende wachttijd over te slaan (1 robijn per begonnen uur, min 1)
+  chestSkipCost(i) { const s = this.chestSecondsLeft(i); if (s <= 0) return 0; return Math.max(1, Math.ceil(s / 3600)); },
+  skipChest(i) {   // betaal robijnen -> kist meteen klaar
+    const c = this.chests()[i]; if (!c || c.u <= 0 || this.now() >= c.u) return false;
+    if (!this.spendRubies(this.chestSkipCost(i))) return false;
+    c.u = this.now(); this.save(); return true;
+  },
   // kans op een kist na een online match (win = grotere kans); geeft de rarity terug of null
   rollChestDrop(won) {
     if (!this.canReceiveChest()) return null;

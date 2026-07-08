@@ -11,9 +11,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0d0f14" />
   <title>Tiny Power Smashers</title>
-  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu136" />
-  <link rel="apple-touch-icon" href="icon.svg?v=menu136" />
-  <link rel="stylesheet" href="css/style.css?v=menu136" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu137" />
+  <link rel="apple-touch-icon" href="icon.svg?v=menu137" />
+  <link rel="stylesheet" href="css/style.css?v=menu137" />
 </head>
 <body>
   <div id="game-root">
@@ -67,7 +67,7 @@
     </div>
 
     <!-- ===== Splash bij opstarten (logo, fadet vanzelf weg) ===== -->
-    <div id="splash"><img src="logo.svg?v=menu136" alt="Tiny Power Smashers" /></div>
+    <div id="splash"><img src="logo.svg?v=menu137" alt="Tiny Power Smashers" /></div>
 
     <!-- ===== Canvas (de spelwereld) ===== -->
     <canvas id="game-canvas"></canvas>
@@ -129,12 +129,18 @@
     <div id="menu-screen" class="screen">
       <div class="menu-frame">
         <header class="menu-top">
-          <img class="menu-logo-img" src="logo.svg?v=menu136" alt="Tiny Power Smashers" />
-          <div class="menu-hud">
-            <span class="menu-coins-top">
-              <svg class="px-icon" viewBox="0 0 8 8" width="16" height="16" shape-rendering="crispEdges"><rect x="2" y="1" width="4" height="6" fill="#caa12e"/><rect x="1" y="2" width="6" height="4" fill="#ffd24a"/><rect x="3" y="2" width="1" height="4" fill="#fff0a8"/></svg>
+          <div class="menu-currency">
+            <span class="menu-coins-top" title="Munten">
+              <svg class="px-icon" viewBox="0 0 8 8" width="18" height="18" shape-rendering="crispEdges"><rect x="2" y="1" width="4" height="6" fill="#caa12e"/><rect x="1" y="2" width="6" height="4" fill="#ffd24a"/><rect x="3" y="2" width="1" height="4" fill="#fff0a8"/></svg>
               <span id="menu-coin-count">0</span>
             </span>
+            <span class="menu-rubies-top" title="Robijnen">
+              <svg class="px-icon" viewBox="0 0 8 8" width="18" height="18" shape-rendering="crispEdges"><rect x="2" y="1" width="4" height="1" fill="#ff9db0"/><rect x="1" y="2" width="6" height="1" fill="#f24d68"/><rect x="1" y="3" width="6" height="1" fill="#e0364f"/><rect x="2" y="4" width="4" height="1" fill="#c72740"/><rect x="3" y="5" width="2" height="1" fill="#a81e33"/><rect x="3" y="2" width="1" height="2" fill="#ffd0da"/></svg>
+              <span id="menu-ruby-count">0</span>
+            </span>
+          </div>
+          <img class="menu-logo-img" src="logo.svg?v=menu137" alt="Tiny Power Smashers" />
+          <div class="menu-hud">
             <span id="menu-userline" class="menu-userline">Gast | Lvl 1</span>
             <button id="btn-settings" class="stone-icon" title="Instellingen" aria-label="Instellingen">
               <svg class="px-icon" viewBox="0 0 8 8" width="20" height="20" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#cfd6df"/><rect x="0" y="3" width="8" height="2" fill="#cfd6df"/><rect x="2" y="2" width="4" height="4" fill="#9aa3ad"/><rect x="3" y="3" width="2" height="2" fill="#2a3242"/></svg>
@@ -582,17 +588,17 @@
     </div>
   </div>
 
-  <script src="vendor/supabase.min.js?v=menu136"></script>
-  <script src="js/config.js?v=menu136"></script>
-  <script src="js/storage.js?v=menu136"></script>
-  <script src="js/audio.js?v=menu136"></script>
-  <script src="js/net.js?v=menu136"></script>
-  <script src="js/input.js?v=menu136"></script>
-  <script src="js/sprites.js?v=menu136"></script>
-  <script src="js/menubg.js?v=menu136"></script>
-  <script src="js/entities.js?v=menu136"></script>
-  <script src="js/ui.js?v=menu136"></script>
-  <script src="js/game.js?v=menu136"></script>
-  <script src="js/main.js?v=menu136"></script>
+  <script src="vendor/supabase.min.js?v=menu137"></script>
+  <script src="js/config.js?v=menu137"></script>
+  <script src="js/storage.js?v=menu137"></script>
+  <script src="js/audio.js?v=menu137"></script>
+  <script src="js/net.js?v=menu137"></script>
+  <script src="js/input.js?v=menu137"></script>
+  <script src="js/sprites.js?v=menu137"></script>
+  <script src="js/menubg.js?v=menu137"></script>
+  <script src="js/entities.js?v=menu137"></script>
+  <script src="js/ui.js?v=menu137"></script>
+  <script src="js/game.js?v=menu137"></script>
+  <script src="js/main.js?v=menu137"></script>
 </body>
 </html>

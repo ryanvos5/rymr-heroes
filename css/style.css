@@ -457,8 +457,15 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   font-size: clamp(15px, 3vw, 28px); color: #fff; text-shadow: 2px 2px 0 #000, 0 2px 6px rgba(0,0,0,.4);
 }
 .menu-hud { position: absolute; right: 0; top: 0; display: flex; align-items: center; gap: clamp(8px, 2vw, 20px); }
-.menu-coins-top, .menu-userline { display: flex; align-items: center; gap: 6px; color: #fff; font-size: clamp(12px, 1.8vw, 16px); text-shadow: 1px 1px 0 #000; }
+/* munten + robijnen onder elkaar, links van het logo */
+.menu-currency { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; z-index: 2; }
+.menu-coins-top, .menu-rubies-top, .menu-userline { display: flex; align-items: center; gap: 6px; color: #fff; font-size: clamp(12px, 1.8vw, 16px); text-shadow: 1px 1px 0 #000; }
+.menu-coins-top, .menu-rubies-top {
+  background: linear-gradient(180deg, rgba(30,22,16,.72), rgba(14,9,7,.82));
+  border: 1px solid rgba(90,70,45,.7); border-radius: 999px; padding: 2px clamp(6px, 1.4vw, 10px); min-width: clamp(50px, 8vw, 72px);
+}
 .menu-coins-top #menu-coin-count { color: var(--gold); font-weight: bold; }
+.menu-rubies-top #menu-ruby-count { color: #ff8aa0; font-weight: bold; }
 .px-icon { display: block; image-rendering: pixelated; }
 
 /* drie tegels in het midden — gecentreerd, niet beeldvullend (zoals de mockup) */
@@ -500,6 +507,16 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 }
 .chest-slot.empty { border-style: dashed; border-color: #3a3028; opacity: .5; cursor: default; box-shadow: none; }
 .chest-slot .chest-ico { width: 48px; height: 40px; image-rendering: pixelated; }
+/* robijn-skip-knopje op een kist die aan het openen is */
+.chest-skip {
+  position: absolute; top: -8px; right: -6px; display: inline-flex; align-items: center; gap: 2px;
+  font-size: 11px; font-weight: bold; color: #ffd7e0; line-height: 1;
+  background: linear-gradient(180deg, #6a1830, #3a0c1a); border: 1px solid #ff6f8a; border-radius: 999px;
+  padding: 2px 6px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.5); z-index: 3;
+}
+.chest-skip:hover { filter: brightness(1.15); }
+.chest-slot.shake { animation: chestShake .32s ease; }
+@keyframes chestShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
 .chest-slot .chest-lbl { font-family: var(--pixel-font); font-weight: bold; font-size: clamp(9px, 1.5vw, 12px); text-shadow: 1px 1px 0 #000; line-height: 1; }
 .chest-slot.ready { animation: chestReady 1s ease-in-out infinite; }
 .chest-slot.ready .chest-lbl { color: #ffe27a; }
