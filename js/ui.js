@@ -2359,7 +2359,7 @@ const UI = {
     const st = Storage.charStats(cid);
     const bonus = [];
     if (st.hpBonus > 0) bonus.push('+' + st.hpBonus + ' HP');
-    if (st.speedMul > 1) bonus.push('+' + Math.round((st.speedMul - 1) * 100) + '% snelheid');
+    if (st.speedMul > 1) bonus.push('+' + Math.round((st.speedMul - 1) * 100) + '% ' + tl('snelheid'));
     if (st.abilityDurMul > 1 && CHARACTERS[cid].ability) bonus.push('+' + Math.round((st.abilityDurMul - 1) * 100) + '% ability');
     wrap.innerHTML = '<div class="char-lvl-top"><span class="char-lvl-num">Lv ' + lvl + '<span class="char-lvl-max">/' + CHAR_MAX_LEVEL + '</span></span>' +
       (bonus.length ? '<span class="char-lvl-bonus">' + bonus.join(' · ') + '</span>' : '') + '</div>';
@@ -2374,7 +2374,7 @@ const UI = {
     // upgrade-knop
     const up = document.createElement('button'); up.className = 'char-upgrade';
     if (maxed) { up.classList.add('maxed'); up.textContent = 'MAX LEVEL'; up.disabled = true; }
-    else if (!Storage.charXpFull(cid)) { up.classList.add('locked'); up.textContent = 'XP-balk vullen'; up.disabled = true; }
+    else if (!Storage.charXpFull(cid)) { up.classList.add('locked'); up.textContent = tl('XP-balk vullen'); up.disabled = true; }
     else {
       const cost = Storage.charUpgradeCost(cid), afford = (Storage.data.coins || 0) >= cost;
       up.classList.add(afford ? 'ready' : 'cant');
@@ -2573,10 +2573,10 @@ const UI = {
       cctx.imageSmoothingEnabled = false;
       Sprites.drawWeaponIcon(cctx, wid, 2);
 
-      const slot = w.type === 'melee' ? 'MELEE' : 'VUURWAPEN';
+      const slot = w.type === 'melee' ? 'MELEE' : tl('VUURWAPEN');
       const dps = w.type === 'melee'
-        ? `Schade <b>${w.damage}</b> · Melee`
-        : `Schade <b>${w.damage}</b> · ${Math.round(60000 / w.cooldown)}/min`;
+        ? `${tl('Schade')} <b>${w.damage}</b> · Melee`
+        : `${tl('Schade')} <b>${w.damage}</b> · ${Math.round(60000 / w.cooldown)}/min`;
 
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${w.name} <span class="w-slot">${slot}</span></div>
@@ -2616,7 +2616,7 @@ const UI = {
     Sprites.drawAmmoBox(actx, 70, 42, 3);
     const aInfo = document.createElement('div');
     aInfo.innerHTML = `<div class="w-name">Munitie <span class="w-slot">VOORRAAD</span></div>
-      <div class="w-stats">Je hebt nu <b>${Storage.data.ammo}</b> / ${AMMO_MAX} kogels<br>+${AMMO_PACK.amount} kogels per koop</div>`;
+      <div class="w-stats">${tl('Je hebt nu ')}<b>${Storage.data.ammo}</b> / ${AMMO_MAX} ${tl('kogels')}<br>+${AMMO_PACK.amount} ${tl('kogels per koop')}</div>`;
     const aBtn = document.createElement('button');
     aBtn.className = 'shop-buy';
     if (Storage.data.ammo >= AMMO_MAX) {
@@ -2643,7 +2643,7 @@ const UI = {
       Sprites.drawRocketPickup(rctx, 55, 40, 0);
       const rInfo = document.createElement('div');
       rInfo.innerHTML = `<div class="w-name">Raketten <span class="w-slot">RPG</span></div>
-        <div class="w-stats">Je hebt nu <b>${Storage.data.rockets}</b> raketten<br>krachtig & explosief (AoE)</div>`;
+        <div class="w-stats">${tl('Je hebt nu ')}<b>${Storage.data.rockets}</b> ${tl('raketten')}<br>${tl('krachtig & explosief (AoE)')}</div>`;
       const rBtn = document.createElement('button');
       rBtn.className = 'shop-buy';
       if (Storage.data.coins >= ROCKET_COST) {
@@ -2678,8 +2678,8 @@ const UI = {
       });
 
       // stats t.o.v. Ryan
-      const spd = c.speedMul >= 1 ? 'snel' : (c.speedMul >= 0.9 ? 'iets trager' : 'traag');
-      const mel = c.meleeMul > 1 ? `+${Math.round((c.meleeMul - 1) * 100)}%` : 'normaal';
+      const spd = c.speedMul >= 1 ? tl('snel') : (c.speedMul >= 0.9 ? tl('iets trager') : tl('traag'));
+      const mel = c.meleeMul > 1 ? `+${Math.round((c.meleeMul - 1) * 100)}%` : tl('normaal');
       const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${c.name}</div>

@@ -455,6 +455,11 @@ I18N.UI_EN = {
   'Willekeurige map wordt gekozen…': 'Picking a random map…', 'Wachten op tegenstander…': 'Waiting for opponent…',
   'Versla ALLE zombies! Sla met de melee-knop of schiet': 'Defeat ALL zombies! Hit with the melee button or shoot',
   'Versla eerst de bot-mensaap!': 'Defeat the ape bot first!',
+  // shop/inventaris character- & wapen-stats
+  'snel': 'fast', 'iets trager': 'a bit slower', 'traag': 'slow', 'normaal': 'normal', 'snelheid': 'speed',
+  'XP-balk vullen': 'Fill XP bar', 'VUURWAPEN': 'FIREARM', 'Schade': 'Damage',
+  'Je hebt nu ': 'You now have ', 'kogels': 'bullets', 'kogels per koop': 'bullets per purchase',
+  'raketten': 'rockets', 'krachtig & explosief (AoE)': 'powerful & explosive (AoE)',
   // versus-uitslag
   ' VERSLAGEN! ': ' DEFEATED! ', 'VERLOREN': 'DEFEAT', ' OPNIEUW': ' RETRY', ' REMATCH': ' REMATCH',
   'Beiden moeten op rematch drukken.': 'Both players must press rematch.',
