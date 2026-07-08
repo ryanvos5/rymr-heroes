@@ -1461,15 +1461,53 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   .gal-slide { width: min(60%, 200px); }
   .gal-arrow { width: 36px; height: 36px; }
 }
-/* lage schermen (landscape mobiel): kop compacter zodat de galerij past */
-@media (max-height: 500px) {
-  #shop-screen .screen-title, #inventory-screen .screen-title { font-size: 16px; margin-bottom: 2px; }
-  #shop-screen .shop-tabs, #inventory-screen .shop-tabs { margin-bottom: 4px; }
-  .shop-coins { font-size: 12px !important; margin: 2px 0 4px !important; }
+/* ====== Horizontale PLANK (nieuw): meerdere kaarten tegelijk, sideways scrollen ====== */
+.shop-grid.gallery {
+  display: flex; flex-direction: row; align-items: stretch; gap: 4px; position: relative;
+  overflow: visible; width: 100%; max-width: 1000px; margin: 6px auto; padding: 0; min-height: 0;
+}
+.shop-shelf {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  display: flex; gap: 10px; align-items: stretch;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  padding: 4px 4px 10px; scroll-padding-inline: 8px;
+}
+.shop-shelf::-webkit-scrollbar { height: 6px; }
+.shop-shelf::-webkit-scrollbar-track { background: transparent; }
+.shop-shelf::-webkit-scrollbar-thumb { background: #3a4456; border-radius: 3px; }
+.shelf-cell { flex: 0 0 auto; width: clamp(148px, 20vw, 194px); scroll-snap-align: center; display: flex; }
+.shelf-cell .shop-card { width: 100%; margin: 0; }
+/* pijlen als vaste flex-knoppen naast de plank (vooral desktop; op touch veeg je gewoon) */
+.shop-grid.gallery .gal-arrow {
+  position: static; flex: 0 0 auto; align-self: center; transform: none;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid #4a5568; background: rgba(16,20,28,.92);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.45);
+}
+.shop-grid.gallery .gal-arrow .ic { width: 22px; height: 22px; }
+.shop-grid.gallery .gal-arrow:disabled { opacity: .3; cursor: default; }
+.shop-grid.gallery .gal-arrow:not(:disabled):active { transform: scale(.9); }
+
+/* lage schermen (landscape mobiel): kop + kaarten compacter zodat er meer op de plank past */
+@media (max-height: 520px) {
+  #shop-screen .screen-title, #inventory-screen .screen-title { font-size: 15px; margin-bottom: 1px; }
+  #shop-screen .shop-tabs, #inventory-screen .shop-tabs { margin-bottom: 3px; }
+  .shop-coins { font-size: 12px !important; margin: 1px 0 3px !important; }
   #inv-hint { display: none; }
-  .gal-viewport { padding: 2px 0; }
-  .gal-dots { margin-top: 3px; }
-  .gal-arrow { width: 32px; height: 32px; }
+  .shelf-cell { width: clamp(130px, 18vw, 166px); }
+  .shelf-cell .shop-card { padding: 7px; gap: 4px; }
+  .shelf-cell .shop-card canvas { max-height: 62px; }
+  .shelf-cell .shop-card .w-name { font-size: 12px; }
+  .shelf-cell .shop-card .w-stats { font-size: 9px; line-height: 1.28; }
+  .shelf-cell .shop-buy { padding: 6px 2px; font-size: 11px; }
+  .shop-grid.gallery .gal-arrow { width: 32px; height: 32px; }
+}
+@media (max-width: 620px) {
+  .shop-grid.gallery .gal-arrow { display: none !important; }   /* touch: gewoon vegen -> pijlen weg, meer ruimte */
+  .shop-grid.gallery { gap: 0; }
+  .shelf-cell { width: clamp(132px, 40vw, 158px); }             /* portrait: 2 kaarten in beeld */
 }
 
 .result-stats {

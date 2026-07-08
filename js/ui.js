@@ -2256,6 +2256,8 @@ const UI = {
   // ---------- HORIZONTALE GALERIJ (shop + inventaris) ----------
   // Zet de reeds gebouwde .shop-card kinderen om in een carrousel:
   // 1 item groot in het midden (2.5D), buren kleiner, pijltjes om te scrollen.
+  // Winkel/inventaris als HORIZONTALE plank: meerdere kaarten tegelijk zichtbaar,
+  // sideways vegen/scrollen om er meer te zien (App Store-stijl, benut brede iOS-landscape).
   _galleryify(container, key) {
     if (this._galRO) { try { this._galRO.disconnect(); } catch (e) {} this._galRO = null; }
     if (this._galResizeHandler) { window.removeEventListener('resize', this._galResizeHandler); this._galResizeHandler = null; }
@@ -2264,88 +2266,32 @@ const UI = {
     container.innerHTML = '';
     container.classList.add('gallery');
 
-    this._galIdx = this._galIdx || {};
-    let cur = Math.min(cards.length - 1, Math.max(0, this._galIdx[key] || 0));
+    const shelf = document.createElement('div'); shelf.className = 'shop-shelf';
+    cards.forEach((card) => { const cell = document.createElement('div'); cell.className = 'shelf-cell'; cell.appendChild(card); shelf.appendChild(cell); });
 
-    const viewport = document.createElement('div'); viewport.className = 'gal-viewport';
-    const track = document.createElement('div'); track.className = 'gal-track';
-    const slides = cards.map((card) => {
-      const s = document.createElement('div'); s.className = 'gal-slide';
-      s.appendChild(card); track.appendChild(s); return s;
-    });
-    viewport.appendChild(track);
+    const prev = document.createElement('button'); prev.className = 'gal-arrow left'; prev.type = 'button'; prev.innerHTML = this._ic('arrow-l');
+    const next = document.createElement('button'); next.className = 'gal-arrow right'; next.type = 'button'; next.innerHTML = this._ic('arrow-r');
+    container.appendChild(prev); container.appendChild(shelf); container.appendChild(next);
 
-    const prev = document.createElement('button'); prev.className = 'gal-arrow left'; prev.type = 'button';
-    prev.innerHTML = this._ic('arrow-l');
-    const next = document.createElement('button'); next.className = 'gal-arrow right'; next.type = 'button';
-    next.innerHTML = this._ic('arrow-r');
-
-    const dots = document.createElement('div'); dots.className = 'gal-dots';
-    const dotEls = cards.map((_, i) => {
-      const d = document.createElement('span'); d.className = 'gal-dot'; d.dataset.i = i;
-      d.onclick = () => { cur = i; apply(); };
-      dots.appendChild(d); return d;
-    });
-
-    container.appendChild(prev);
-    container.appendChild(viewport);
-    container.appendChild(next);
-    container.appendChild(dots);
-
-    const apply = () => {
-      cur = Math.min(slides.length - 1, Math.max(0, cur));
-      this._galIdx[key] = cur;
-      slides.forEach((s, i) => {
-        const active = i === cur;
-        s.classList.toggle('active', active);
-        s.setAttribute('aria-hidden', active ? 'false' : 'true');
-      });
-      dotEls.forEach((d, i) => d.classList.toggle('on', i === cur));
-      prev.disabled = cur <= 0;
-      next.disabled = cur >= slides.length - 1;
-      // fit-to-hoogte: schaal de actieve kaart zo dat hij altijd binnen de viewport past (geen scroll)
-      const vpH = (viewport.clientHeight || 0) - 14;
-      slides.forEach((s, i) => {
-        if (i === cur) {
-          const card = s.querySelector('.shop-card');
-          const ch = (card && card.offsetHeight) || 1;
-          const fit = vpH > 40 ? Math.min(1, vpH / ch) : 1;
-          s.style.transform = 'scale(' + fit + ')';
-        } else {
-          s.style.transform = '';        // buren gebruiken de CSS-schaal
-        }
-      });
-      const sw = slides[0].offsetWidth || (viewport.offsetWidth * 0.6);
-      const tx = viewport.offsetWidth / 2 - cur * sw - sw / 2;
-      track.style.transform = 'translateX(' + tx + 'px)';
+    const step = () => { const cell = shelf.querySelector('.shelf-cell'); return ((cell ? cell.offsetWidth : 160) + 10) * 2; };
+    const updateArrows = () => {
+      const maxSL = shelf.scrollWidth - shelf.clientWidth;
+      prev.disabled = shelf.scrollLeft <= 2;
+      next.disabled = shelf.scrollLeft >= maxSL - 2;
+      const hide = maxSL <= 4;                       // alles past -> pijlen verbergen
+      prev.style.display = next.style.display = hide ? 'none' : '';
     };
+    prev.onclick = () => shelf.scrollBy({ left: -step(), behavior: 'smooth' });
+    next.onclick = () => shelf.scrollBy({ left: step(), behavior: 'smooth' });
 
-    prev.onclick = () => { if (cur > 0) { cur--; apply(); } };
-    next.onclick = () => { if (cur < slides.length - 1) { cur++; apply(); } };
+    // scrollpositie per tab onthouden
+    this._galScroll = this._galScroll || {};
+    shelf.addEventListener('scroll', () => { this._galScroll[key] = shelf.scrollLeft; updateArrows(); }, { passive: true });
+    requestAnimationFrame(() => { shelf.scrollLeft = this._galScroll[key] || 0; updateArrows(); });
 
-    // swipe/sleep-ondersteuning (mobiel)
-    let dragX = null;
-    viewport.addEventListener('touchstart', (e) => { dragX = e.touches[0].clientX; }, { passive: true });
-    viewport.addEventListener('touchend', (e) => {
-      if (dragX == null) return;
-      const dx = (e.changedTouches[0].clientX - dragX);
-      if (dx < -30 && cur < slides.length - 1) { cur++; apply(); }
-      else if (dx > 30 && cur > 0) { cur--; apply(); }
-      dragX = null;
-    }, { passive: true });
-
-    // meet & positioneer na layout (viewport moet zichtbaar zijn)
-    this._galApply = apply;
-    apply();
-    requestAnimationFrame(apply);
-    // herbereken fit + centrering bij elke maatverandering (orientatie, layout-settle, resize)
-    if (typeof ResizeObserver !== 'undefined') {
-      this._galRO = new ResizeObserver(() => apply());
-      this._galRO.observe(viewport);
-    } else {
-      this._galResizeHandler = () => apply();
-      window.addEventListener('resize', this._galResizeHandler);
-    }
+    this._galApply = updateArrows;
+    if (typeof ResizeObserver !== 'undefined') { this._galRO = new ResizeObserver(() => updateArrows()); this._galRO.observe(shelf); }
+    else { this._galResizeHandler = () => updateArrows(); window.addEventListener('resize', this._galResizeHandler); }
   },
 
   _spriteCard(palette, opts, nameHtml, owned) {
