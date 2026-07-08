@@ -360,6 +360,64 @@ I18N.CUT_EN = {
 };
 I18N.cut = function (s) { return this.lang === 'en' ? (this.CUT_EN[s] || s) : s; };
 
+// ---- losse dynamische UI-teksten: NL blijft bron, Engelse overlay hieronder (tl('...')) ----
+I18N.UI_EN = {
+  // co-op / friends / lobby
+  '✓ Verbonden! Kies een level om samen te spelen.': '✓ Connected! Pick a level to play together.',
+  '✓ Verbonden! Je maat kiest een level…': '✓ Connected! Your buddy is picking a level…',
+  'Geen verbinding met de server.': 'No connection to the server.',
+  'Uitnodiging naar ': 'Invite sent to ', ' gestuurd… wachten tot die meedoet.': '… waiting for them to join.',
+  'Uitnodigen': 'Invite', 'Offline': 'Offline',
+  'Laden…': 'Loading…', 'Verzoeken': 'Requests', 'Verzonden verzoeken': 'Sent requests',
+  'Nog geen vrienden. Voeg er een toe via "Toevoegen".': 'No friends yet. Add one via "Add".',
+  'Meedoen…': 'Joining…', 'Kamer aanmaken…': 'Creating room…', 'Verbinden…': 'Connecting…',
+  'Vul de kamercode in.': 'Enter the room code.', 'Kon geen kamer maken: ': 'Could not create a room: ',
+  'Nog geen spelers met een account. Log in en speel!': 'No players with an account yet. Log in and play!',
+  'Tegenstander is weg — geen rematch mogelijk.': 'Opponent left — no rematch possible.',
+  'Geen verbinding meer — terug naar lobby.': 'Connection lost — back to the lobby.',
+  'Beiden moeten op rematch drukken.': 'Both must press rematch.',
+  'Kies een map en speel tegen de bot:': 'Pick a map and play against the bot:',
+  'De training-lobby heeft internet nodig om andere spelers te zien.': 'The training lobby needs internet to see other players.',
+  ' nodigt je uit voor CO-OP!': ' invites you to CO-OP!', ' nodigt je uit voor een 1v1!': ' invites you to a 1v1!',
+  'Iemand': 'Someone', 'Winnaar': 'Winner',
+  // account / auth
+  'Updaten…': 'Updating…', 'Bezig…': 'Working…',
+  'Vul e-mail en wachtwoord in.': 'Enter e-mail and password.', 'Kies een nickname.': 'Choose a nickname.',
+  'Wachtwoord moet minstens 6 tekens zijn.': 'Password must be at least 6 characters.',
+  'Account aangemaakt!': 'Account created!', 'Ingelogd!': 'Logged in!',
+  'Bevestig je e-mail via de link die we stuurden, en log daarna in.': 'Confirm your e-mail via the link we sent, then log in.',
+  'Al een account? Inloggen': 'Already have an account? Log in', 'Nog geen account? Registreren': 'No account yet? Register',
+  'Kies je speler-naam (zo sta je op de leaderboard):': 'Choose your player name (this is how you appear on the leaderboard):',
+  'Naam mag niet leeg zijn.': 'Name cannot be empty.', 'Kon de naam niet opslaan: ': 'Could not save the name: ',
+  // journey / result
+  'Je bent verslagen — je kunt vanaf de vlag verder.': 'You were defeated — you can continue from the flag.',
+  'Je bent verslagen.': 'You were defeated.', ' Opnieuw (vanaf begin)': ' Retry (from start)',
+  'Level ': 'Level ', ' gehaald!': ' cleared!', 'Probeer het opnieuw.': 'Try again.',
+  // inventaris / blacksmith hints
+  'Nog geen harnas. Smeed er een bij de Blacksmith.': 'No armour yet. Forge some at the Blacksmith.',
+  'Repareren: ': 'Repairing: ', 'Smeden: ': 'Forging: ',
+  'Kies max <b>3</b> power-ups voor je loadout (': 'Pick up to <b>3</b> power-ups for your loadout (',
+  ')/3). In een match activeer je ze; per gebruik gaat er 1 af.': ')/3). Activate them in a match; each use spends one.',
+  'Harnas geeft <b>extra HP</b> (grijs balkje). Rust per slot 1 stuk uit. Smeed nieuwe stukken bij de <b>Blacksmith</b>.': 'Armour gives <b>extra HP</b> (grey bar). Equip one piece per slot. Forge new pieces at the <b>Blacksmith</b>.',
+  'Materialen vind je in <b>kisten</b>. Gebruik ze bij de <b>Blacksmith</b> om harnas te smeden.': 'Materials come from <b>chests</b>. Use them at the <b>Blacksmith</b> to forge armour.',
+  // in-game
+  'VERSLAGEN!': 'DEFEATED!', 'JIJ': 'YOU',
+  'JIJ wint de ronde!': 'YOU win the round!', 'TEGENSTANDER wint de ronde': 'OPPONENT wins the round',
+  'online': 'online', 'OVERLEEF!': 'SURVIVE!', 'VERSLA ZE!': 'DEFEAT THEM!',
+  // versus-uitslag
+  ' VERSLAGEN! ': ' DEFEATED! ', 'VERLOREN': 'DEFEAT', ' OPNIEUW': ' RETRY', ' REMATCH': ' REMATCH',
+  'Beiden moeten op rematch drukken.': 'Both players must press rematch.',
+  // arena / daglimiet
+  'Kon de daglimiet niet controleren: ': 'Could not check the daily limit: ',
+  'Nieuw spel starten? Al je munten, wapens, characters en levelvoortgang worden gewist.': 'Start a new game? All your coins, weapons, characters and level progress will be wiped.',
+  // coop panel sub-teksten (innerHTML)
+  '<p class="screen-sub">Log in (menu ▸ account) en voeg vrienden toe om samen te spelen.</p>': '<p class="screen-sub">Log in (menu ▸ account) and add friends to play together.</p>',
+  '<p class="screen-sub">Laden…</p>': '<p class="screen-sub">Loading…</p>',
+  '<p class="screen-sub">Nog geen vrienden. Voeg ze toe via de Friends-knop.</p>': '<p class="screen-sub">No friends yet. Add them via the Friends button.</p>',
+};
+I18N.ui = function (s) { return this.lang === 'en' ? (this.UI_EN[s] || s) : s; };
+window.tl = function (s) { return I18N.ui(s); };
+
 I18N.init();
 window.I18N = I18N;
 window.t = function (k, f) { return I18N.t(k, f); };

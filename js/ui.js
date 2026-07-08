@@ -93,7 +93,7 @@ const UI = {
 
     // nieuw spel (wist alle voortgang)
     $('btn-newgame').onclick = () => {
-      if (confirm('Nieuw spel starten? Al je munten, wapens, characters en levelvoortgang worden gewist.')) {
+      if (confirm(tl('Nieuw spel starten? Al je munten, wapens, characters en levelvoortgang worden gewist.'))) {
         Storage.reset();
         this.show('menu');
       }
@@ -219,7 +219,7 @@ const UI = {
     if (window.Net && Net.ready && Net.isLoggedIn()) {
       let left;
       try { left = await Net.arenaUsePlay(); }
-      catch (e) { alert('Kon de daglimiet niet controleren: ' + (e.message || e)); return; }
+      catch (e) { alert(tl('Kon de daglimiet niet controleren: ') + (e.message || e)); return; }
       if (left === -1) {
         alert('Je hebt vandaag al ' + ARENA_PLAYS_PER_DAY + ' keer Zombie Knock-out gespeeld.\nDe limiet reset elke ochtend om 06:00.');
         return;
@@ -260,7 +260,7 @@ const UI = {
     return {
       onMatch: (role) => {
         this._coopRole = role; this._coopConnected = true;
-        if (st()) st().textContent = role === 'host' ? '✓ Verbonden! Kies een level om samen te spelen.' : '✓ Verbonden! Je maat kiest een level…';
+        if (st()) st().textContent = role === 'host' ? tl('✓ Verbonden! Kies een level om samen te spelen.') : tl('✓ Verbonden! Je maat kiest een level…');
       },
       onJStart: (p) => { if (p && p.n) this.beginCoopStage(p.n); },
       onJP: (p) => Game.onCoopP(p),
@@ -275,18 +275,18 @@ const UI = {
   // online vrienden tonen met een "Uitnodigen"-knop
   async renderCoopFriends() {
     const box = document.getElementById('coop-friends'); if (!box) return;
-    if (!window.Net || !Net.isLoggedIn()) { box.innerHTML = '<p class="screen-sub">Log in (menu ▸ account) en voeg vrienden toe om samen te spelen.</p>'; return; }
-    box.innerHTML = '<p class="screen-sub">Laden…</p>';
+    if (!window.Net || !Net.isLoggedIn()) { box.innerHTML = tl('<p class="screen-sub">Log in (menu ▸ account) en voeg vrienden toe om samen te spelen.</p>'); return; }
+    box.innerHTML = tl('<p class="screen-sub">Laden…</p>');
     let ov; try { ov = await Net.friendsOverview(); } catch (e) { box.innerHTML = '<p class="screen-sub">⚠ ' + (e.message || e) + '</p>'; return; }
     const friends = ov.filter((r) => r.kind === 'friend');
     box.innerHTML = '';
-    if (!friends.length) { box.innerHTML = '<p class="screen-sub">Nog geen vrienden. Voeg ze toe via de Friends-knop.</p>'; return; }
+    if (!friends.length) { box.innerHTML = tl('<p class="screen-sub">Nog geen vrienden. Voeg ze toe via de Friends-knop.</p>'); return; }
     friends.sort((a, b) => (Net.isOnline(b.other_id) ? 1 : 0) - (Net.isOnline(a.other_id) ? 1 : 0));
     friends.forEach((r) => {
       const online = Net.isOnline(r.other_id);
       const row = document.createElement('div'); row.className = 'friend-row';
       row.innerHTML = '<span class="fr-dot ' + (online ? 'on' : '') + '"></span><span class="fr-name">' + this._esc(r.nickname) + '</span>';
-      const b = document.createElement('button'); b.className = 'fr-btn challenge'; b.textContent = online ? 'Uitnodigen' : 'Offline';
+      const b = document.createElement('button'); b.className = 'fr-btn challenge'; b.textContent = online ? tl('Uitnodigen') : 'Offline';
       b.disabled = !online; b.onclick = () => this.coopInvite(r.other_id, r.nickname);
       const act = document.createElement('span'); act.className = 'fr-actions'; act.appendChild(b); row.appendChild(act);
       box.appendChild(row);
@@ -295,12 +295,12 @@ const UI = {
   // een vriend uitnodigen voor co-op: maak een kamer + stuur een co-op-uitnodiging
   async coopInvite(toId, toNick) {
     const st = document.getElementById('coop-status');
-    if (!window.Net || !Net.ready) { if (st) st.textContent = 'Geen verbinding met de server.'; return; }
+    if (!window.Net || !Net.ready) { if (st) st.textContent = tl('Geen verbinding met de server.'); return; }
     try {
       this._coopRole = 'host';
       const code = await Net.versusHost(this._coopCbs());
       Net.lobbyInvite(toId, code, true);                   // coop = true
-      if (st) st.textContent = 'Uitnodiging naar ' + toNick + ' gestuurd… wachten tot die meedoet.';
+      if (st) st.textContent = tl('Uitnodiging naar ') + toNick + tl(' gestuurd… wachten tot die meedoet.');
     } catch (e) { this._coopRole = null; if (st) st.textContent = '' + (e.message || e); }
   },
   beginCoopStage(n) {
@@ -462,8 +462,8 @@ const UI = {
       if (btn) btn.classList.add('hidden');
     } else {
       if (btn) btn.classList.remove('hidden');
-      if (sub) sub.textContent = flagReached ? 'Je bent verslagen — je kunt vanaf de vlag verder.' : 'Je bent verslagen.';
-      if (btn) btn.innerHTML = this._ic('flag') + (flagReached ? ' Start vanaf checkpoint' : ' Opnieuw (vanaf begin)');
+      if (sub) sub.textContent = flagReached ? tl('Je bent verslagen — je kunt vanaf de vlag verder.') : tl('Je bent verslagen.');
+      if (btn) btn.innerHTML = this._ic('flag') + (flagReached ? ' Start vanaf checkpoint' : tl(' Opnieuw (vanaf begin)'));
     }
     document.getElementById('jdeath-screen').classList.remove('hidden');
   },
@@ -484,18 +484,18 @@ const UI = {
     document.getElementById('ability-btn').classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + ' VERSLAGEN! ' + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : 'VERLOREN';
+    if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + tl(' VERSLAGEN! ') + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : tl('VERLOREN');
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = (myScore || 0) + ' – ' + (oppScore || 0);
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
     const lvlName = (levels[idx - 1] ? levels[idx - 1].name : ('Level ' + idx));
-    xpEl.innerHTML = lvlName + '<br>' + (won ? 'Level ' + idx + ' gehaald!' : 'Probeer het opnieuw.');
+    xpEl.innerHTML = lvlName + '<br>' + (won ? 'Level ' + idx + tl(' gehaald!') : tl('Probeer het opnieuw.'));
     const voteBox = document.getElementById('vs-result-vote'); if (voteBox) voteBox.classList.add('hidden');
     const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = '';
     const rbtn = document.getElementById('btn-vs-rematch');
     rbtn.classList.remove('hidden'); rbtn.disabled = false;
-    rbtn.innerHTML = won ? (hasNext ? this._ic('arrow-r') + ' VOLGENDE LEVEL' : this._ic('check') + ' KLAAR') : this._ic('refresh') + ' OPNIEUW';
+    rbtn.innerHTML = won ? (hasNext ? this._ic('arrow-r') + ' VOLGENDE LEVEL' : this._ic('check') + ' KLAAR') : this._ic('refresh') + tl(' OPNIEUW');
     rbtn.onclick = () => {
       document.getElementById('versus-result').classList.add('hidden');
       if (won && hasNext) this.pickJourneyLevel(idx + 1);   // via story-check: verhaal speelt ook hier
@@ -710,7 +710,7 @@ const UI = {
   // ---- SPEL UPDATEN (verse versie laden) ----
   async forceUpdate() {
     const btn = document.getElementById('btn-update');
-    if (btn) { btn.disabled = true; btn.textContent = 'Updaten…'; }
+    if (btn) { btn.disabled = true; btn.textContent = tl('Updaten…'); }
     // eventuele caches legen (helpt bij hardnekkige browsers / PWA)
     try {
       if (window.caches && caches.keys) {
@@ -792,11 +792,11 @@ const UI = {
 
   async promptNickname() {
     const cur = this._hasNickname() ? Net.nickname() : '';
-    const nick = window.prompt('Kies je speler-naam (zo sta je op de leaderboard):', cur);
+    const nick = window.prompt(tl('Kies je speler-naam (zo sta je op de leaderboard):'), cur);
     if (nick == null) return;                       // geannuleerd
-    if (!nick.trim()) { alert('Naam mag niet leeg zijn.'); return; }
+    if (!nick.trim()) { alert(tl('Naam mag niet leeg zijn.')); return; }
     try { await Net.setNickname(nick); this.syncCoins(); }
-    catch (e) { alert('Kon de naam niet opslaan: ' + (e.message || e)); }
+    catch (e) { alert(tl('Kon de naam niet opslaan: ') + (e.message || e)); }
   },
 
   // na (her)inloggen: vraag een naam als die nog ontbreekt
@@ -826,7 +826,7 @@ const UI = {
     const isReg = mode === 'register';
     document.getElementById('auth-title').textContent = isReg ? 'REGISTREREN' : 'INLOGGEN';
     document.getElementById('btn-auth-submit').textContent = isReg ? 'ACCOUNT AANMAKEN' : 'INLOGGEN';
-    document.getElementById('btn-auth-toggle').textContent = isReg ? 'Al een account? Inloggen' : 'Nog geen account? Registreren';
+    document.getElementById('btn-auth-toggle').textContent = isReg ? tl('Al een account? Inloggen') : tl('Nog geen account? Registreren');
     document.getElementById('auth-nick').classList.toggle('hidden', !isReg);
     document.getElementById('auth-pass').setAttribute('autocomplete', isReg ? 'new-password' : 'current-password');
     document.getElementById('auth-msg').textContent = '';
@@ -839,23 +839,23 @@ const UI = {
     const pass = document.getElementById('auth-pass').value;
     const nick = document.getElementById('auth-nick').value;
     const submitBtn = document.getElementById('btn-auth-submit');
-    if (!email || !pass) { msg.textContent = 'Vul e-mail en wachtwoord in.'; return; }
-    if (this.authMode === 'register' && !nick) { msg.textContent = 'Kies een nickname.'; return; }
-    if (pass.length < 6) { msg.textContent = 'Wachtwoord moet minstens 6 tekens zijn.'; return; }
-    msg.style.color = ''; msg.textContent = 'Bezig…'; submitBtn.disabled = true;
+    if (!email || !pass) { msg.textContent = tl('Vul e-mail en wachtwoord in.'); return; }
+    if (this.authMode === 'register' && !nick) { msg.textContent = tl('Kies een nickname.'); return; }
+    if (pass.length < 6) { msg.textContent = tl('Wachtwoord moet minstens 6 tekens zijn.'); return; }
+    msg.style.color = ''; msg.textContent = tl('Bezig…'); submitBtn.disabled = true;
     try {
       if (this.authMode === 'register') {
         const res = await Net.register(email, nick, pass);
         if (res.confirmed) {
-          msg.style.color = '#7ad06a'; msg.textContent = 'Account aangemaakt!';
+          msg.style.color = '#7ad06a'; msg.textContent = tl('Account aangemaakt!');
           setTimeout(() => { document.getElementById('auth-screen').classList.add('hidden'); this.syncCoins(); }, 800);
         } else {
           msg.style.color = '#7ad06a';
-          msg.textContent = 'Bevestig je e-mail via de link die we stuurden, en log daarna in.';
+          msg.textContent = tl('Bevestig je e-mail via de link die we stuurden, en log daarna in.');
         }
       } else {
         await Net.login(email, pass);
-        msg.style.color = '#7ad06a'; msg.textContent = 'Ingelogd!';
+        msg.style.color = '#7ad06a'; msg.textContent = tl('Ingelogd!');
         setTimeout(() => { document.getElementById('auth-screen').classList.add('hidden'); this.syncCoins(); }, 700);
       }
     } catch (e) {
@@ -946,7 +946,7 @@ const UI = {
   async renderFriends() {
     if (!window.Net || !Net.isLoggedIn()) return;
     const emptyEl = document.getElementById('friends-empty');
-    emptyEl.textContent = 'Laden…';
+    emptyEl.textContent = tl('Laden…');
     let ov;
     try { ov = await Net.friendsOverview(); }
     catch (e) { emptyEl.textContent = '' + (e.message || e); return; }
@@ -969,15 +969,15 @@ const UI = {
     const incoming = ov.filter((r) => r.kind === 'incoming');
     const outgoing = ov.filter((r) => r.kind === 'outgoing');
     if (incoming.length) {
-      const h = document.createElement('div'); h.className = 'friends-subhead'; h.textContent = 'Verzoeken';
+      const h = document.createElement('div'); h.className = 'friends-subhead'; h.textContent = tl('Verzoeken');
       reqEl.appendChild(h); incoming.forEach((r) => reqEl.appendChild(this._friendRow(r, 'incoming')));
     }
     const on = (id) => (window.Net && Net.isOnline(id)) ? 1 : 0;
     friends.sort((a, b) => on(b.other_id) - on(a.other_id));      // online-vrienden bovenaan
     friends.forEach((r) => listEl.appendChild(this._friendRow(r, 'friend')));
-    emptyEl.textContent = (friends.length || incoming.length) ? '' : 'Nog geen vrienden. Voeg er een toe via "Toevoegen".';
+    emptyEl.textContent = (friends.length || incoming.length) ? '' : tl('Nog geen vrienden. Voeg er een toe via "Toevoegen".');
     if (outgoing.length) {
-      const h = document.createElement('div'); h.className = 'friends-subhead'; h.textContent = 'Verzonden verzoeken';
+      const h = document.createElement('div'); h.className = 'friends-subhead'; h.textContent = tl('Verzonden verzoeken');
       outEl.appendChild(h); outgoing.forEach((r) => outEl.appendChild(this._friendRow(r, 'outgoing')));
     }
   },
@@ -1050,7 +1050,7 @@ const UI = {
     const ch = document.getElementById('btn-convo-challenge');
     ch.disabled = !online; ch.innerHTML = this._ic('swords') + (online ? ' Uitdagen' : ' Offline');
     const box = document.getElementById('convo-messages'); box.innerHTML = '';
-    document.getElementById('convo-msg').textContent = 'Laden…';
+    document.getElementById('convo-msg').textContent = tl('Laden…');
     let msgs;
     try { msgs = await Net.loadMessages(id); }
     catch (e) { document.getElementById('convo-msg').textContent = '' + (e.message || e); return; }
@@ -1098,13 +1098,13 @@ const UI = {
       Net.lobbyInvite(toId, code);            // broadcast op de nog-open chat-channel
       this.show('versus');                     // naar de versus-wachtruimte
       this._enterRoom(code);
-      document.getElementById('vs-peer-status').textContent = 'Uitnodiging naar ' + toNick + ' gestuurd… wachten tot die meedoet.';
-    } catch (e) { alert('Kon geen kamer maken: ' + (e.message || e)); }
+      document.getElementById('vs-peer-status').textContent = tl('Uitnodiging naar ') + toNick + tl(' gestuurd… wachten tot die meedoet.');
+    } catch (e) { alert(tl('Kon geen kamer maken: ') + (e.message || e)); }
   },
 
   onChatInvite(p) {
     this._chatInvite = p;
-    document.getElementById('invite-text').textContent = (p.from || 'Iemand') + (p.coop ? ' nodigt je uit voor CO-OP!' : ' nodigt je uit voor een 1v1!');
+    document.getElementById('invite-text').textContent = (p.from || tl('Iemand')) + (p.coop ? tl(' nodigt je uit voor CO-OP!') : tl(' nodigt je uit voor een 1v1!'));
     document.getElementById('invite-screen').classList.remove('hidden');
   },
 
@@ -1117,7 +1117,7 @@ const UI = {
       this._coopRole = 'guest';
       this.openJourney();
       document.getElementById('coop-panel').classList.remove('hidden');
-      const st = document.getElementById('coop-status'); if (st) st.textContent = 'Meedoen…';
+      const st = document.getElementById('coop-status'); if (st) st.textContent = tl('Meedoen…');
       Net.versusJoin(p.code, this._coopCbs());
       return;
     }
@@ -1137,12 +1137,12 @@ const UI = {
   async renderLeaderboard(sortBy) {
     const list = document.getElementById('lb-list');
     const msg = document.getElementById('lb-msg');
-    list.innerHTML = ''; msg.textContent = 'Laden…';
-    if (!window.Net || !Net.ready) { msg.textContent = 'Geen verbinding met de server.'; return; }
+    list.innerHTML = ''; msg.textContent = tl('Laden…');
+    if (!window.Net || !Net.ready) { msg.textContent = tl('Geen verbinding met de server.'); return; }
     let rows;
     try { rows = await Net.getLeaderboard(sortBy, 50); }
     catch (e) { msg.textContent = '' + (e.message || e); return; }
-    if (!rows.length) { msg.textContent = 'Nog geen spelers met een account. Log in en speel!'; return; }
+    if (!rows.length) { msg.textContent = tl('Nog geen spelers met een account. Log in en speel!'); return; }
     msg.textContent = '';
     const myNick = (window.Net && Net.isLoggedIn()) ? Net.nickname() : null;
     const statText = (r) => {
@@ -1286,7 +1286,7 @@ const UI = {
         if (Game.state === 'versus') { Game.endVersus(true, true); }   // tegenstander verliet = jij wint (forfeit)
         else if (Game.state === 'versusOver') {                   // op het uitslagscherm: rematch onmogelijk
           const rb = document.getElementById('btn-vs-rematch'); if (rb) { rb.disabled = true; rb.innerHTML = this._ic('refresh') + ' REMATCH'; }
-          const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = 'Tegenstander is weg — geen rematch mogelijk.';
+          const rs = document.getElementById('vs-rematch-status'); if (rs) rs.textContent = tl('Tegenstander is weg — geen rematch mogelijk.');
           if (window.Net) Net.leaveVersus();
         } else { const ps = document.getElementById('vs-peer-status'); if (ps) ps.textContent = 'Tegenstander is weg…'; this._peer = null; document.getElementById('vs-lobby-opts').classList.add('hidden'); this.cancelCountdown(); }
       },
@@ -1295,8 +1295,8 @@ const UI = {
 
   async versusHost() {
     const msg = document.getElementById('versus-msg');
-    if (!window.Net || !Net.ready) { msg.textContent = 'Geen verbinding met de server.'; return; }
-    msg.style.color = ''; msg.textContent = 'Kamer aanmaken…';
+    if (!window.Net || !Net.ready) { msg.textContent = tl('Geen verbinding met de server.'); return; }
+    msg.style.color = ''; msg.textContent = tl('Kamer aanmaken…');
     try {
       this._vsRole = 'host';
       const code = await Net.versusHost(this._versusCbs());
@@ -1307,9 +1307,9 @@ const UI = {
   async versusJoin() {
     const msg = document.getElementById('versus-msg');
     const code = document.getElementById('vs-code-input').value;
-    if (!code) { msg.textContent = 'Vul de kamercode in.'; return; }
-    if (!window.Net || !Net.ready) { msg.textContent = 'Geen verbinding met de server.'; return; }
-    msg.style.color = ''; msg.textContent = 'Verbinden…';
+    if (!code) { msg.textContent = tl('Vul de kamercode in.'); return; }
+    if (!window.Net || !Net.ready) { msg.textContent = tl('Geen verbinding met de server.'); return; }
+    msg.style.color = ''; msg.textContent = tl('Verbinden…');
     try {
       this._vsRole = 'guest';
       const c = await Net.versusJoin(code, this._versusCbs());
@@ -1328,7 +1328,7 @@ const UI = {
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
     document.querySelector('.vs-wait-label').classList.add('hidden');     // geen kamercode bij bot
-    document.getElementById('vs-peer-status').textContent = 'Kies een map en speel tegen de bot:';
+    document.getElementById('vs-peer-status').textContent = tl('Kies een map en speel tegen de bot:');
     document.getElementById('vs-lobby-opts').classList.remove('hidden');
     this.renderMapVote();
     document.querySelectorAll('.vs-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'melee'));
@@ -1625,7 +1625,7 @@ const UI = {
 
   // ---------- TRAINING LOBBY ----------
   openTraining() {
-    if (!window.Net || !Net.ready) { alert('De training-lobby heeft internet nodig om andere spelers te zien.'); }
+    if (!window.Net || !Net.ready) { alert(tl('De training-lobby heeft internet nodig om andere spelers te zien.')); }
     Game.startTraining();
   },
   showTraining() {
@@ -1787,7 +1787,7 @@ const UI = {
     if (rb) {
       if (v.roundMsg && v.roundFreezeUntil > Game.time) {
         rb.classList.remove('hidden');
-        rb.textContent = v.roundMsg;
+        rb.textContent = tl(v.roundMsg);
         rb.className = 'vs-round-banner ' + (v.roundMsg.indexOf('JIJ') === 0 ? 'win' : 'lose');
       } else rb.classList.add('hidden');
     }
@@ -1795,7 +1795,7 @@ const UI = {
 
   showWinCelebration(name, won) {
     const el = document.getElementById('vs-win'); if (!el) return;
-    const nm = document.getElementById('vs-win-name'); if (nm) nm.textContent = name || 'Winnaar';
+    const nm = document.getElementById('vs-win-name'); if (nm) nm.textContent = name ? tl(name) : tl('Winnaar');
     el.classList.remove('hidden');
   },
 
@@ -1812,7 +1812,7 @@ const UI = {
     document.body.classList.remove('in-game');
     this.el.touch.classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    if (won) t.innerHTML = 'GEWONNEN! ' + this._ic('trophy'); else t.textContent = 'VERLOREN';
+    if (won) t.innerHTML = 'GEWONNEN! ' + this._ic('trophy'); else t.textContent = tl('VERLOREN');
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = myScore + ' – ' + oppScore;
     const xpEl = document.getElementById('vs-result-xp');
@@ -1838,7 +1838,7 @@ const UI = {
       if (voteBox) voteBox.classList.add('hidden');
     } else {
       rbtn.disabled = false; rbtn.innerHTML = this._ic('refresh') + ' REMATCH'; rbtn.classList.remove('hidden');
-      rs.textContent = isBot ? '' : 'Beiden moeten op rematch drukken.';
+      rs.textContent = isBot ? '' : tl('Beiden moeten op rematch drukken.');
       // map-stemmen voor de volgende pot: standaard de huidige map
       const curMap = (Game.vsMap && Game.vsMap.id) || VERSUS_MAPS[0].id;
       const rr = this._lastRounds || SMASH_ROUNDS;
@@ -1881,7 +1881,7 @@ const UI = {
     }
     // online: handshake (beiden ready)
     if (!window.Net || !Net.versus) {        // tegenstander al weg / geen kanaal
-      document.getElementById('vs-rematch-status').textContent = 'Geen verbinding meer — terug naar lobby.';
+      document.getElementById('vs-rematch-status').textContent = tl('Geen verbinding meer — terug naar lobby.');
       return;
     }
     this._rematchMine = true;
@@ -2081,8 +2081,8 @@ const UI = {
       this.renderPowerupCards(grid, 'inventory');
     } else if (tab === 'chars') { hint.classList.add('hidden'); this.renderOwnedChars(grid); }
     else if (tab === 'hats') { hint.classList.add('hidden'); this.renderOwnedHats(grid); }
-    else if (tab === 'armor') { hint.classList.remove('hidden'); hint.innerHTML = 'Harnas geeft <b>extra HP</b> (grijs balkje). Rust per slot 1 stuk uit. Smeed nieuwe stukken bij de <b>Blacksmith</b>.'; this.renderOwnedArmor(grid); }
-    else if (tab === 'materials') { hint.classList.remove('hidden'); hint.innerHTML = 'Materialen vind je in <b>kisten</b>. Gebruik ze bij de <b>Blacksmith</b> om harnas te smeden.'; this.renderMaterials(grid); }
+    else if (tab === 'armor') { hint.classList.remove('hidden'); hint.innerHTML = tl('Harnas geeft <b>extra HP</b> (grijs balkje). Rust per slot 1 stuk uit. Smeed nieuwe stukken bij de <b>Blacksmith</b>.'); this.renderOwnedArmor(grid); }
+    else if (tab === 'materials') { hint.classList.remove('hidden'); hint.innerHTML = tl('Materialen vind je in <b>kisten</b>. Gebruik ze bij de <b>Blacksmith</b> om harnas te smeden.'); this.renderMaterials(grid); }
     this._galleryify(grid, 'inv_' + tab);
   },
   // ---------- INVENTARIS: harnas ----------
@@ -2104,7 +2104,7 @@ const UI = {
       else { btn.className += ' equip'; btn.textContent = t('equip'); this._tap(btn, () => { Storage.equipArmor(id); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     }
-    if (!any) { const e = document.createElement('p'); e.className = 'screen-sub'; e.textContent = 'Nog geen harnas. Smeed er een bij de Blacksmith.'; grid.appendChild(e); }
+    if (!any) { const e = document.createElement('p'); e.className = 'screen-sub'; e.textContent = tl('Nog geen harnas. Smeed er een bij de Blacksmith.'); grid.appendChild(e); }
   },
   renderMaterials(grid) {
     for (const id of MATERIAL_ORDER) {
@@ -2198,7 +2198,7 @@ const UI = {
     if (!f) { el.classList.add('hidden'); el.innerHTML = ''; return; }
     el.classList.remove('hidden'); el.innerHTML = '';
     const p = ARMOR_PIECES[f.id];
-    const nm = document.createElement('span'); nm.className = 'bs-forge-name'; nm.textContent = (f.repair ? 'Repareren: ' : 'Smeden: ') + p.name; el.appendChild(nm);
+    const nm = document.createElement('span'); nm.className = 'bs-forge-name'; nm.textContent = (f.repair ? tl('Repareren: ') : tl('Smeden: ')) + p.name; el.appendChild(nm);
     if (Storage.forgeReady()) {
       const btn = document.createElement('button'); btn.className = 'bs-collect'; btn.textContent = t('collect');
       this._tap(btn, () => { const r = Storage.collectForge(); if (r) { if (window.Sfx) Sfx.play('coin'); this.renderBlacksmith(); } });

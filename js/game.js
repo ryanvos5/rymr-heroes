@@ -923,7 +923,7 @@ const Game = {
   onZombieKilled(z, reward) {
     if (z && z.brawler && this.triggerKO) {              // BOT-MENSAAP verslagen: Power Smash KO-cinematic
       this.triggerKO(z.x, z.cy, true);
-      this.addFloatText(z.x, z.cy - 30, 'VERSLAGEN!', '#5aff7a', true);
+      this.addFloatText(z.x, z.cy - 30, tl('VERSLAGEN!'), '#5aff7a', true);
     }
     if (this.level.arena) reward = Math.ceil(reward * ARENA_COIN_MULT); // minder munten in de arena
     else if (this.levelWasCleared) reward = 0;                          // herhaald level: geen kill-munten
@@ -5499,7 +5499,7 @@ const Game = {
       // hint: overleef (drager) of versla ze (tegenstander)
       ctx.fillStyle = this.nuke.mine ? '#7dff8a' : '#ff6a4a';
       ctx.font = 'bold 8px "Courier New", monospace';
-      ctx.fillText(this.nuke.mine ? 'OVERLEEF!' : 'VERSLA ZE!', W / 2, by + bh + 7);
+      ctx.fillText(this.nuke.mine ? tl('OVERLEEF!') : tl('VERSLA ZE!'), W / 2, by + bh + 7);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.restore();
     }
