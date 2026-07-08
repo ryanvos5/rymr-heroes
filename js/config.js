@@ -244,7 +244,7 @@ const CHARACTERS = {
   },
   yarno: {
     id: 'yarno', name: 'Yarno', cost: 9200, lvl: 24,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'back', ability: 'knife',
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'back', ability: 'knife', abChargeMul: 3,
     palette: {
       hair: '#161616', hairDark: '#000000',     // zwart, naar achteren
       skin: '#d8a878', skinDark: '#b8895e',

@@ -454,7 +454,11 @@ const Storage = {
     else if (rarity === 'rare') { addMat('leather', ri(2, 4)); addMat('nails', ri(1, 3)); if (Math.random() < 0.4) addMat('iron', ri(1, 2)); }
     else if (rarity === 'epic') { addMat('nails', ri(2, 4)); addMat('iron', ri(2, 4)); if (Math.random() < 0.4) addMat('steel', 1); }
     else { addMat('iron', ri(3, 5)); addMat('steel', ri(1, 3)); addMat('nails', ri(2, 4)); }
-    return { rarity, gold, xp, pus, mats };
+    // robijnen: alleen uit epic (2-10) en legendary (5-20)
+    let rubies = 0;
+    if (rarity === 'epic') rubies = ri(2, 10);
+    else if (rarity === 'legendary') rubies = ri(5, 20);
+    return { rarity, gold, xp, pus, mats, rubies };
   },
   // een klaar-staande kist ophalen -> beloning toepassen + slot vrijmaken
   collectChest(i) {
@@ -466,6 +470,7 @@ const Storage = {
     this.data.powerups = this.data.powerups || {};
     for (const id in rw.pus) this.data.powerups[id] = (this.data.powerups[id] || 0) + rw.pus[id];
     if (rw.mats) { const m = this.materials(); for (const k in rw.mats) m[k] = (m[k] || 0) + rw.mats[k]; }   // materialen bijschrijven
+    if (rw.rubies) this.data.rubies = (this.data.rubies || 0) + rw.rubies;                                    // robijnen bijschrijven
     this.chests().splice(i, 1);
     this.save();
     return rw;

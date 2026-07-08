@@ -517,9 +517,10 @@ const UI = {
       Storage.data.powerups = Storage.data.powerups || {};
       for (const id in rw.pus) Storage.data.powerups[id] = (Storage.data.powerups[id] || 0) + rw.pus[id];
       if (rw.mats) { const m = Storage.materials(); for (const k in rw.mats) m[k] = (m[k] || 0) + rw.mats[k]; }
+      if (rw.rubies) Storage.data.rubies = (Storage.data.rubies || 0) + rw.rubies;
       Storage.save();
       out.push({ type: 'chestopen', rarity, level: L });           // openings-animatie
-      out.push({ type: 'earn', coins: rw.gold, xp: rw.xp });
+      out.push({ type: 'earn', coins: rw.gold, xp: rw.xp, rubies: rw.rubies || 0 });
       for (const id in rw.pus) out.push({ type: 'pu', id, n: rw.pus[id] });
       for (const k in (rw.mats || {})) out.push({ type: 'mat', id: k, n: rw.mats[k] });
     }
@@ -2564,7 +2565,7 @@ const UI = {
   },
   showChestRewards(rw) {
     const list = [{ type: 'chestopen', rarity: rw.rarity }];   // eerst de openings-animatie
-    list.push({ type: 'earn', coins: rw.gold, xp: rw.xp });
+    list.push({ type: 'earn', coins: rw.gold, xp: rw.xp, rubies: rw.rubies || 0 });
     for (const id in rw.pus) list.push({ type: 'pu', id, n: rw.pus[id] });
     for (const k in (rw.mats || {})) list.push({ type: 'mat', id: k, n: rw.mats[k] });
     list.push(...this._levelUpRewards());   // kist-xp kan je laten levelen (evt. mijlpaal-kist)
