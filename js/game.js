@@ -1732,7 +1732,7 @@ const Game = {
         w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
       };
       this.journey = { world: worldId, idx, lv };
-      this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot, swapSides: Math.random() < 0.5 });
+      this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, bossFight: !!lv.bossFight, botChar: lv.bot, swapSides: Math.random() < 0.5 });
       this.journey = { world: worldId, idx, lv };
       return;
     }
@@ -1751,7 +1751,7 @@ const Game = {
       };
     }
     this.journey = { world: 1, idx, lv };
-    this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, botChar: lv.bot, swapSides: Math.random() < 0.5 });
+    this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, bossFight: !!lv.bossFight, botChar: lv.bot, swapSides: Math.random() < 0.5 });
     this.journey = { world: 1, idx, lv };   // startVersus reset 'm; opnieuw zetten
   },
 
@@ -2196,7 +2196,7 @@ const Game = {
     const mode = (opts.mode === 'both') ? 'both' : (opts.mode === 'smash') ? 'smash' : 'melee';
     this.vsMap = map; this.vsMode = mode;
     this.vsMapW = map.w || CONFIG.VIEW_W;
-    if (window.Sfx) Sfx.music(map.id);                 // map-thema-muziek
+    if (window.Sfx) Sfx.music((opts.bossFight || opts.boss) ? 'boss' : map.id);   // boss = snel & uitdagend, anders map-thema
     this.vsFallY = map.fallY || FALL_DEATH_Y;
     this.vsCamX = 0; this.vsCamY = 0; this.vsCamZoom = 1;
     this.worldId = -1;

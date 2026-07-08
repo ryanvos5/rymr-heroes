@@ -148,6 +148,11 @@ const Sfx = {
       scale: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15], prog: [0, 3, 5, 7],
       riff: [0, 3, 0, 5, 0, 3, 4, -1, 0, 3, 0, 7, 5, 4, 3, -1],
       kick: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1] },
+    // Boss: razendsnel en uitdagend — frygisch-dominant (dreigend/exotisch), dubbele stampende kick
+    boss: { root: 146.8, bpm: 168, lead: 'sawtooth', bass: 'square',
+      scale: [0, 1, 4, 5, 7, 8, 11, 12, 13, 16], prog: [0, 1, 0, 5],
+      riff: [0, 7, 4, 1, 0, 4, 5, 1, 0, 7, 8, 6, 5, 4, 1, 0],
+      kick: [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1] },
   },
   _minor: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15],   // fallback-toonladder
   _prog: [0, 10, 8, 7],                          // fallback-akkoorden
