@@ -1918,7 +1918,7 @@ const Game = {
     if (window.Sfx && seg.theme) Sfx.music(seg.theme === 'jungle' ? 'jungle' : 'beach');   // muziek volgt de scène
     this._storyBg(this._storyClock || 0, seg.theme);   // achtergrond (golven) loopt door, ook tijdens bevriezen
     seg.draw(t);
-    const cap = document.getElementById('journey-cap'); if (cap) cap.textContent = seg.cap;
+    const cap = document.getElementById('journey-cap'); if (cap) cap.textContent = (window.I18N && I18N.cut) ? I18N.cut(seg.cap) : seg.cap;
   },
   // bouwt de stukjes (met tekst, duur en teken-functie) voor een verhaal-script
   _buildStorySegs(script) {
@@ -2564,7 +2564,7 @@ const Game = {
         // ===== Scène 4 – Zwart scherm: wordt vervolgd =====
         { theme: 'temple', dur: 3000, cap: 'Wordt vervolgd…', draw: (t) => {
           const c = this.ctx; c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
-          const a = Math.min(1, t / 900); c.globalAlpha = a; c.fillStyle = '#f4e8c0'; c.font = 'bold 17px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('WORDT VERVOLGD…', W / 2, H / 2); c.textAlign = 'left'; c.globalAlpha = 1;
+          const a = Math.min(1, t / 900); c.globalAlpha = a; c.fillStyle = '#f4e8c0'; c.font = 'bold 17px "Courier New",monospace'; c.textAlign = 'center'; c.fillText((window.I18N && I18N.lang === 'en') ? 'TO BE CONTINUED…' : 'WORDT VERVOLGD…', W / 2, H / 2); c.textAlign = 'left'; c.globalAlpha = 1;
         } },
       ];
     }
