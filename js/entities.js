@@ -69,12 +69,13 @@ class Player {
     this.abChargeMul = ch.abChargeMul || 1;   // Timo/Tygo/Bonzo: 3× langere oplaadtijd
     this.abilityDurMul = 1;     // character-level: langere ability-duur (alleen voor de lokale speler gezet)
     this.jumpMul = 1;           // Tygo: hogere sprong (ability)
-    this._ultraUntil = 0;       // Gorilla King: ultra rage (4× schade)
+    this._ultraUntil = 0;       // ultra rage (4× schade)
+    this._rage3Until = 0;       // Gorilla King: Koningswoede (3× schade)
     this._bladeRounds = 0;      // Yarno: zap-mes nog X rondes
   }
 
   // rage-schademultiplier (ultra rage = 4×, gewone rage = 2×)
-  rageMul(time) { return this._ultraUntil > time ? 4 : (this.hasBuff('rage', time) ? 2 : 1); }
+  rageMul(time) { return this._ultraUntil > time ? 4 : (this._rage3Until > time ? 3 : (this.hasBuff('rage', time) ? 2 : 1)); }
 
   get height() { return this.ducking ? 20 : 29; }
 

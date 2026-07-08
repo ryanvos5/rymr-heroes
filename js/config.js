@@ -278,15 +278,15 @@ const CHARACTERS = {
     desc: 'Bruut: fors & sterk (+25% melee). Alleen via Journey.'
   },
   kong: {
-    id: 'kong', name: 'Gorilla King', cost: 0, journeyOnly: true,
-    maxHp: 130, speedMul: 0.95, meleeMul: 1.0, build: 'bulky', hair: 'bald', ability: 'ultrarage',
+    id: 'kong', name: 'Gorilla King', cost: 6000,
+    maxHp: 130, speedMul: 0.95, meleeMul: 1.0, build: 'bulky', hair: 'bald', ability: 'rage3', abChargeMul: 4,
     palette: {
       hair: '#2a2622', hairDark: '#15120f',
       skin: '#3a342f', skinDark: '#262220',     // gorilla-zwart
       eye: '#ffcf33',
       shirt: '#3a342f', shirtDark: '#201d1a', pants: '#1a1816', shoe: '#0c0b0a',
     },
-    desc: 'Gorillakoning: enorme kracht + rage. Versla hem in Journey om te unlocken.'
+    desc: 'Gorillakoning: enorme kracht. Ability Koningswoede (3× schade), maar lange oplaadtijd.'
   },
   // ---- TEMPLE-WERELD BOSSES (unlockbaar door ze te verslaan in Journey) ----
   guardian: {
@@ -355,6 +355,7 @@ const ABILITIES = {
   rage10:     { name: 'Rage',        desc: 'Rage 10s (2× schade).' },
   rage8:      { name: 'Rage',        desc: 'Rage 8s (2× schade).' },
   ultrarage:  { name: 'Ultra Rage',  desc: 'Ultra rage 5s (4× schade).' },
+  rage3:      { name: 'Koningswoede', desc: 'Rage 8s (3× schade) — lange oplaadtijd.' },
   knife:      { name: 'Zap-mes',     desc: 'Speciaal mes voor 1 ronde (snel + hard).' },
   katanacombo:{ name: 'Katana-combo', desc: '5s lang 2× zo snel slaan met de katana.' },
   traps:      { name: 'Vallen',       desc: 'Krijg 3 vallen — plaats ze zelf één voor één op de grond of een platform. Stapt je tegenstander erop: 8s vast.' },

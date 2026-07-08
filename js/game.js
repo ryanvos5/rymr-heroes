@@ -4184,6 +4184,7 @@ const Game = {
       case 'rage10': p.buffs.rage = now + 10000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'rage8': p.buffs.rage = now + 8000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'ultrarage': p.buffs.rage = now + 5000 * dm; p._ultraUntil = now + 5000 * dm; this._abFx(p, '#ff2a2a'); break;
+      case 'rage3': p.buffs.rage = now + 8000 * dm; p._rage3Until = now + 8000 * dm; this._abFx(p, '#ff3a2a'); break;
       case 'earthquake': this.startEarthquake(); break;
       case 'knife': p._bladeRounds = 1; p.meleeId = 'zapblade'; p.weaponId = 'zapblade'; this._abFx(p, '#cfe8ff'); break;
       case 'katanacombo': p.meleeId = 'katana'; p.weaponId = 'katana'; p._fastMeleeUntil = now + 5000 * dm; this._abFx(p, '#f2f6fa'); break;
@@ -4229,7 +4230,7 @@ const Game = {
   },
   _abilityColor(ab) {
     return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', fireaura10: '#ff8a2a',
-      rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', zapdash: '#ffe27a',
+      rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', rage3: '#ff3a2a', zapdash: '#ffe27a',
       earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', stunpulse: '#8fd0ff', invisible: '#b06bff' })[ab] || '#c9a6ff';
   },
   // Monnik-ability: energiegolf die iedereen binnen bereik verdooft (werkt tegen bot én online)
@@ -4362,6 +4363,7 @@ const Game = {
       case 'rage10': b.buffs.rage = now + 10000; this._abFx(b, '#ff5a3a'); break;
       case 'rage8': b.buffs.rage = now + 8000; this._abFx(b, '#ff5a3a'); break;
       case 'ultrarage': b.buffs.rage = now + 5000; b._ultraUntil = now + 5000; this._abFx(b, '#ff2a2a'); break;
+      case 'rage3': b.buffs.rage = now + 8000; b._rage3Until = now + 8000; this._abFx(b, '#ff3a2a'); break;
       case 'earthquake': this.botEarthquake(); break;
       case 'knife': b._bladeRounds = 1; b.meleeId = 'zapblade'; b.weaponId = 'zapblade'; this._abFx(b, '#cfe8ff'); break;
       case 'katanacombo': b.meleeId = 'katana'; b.weaponId = 'katana'; b._fastMeleeUntil = now + 5000; this._abFx(b, '#f2f6fa'); break;
