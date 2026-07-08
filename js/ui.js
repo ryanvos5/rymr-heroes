@@ -399,7 +399,8 @@ const UI = {
   _journeyStory2For(n) {
     if (n === 1) return 'kongwin';   // overgang jungle -> tempel (slot van wereld 1)
     if (n === 5) return 'guardian';  // Temple Bewaker (baas 1)
-    return null;                      // Monnik (10) en Ninja (15) volgen later
+    if (n === 10) return 'monnik';   // De Oude Monnik (baas 2)
+    return null;                      // Ninja (15) volgt later
   },
   // verhaal-cutscene op het canvas afspelen, daarna het level starten
   playStory(script, n) {

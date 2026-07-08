@@ -1727,8 +1727,9 @@ const Game = {
     let mapObj;
     if (worldId === 2) {
       const layout = TEMPLE_JOURNEY_LAYOUTS[(lv.layout || 0) % TEMPLE_JOURNEY_LAYOUTS.length];
+      const interior = idx >= 10;    // vanaf level 10: de tempel van BINNEN (donkere zaal, dichte vloer, alleen via de zijkant eraf)
       mapObj = {
-        id: 'templeJ', name: lv.name, sky: ['#f2b96a', '#9a5a4a'], void: '#0a0604', plat: 'stone', stone: true, temple: true, noPortals: true,
+        id: 'templeJ', name: lv.name, sky: interior ? ['#2c2016', '#0d0906'] : ['#f2b96a', '#9a5a4a'], void: '#0a0604', plat: 'stone', stone: true, temple: true, templeIn: interior, noPortals: true,
         w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
       };
       this.journey = { world: worldId, idx, lv };
@@ -2335,6 +2336,76 @@ const Game = {
           Sprites.drawCharacter(c, P(0.3), Math.round(gy - 2), 1, ch.palette, Object.assign({ attacking: true, weapon: null }, pose0));
           guardian(c, W * 0.62, gy - 2 - bob, -1, 0, { attacking: true });
           c.fillStyle = '#ffef9a'; c.font = 'bold 16px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('VS', P(0.47), gy - 50); c.textAlign = 'left';
+        } },
+      ];
+    }
+    // ===== DE OUDE MONNIK / MONNIK (Wereld 2, level 10) — diep in de tempel, een donkere zaal =====
+    if (script === 'monnik') {
+      const P = (x) => Math.round(W * x);
+      // donkere binnenzaal die de tempel-buitenkant overdekt (pilaren + fakkels + glyphs)
+      const hall = (c) => {
+        c.fillStyle = '#221a12'; c.fillRect(0, 0, W, gy);                                   // donkere stenen wand
+        c.fillStyle = '#2b2016'; for (let y = 6; y < gy; y += 16) { const off = ((y / 16) % 2) * 16; for (let x = -off; x < W; x += 32) Sprites.px(c, '#2b2016', x + 1, y, 30, 14); }
+        // pilaren op de achtergrond
+        [46, 180, 314].forEach((pxp) => { Sprites.px(c, '#463526', pxp - 11, 8, 22, gy - 8); Sprites.px(c, '#54402d', pxp - 11, 8, 6, gy - 8); Sprites.px(c, '#2c2015', pxp + 5, 8, 6, gy - 8); Sprites.px(c, '#5a4632', pxp - 14, 4, 28, 6); for (let y = 20; y < gy - 10; y += 7) Sprites.px(c, '#2c2015', pxp - 3, y, 6, 2); });
+        // gouden glyphs op de wand
+        c.globalAlpha = 0.5; const glyph = (gxp, gyp) => { Sprites.px(c, '#b8912e', gxp, gyp, 2, 8); Sprites.px(c, '#b8912e', gxp - 3, gyp + 2, 8, 2); Sprites.px(c, '#b8912e', gxp - 2, gyp + 6, 6, 2); }; glyph(108, 40); glyph(250, 46); glyph(300, 36); c.globalAlpha = 1;
+      };
+      const torch = (c, tx, ty) => { Sprites.px(c, '#3a2a18', tx - 1, ty, 3, 12); const fl = 3 + Math.round(Math.sin(clk() / 90 + tx) * 1.6); c.globalAlpha = 0.3; c.fillStyle = '#ff9a2a'; c.beginPath(); c.arc(tx, ty - 4, fl + 6, 0, 6.2832); c.fill(); c.globalAlpha = 1; c.fillStyle = '#ffb23a'; c.beginPath(); c.arc(tx, ty - 6, fl, 0, 6.2832); c.fill(); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(tx, ty - 6, fl * 0.5, 0, 6.2832); c.fill(); };
+      const torches = (c) => { torch(c, 108, 66); torch(c, 250, 68); torch(c, 300, 62); };
+      const shout = (c, x, y) => { c.strokeStyle = '#ffef9a'; c.lineWidth = 1.2; for (let k = 0; k < 3; k++) { const a = -0.6 + k * 0.6; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * 8, y + Math.sin(a) * 8 - 7); c.stroke(); } };
+      const monk = (c, x, fy, dir, ph, opts) => this._storyFighter(c, 'monnik', x, fy, dir, ph, 1.14, opts || {});
+      const mat = (c, cx) => { c.fillStyle = '#7a4a1e'; c.fillRect(cx - 18, gy - 3, 36, 4); c.fillStyle = '#9a6028'; c.fillRect(cx - 18, gy - 3, 36, 1); };   // meditatiematje
+      return [
+        // ===== Scène 1 – Diep in de Tempel =====
+        { theme: 'temple', dur: 2400, cap: 'Je loopt dieper de eeuwenoude tempel in, waar het donker en doodstil is.', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2400); hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.12) + Math.round(p * 26), Math.round(gy - 2), 1, ch.palette, Object.assign({ walkPhase: clk() / 70, weapon: null }, pose0));
+        } },
+        { theme: 'temple', dur: 2300, cap: 'Fakkels flikkeren langs de muren en vreemde tekens bedekken de stenen.', draw: () => {
+          const c = this.ctx; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.24), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+        } },
+        { theme: 'temple', dur: 2200, cap: 'In het midden van de zaal zit een oude monnik te mediteren.', draw: () => {
+          const c = this.ctx; hall(c); torches(c); mat(c, W * 0.66);
+          Sprites.drawCharacter(c, P(0.24), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          monk(c, W * 0.66, gy - 2, -1, 0, { ducking: true, weapon: null });   // zittend/mediterend
+        } },
+        // ===== Scène 2 – De Ontmoeting =====
+        { theme: 'temple', dur: 2300, cap: 'Langzaam opent de monnik zijn ogen en kijkt hij je streng aan.', draw: () => {
+          const c = this.ctx; hall(c); torches(c); mat(c, W * 0.66);
+          Sprites.drawCharacter(c, P(0.26), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          monk(c, W * 0.66, gy - 2, -1, 0, { ducking: true, weapon: null });
+          c.fillStyle = '#8fe0ff'; c.fillRect(Math.round(W * 0.66) - 6, gy - 20, 2, 2); c.fillRect(Math.round(W * 0.66) - 1, gy - 20, 2, 2);   // open ogen
+        } },
+        { theme: 'temple', dur: 2200, cap: 'Zonder een woord te zeggen staat hij op en grijpt zijn wapen.', draw: (t) => {
+          const c = this.ctx, p = Math.min(1, t / 2200), rise = (1 - p) * 10; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.26), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          monk(c, W * 0.66, gy - 2 + rise, -1, 0, { weapon: 'spear' });
+        } },
+        { theme: 'temple', dur: 2000, cap: 'Je bent niet welkom in zijn tempel.', draw: () => {
+          const c = this.ctx; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.28), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          monk(c, W * 0.64, gy - 2, -1, 0, { weapon: 'spear' });
+          c.fillStyle = '#ff5a5a'; c.font = 'bold 14px "Courier New",monospace'; c.fillText('!', W * 0.64 - 2, gy - 40);
+        } },
+        // ===== Scène 3 – De Strijd =====
+        { theme: 'temple', dur: 2200, cap: 'De oude monnik neemt een gevechtshouding aan en wijst naar de uitgang.', draw: () => {
+          const c = this.ctx, bob = Math.abs(Math.sin(clk() / 100)) * 2; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.28), Math.round(gy - 2), 1, ch.palette, Object.assign({ weapon: null }, pose0));
+          monk(c, W * 0.62, gy - 2 - bob, -1, 0, { attacking: true, weapon: 'spear' });
+          shout(c, W * 0.62 - 16, gy - 40);
+        } },
+        { theme: 'temple', dur: 2000, cap: 'Hij zal je niet verder laten gaan zonder een gevecht.', draw: () => {
+          const c = this.ctx; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.3), Math.round(gy - 2), 1, ch.palette, Object.assign({ ducking: true, weapon: null }, pose0));
+          monk(c, W * 0.6, gy - 2, -1, clk() / 55, { attacking: true, weapon: 'spear' });
+        } },
+        { theme: 'temple', dur: 1800, cap: 'Bereid je voor en versla de oude monnik — VECHT!', draw: () => {
+          const c = this.ctx, bob = Math.abs(Math.sin(clk() / 80)) * 2.5; hall(c); torches(c);
+          Sprites.drawCharacter(c, P(0.3), Math.round(gy - 2), 1, ch.palette, Object.assign({ attacking: true, weapon: null }, pose0));
+          monk(c, W * 0.62, gy - 2 - bob, -1, 0, { weapon: 'spear' });
+          c.fillStyle = '#ffef9a'; c.font = 'bold 16px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('VS', P(0.47), gy - 48); c.textAlign = 'left';
         } },
       ];
     }
@@ -4952,7 +5023,8 @@ const Game = {
     if (map.jbg) this.drawJungleBg(ctx);                // Journey-jungle: zelfde oerwoud-achtergrond (zonder kooi-gimmick)
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
     if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
-    if (map.temple) this.drawTempleBg(ctx);             // stenen tempel: verre pilaren + fakkels
+    if (map.templeIn) this.drawTempleInteriorBg(ctx);   // tempel van BINNEN: donkere zaal, pilaren, wandfakkels
+    else if (map.temple) this.drawTempleBg(ctx);        // stenen tempel (buiten): verre piramide + fakkels
 
     // afgrond onderin (map-thema), camera-bewust (volle zichtbare breedte bij uitzoomen)
     ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, visW + 8, visH + Math.abs(camY) + 320);
@@ -5498,6 +5570,40 @@ const Game = {
       Sprites.px(ctx, '#0e2716', tx - 8, 172 - th, 16, 4);
     }
     ctx.globalAlpha = 1;
+  },
+
+  // tempel-BINNENkant: donkere stenen zaal met pilaren, gouden glyphs en flakkerende wandfakkels
+  drawTempleInteriorBg(ctx) {
+    const W = this.vsMapW, gy = CONFIG.GROUND_Y;
+    // donkere achterwand met blokken-metselwerk
+    ctx.fillStyle = '#241a12'; ctx.fillRect(0, 0, W, gy);
+    for (let y = 4; y < gy; y += 16) { const off = ((y / 16) % 2) * 16; for (let x = -off; x < W; x += 32) Sprites.px(ctx, '#2c2117', x + 1, y, 30, 14); }
+    // zachte lichtschacht van bovenaf (door een dakopening)
+    const lg = ctx.createLinearGradient(0, 0, 0, gy); lg.addColorStop(0, 'rgba(255,224,150,0.12)'); lg.addColorStop(1, 'rgba(255,224,150,0)');
+    ctx.fillStyle = lg; ctx.fillRect(Math.round(W * 0.32), 0, Math.round(W * 0.36), gy);
+    // rij zware pilaren op de achtergrond
+    [40, 180, 320].forEach((px) => {
+      Sprites.px(ctx, '#463526', px - 12, 8, 24, gy - 8);
+      Sprites.px(ctx, '#54402d', px - 12, 8, 6, gy - 8);        // licht-kant
+      Sprites.px(ctx, '#2c2015', px + 6, 8, 6, gy - 8);         // schaduw-kant
+      Sprites.px(ctx, '#5a4632', px - 15, 3, 30, 6);            // kapiteel
+      Sprites.px(ctx, '#5a4632', px - 15, gy - 10, 30, 10);     // voetstuk
+      for (let y = 22; y < gy - 12; y += 7) Sprites.px(ctx, '#2c2015', px - 3, y, 6, 2);   // groeven
+    });
+    // gouden glyphs op de wand
+    ctx.globalAlpha = 0.55;
+    const glyph = (gx, gy2) => { Sprites.px(ctx, '#b8912e', gx, gy2, 2, 9); Sprites.px(ctx, '#b8912e', gx - 3, gy2 + 2, 8, 2); Sprites.px(ctx, '#b8912e', gx - 2, gy2 + 6, 6, 2); };
+    glyph(108, 44); glyph(232, 50); glyph(285, 40);
+    ctx.globalAlpha = 1;
+    // flakkerende wandfakkels
+    const torch = (tx, ty) => {
+      Sprites.px(ctx, '#3a2a18', tx - 1, ty, 3, 13);
+      const fl = 3 + Math.round(Math.sin(this.time / 90 + tx) * 1.7);
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.arc(tx, ty - 4, fl + 7, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffb23a'; ctx.beginPath(); ctx.arc(tx, ty - 6, fl, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.arc(tx, ty - 6, fl * 0.5, 0, 6.2832); ctx.fill();
+    };
+    torch(108, 70); torch(232, 72); torch(285, 66);
   },
 
   // piratenschip-achtergrond: water + zeil + (langzaam opkomend) zeemonster op de achtergrond
