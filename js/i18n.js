@@ -66,6 +66,9 @@ const I18N = {
       reach_finish: 'Reach the finish to earn coins!', retry_word: 'RETRY', levels_word: 'LEVELS', menu_word: 'MENU',
       new_record: 'NEW RECORD!', round_reached: 'Round reached: ', coins_earned2: 'Coins earned: ', record_round: 'Record: round ', again_word: 'AGAIN',
       rotate_phone: 'Rotate your phone', rotate_sub: 'landscape plays best', training_lobby_title: 'TRAINING LOBBY',
+      select_level: 'SELECT LEVEL', remove_powerup: 'Remove power-up', level_complete: 'LEVEL COMPLETE!',
+      next_level: 'NEXT LEVEL', replay_note: 'Replayed level — fixed 15 coins',
+      train_hint: 'Tap a power-up to grab and try it. When you die you respawn immediately.',
     },
     nl: {
       back: 'Terug', close: 'Sluiten', cancel: 'Annuleren', save: 'Opslaan', ok: 'OK', play: 'Play',
@@ -117,6 +120,9 @@ const I18N = {
       reach_finish: 'Haal de finish om munten te verdienen!', retry_word: 'OPNIEUW', levels_word: 'LEVELS', menu_word: 'MENU',
       new_record: 'NIEUW RECORD!', round_reached: 'Ronde bereikt: ', coins_earned2: 'Munten verdiend: ', record_round: 'Record: ronde ', again_word: 'NOG EEN KEER',
       rotate_phone: 'Draai je telefoon', rotate_sub: 'landscape speelt het lekkerst', training_lobby_title: 'TRAINING LOBBY',
+      select_level: 'KIES LEVEL', remove_powerup: 'Power-up verwijderen', level_complete: 'LEVEL VOLTOOID!',
+      next_level: 'VOLGENDE LEVEL', replay_note: 'Herhaald level — vaste 15 munten',
+      train_hint: "Tik een power-up om 'm te pakken en uit te proberen. Bij dood spawn je meteen weer.",
     },
   },
   init() {
@@ -447,6 +453,8 @@ I18N.UI_EN = {
   'INLOGGEN': 'LOG IN', 'REGISTREREN': 'REGISTER', 'ACCOUNT AANMAKEN': 'CREATE ACCOUNT',
   'LEVEL GEHAALD!': 'LEVEL CLEARED!', 'GEWONNEN! ': 'YOU WON! ',
   'Willekeurige map wordt gekozen…': 'Picking a random map…', 'Wachten op tegenstander…': 'Waiting for opponent…',
+  'Versla ALLE zombies! Sla met de melee-knop of schiet': 'Defeat ALL zombies! Hit with the melee button or shoot',
+  'Versla eerst de bot-mensaap!': 'Defeat the ape bot first!',
   // versus-uitslag
   ' VERSLAGEN! ': ' DEFEATED! ', 'VERLOREN': 'DEFEAT', ' OPNIEUW': ' RETRY', ' REMATCH': ' REMATCH',
   'Beiden moeten op rematch drukken.': 'Both players must press rematch.',

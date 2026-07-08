@@ -782,7 +782,7 @@ const Game = {
     this.tutorialMsg = '';
     this.tutorialUntil = 0;
     if (this.worldId === 1 && this.level.id === 1) {
-      this.tutorials.push({ x: 90, text: 'Versla ALLE zombies! Sla met de melee-knop of schiet', shown: false });
+      this.tutorials.push({ x: 90, text: tl('Versla ALLE zombies! Sla met de melee-knop of schiet'), shown: false });
       const car = this.obstacles.find((o) => o.type === 'car');
       if (car) this.tutorials.push({ x: car.x - 90, text: 'Een auto! Spring eroverheen (je kunt op het dak staan)', shown: false });
       const bar = this.obstacles.find((o) => o.type === 'lowbar');
@@ -1232,7 +1232,7 @@ const Game = {
           if (this.coop.partnerAtFinish) this.win();
           else { this.tutorialMsg = 'Wacht bij de finish op je partner!'; this.tutorialUntil = this.time + 600; }
         } else this.win();
-      } else if (brawlerBlocks) { this.tutorialMsg = 'Versla eerst de bot-mensaap!'; this.tutorialUntil = this.time + 900; }
+      } else if (brawlerBlocks) { this.tutorialMsg = tl('Versla eerst de bot-mensaap!'); this.tutorialUntil = this.time + 900; }
     }
 
     UI.updateHUD(this);
