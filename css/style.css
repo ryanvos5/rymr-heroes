@@ -1473,6 +1473,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
   padding: 4px 4px 10px; scroll-padding-inline: 8px;
 }
+.shop-shelf.centered { justify-content: center; }   /* weinig kaarten -> gecentreerd i.p.v. links geplakt */
 .shop-shelf::-webkit-scrollbar { height: 6px; }
 .shop-shelf::-webkit-scrollbar-track { background: transparent; }
 .shop-shelf::-webkit-scrollbar-thumb { background: #3a4456; border-radius: 3px; }

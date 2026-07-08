@@ -2278,8 +2278,9 @@ const UI = {
       const maxSL = shelf.scrollWidth - shelf.clientWidth;
       prev.disabled = shelf.scrollLeft <= 2;
       next.disabled = shelf.scrollLeft >= maxSL - 2;
-      const hide = maxSL <= 4;                       // alles past -> pijlen verbergen
+      const hide = maxSL <= 4;                       // alles past -> pijlen verbergen + kaarten centreren
       prev.style.display = next.style.display = hide ? 'none' : '';
+      shelf.classList.toggle('centered', hide);
     };
     prev.onclick = () => shelf.scrollBy({ left: -step(), behavior: 'smooth' });
     next.onclick = () => shelf.scrollBy({ left: step(), behavior: 'smooth' });
