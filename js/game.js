@@ -1829,29 +1829,79 @@ const Game = {
   _storyBg(t, theme) {
     const ctx = this.ctx, W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, gy = CONFIG.GROUND_Y;
     if (theme === 'temple') {
-      const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#f2b96a'); sky.addColorStop(1, '#9a5a4a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 0.22; ctx.fillStyle = '#ffe79a'; ctx.beginPath(); ctx.arc(W * 0.5, 32, 22, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;   // zonnewaas
-      const pyr = (cx, w2, h2) => { for (let i = 0; i < h2; i += 4) { const iw = w2 * (1 - i / h2); ctx.fillRect(Math.round(cx - iw / 2), gy - i - 4, Math.round(iw), 4); } };
-      ctx.fillStyle = '#8a6a44'; pyr(64, 94, 64); pyr(W - 64, 94, 64);
-      ctx.fillStyle = '#7a5a38'; pyr(W * 0.5, 74, 46);
-      ctx.fillStyle = '#3a2a18'; ctx.fillRect(Math.round(W * 0.5) - 6, gy - 20, 12, 20);   // donkere tempel-ingang
-      ctx.fillStyle = '#5a4028'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#6a4a30'; ctx.fillRect(0, gy, W, 4);   // stenen grond
-      for (let x = 6; x < W; x += 26) Sprites.px(ctx, '#4a3420', x, gy + 8, 12, 2);         // voegen
+      // ---- avondlucht met kleurverloop + zon ----
+      const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#f7c877'); sky.addColorStop(0.5, '#e79a5a'); sky.addColorStop(1, '#8a4a42'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 0.28; ctx.fillStyle = '#ffe6a0'; ctx.beginPath(); ctx.arc(W * 0.5, 40, 34, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffedb0'; ctx.beginPath(); ctx.arc(W * 0.5, 40, 17, 0, 6.2832); ctx.fill();   // felle zonnekern
+      // verre heuvels achter de tempels
+      ctx.fillStyle = '#7a4a44'; for (let x = -10; x < W + 20; x += 70) { ctx.beginPath(); ctx.arc(x, gy - 6, 46, Math.PI, 0); ctx.fill(); }
+      // geschaduwde piramides (twee tinten: zon-kant vs schaduw-kant)
+      const pyr = (cx, w2, h2, lit, dark) => { for (let i = 0; i < h2; i += 4) { const iw = w2 * (1 - i / h2); const x0 = Math.round(cx - iw / 2), iwr = Math.round(iw); ctx.fillStyle = lit; ctx.fillRect(x0, gy - i - 4, iwr, 4); ctx.fillStyle = dark; ctx.fillRect(Math.round(cx), gy - i - 4, Math.round(x0 + iwr - cx), 4); } };
+      pyr(58, 96, 66, '#9a7550', '#6e5236'); pyr(W - 58, 96, 66, '#9a7550', '#6e5236');
+      pyr(W * 0.5, 82, 52, '#8a6a48', '#5e4630');
+      // trap-treden op de grote middelste piramide + donkere ingang
+      ctx.fillStyle = '#4a3826'; for (let s = 0; s < 4; s++) ctx.fillRect(Math.round(W * 0.5) - 10 + s, gy - 6 - s * 4, 20 - s * 2, 2);
+      ctx.fillStyle = '#241a10'; ctx.fillRect(Math.round(W * 0.5) - 6, gy - 22, 12, 22);
+      ctx.fillStyle = '#c98a3a'; ctx.fillRect(Math.round(W * 0.5) - 7, gy - 24, 14, 3);   // gouden latei boven de poort
+      // fakkels naast de ingang (flakkerende gloed)
+      const torch = (fx) => { ctx.fillStyle = '#3a2a18'; ctx.fillRect(fx, gy - 20, 2, 14); const fl = 3 + Math.round(Math.sin(t / 90 + fx) * 1.4); ctx.fillStyle = '#ffb23a'; ctx.beginPath(); ctx.arc(fx + 1, gy - 22, fl, 0, 6.2832); ctx.fill(); ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.arc(fx + 1, gy - 22, fl * 0.5, 0, 6.2832); ctx.fill(); };
+      torch(W * 0.5 - 16); torch(W * 0.5 + 14);
+      // stenen vloer met tegels + scheuren
+      ctx.fillStyle = '#5a4028'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#6a4a30'; ctx.fillRect(0, gy, W, 4);
+      ctx.fillStyle = '#4a3420'; for (let x = 6; x < W; x += 26) { Sprites.px(ctx, '#4a3420', x, gy + 8, 12, 2); Sprites.px(ctx, '#4a3420', x + 13, gy + 16, 2, H - gy - 16); }
+      ctx.strokeStyle = '#3a2818'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W * 0.3, gy + 4); ctx.lineTo(W * 0.36, gy + 14); ctx.lineTo(W * 0.33, H); ctx.stroke();   // scheur
       return;
     }
     if (theme === 'jungle') {
-      const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#2f6e3a'); sky.addColorStop(1, '#7fc06a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#256033'; for (let x = -10; x < W + 10; x += 26) { ctx.beginPath(); ctx.arc(x, 38, 18, 0, 6.2832); ctx.fill(); }
-      ctx.fillStyle = '#2e7a3f'; for (let x = 6; x < W + 10; x += 30) { ctx.beginPath(); ctx.arc(x, 58, 16, 0, 6.2832); ctx.fill(); }
-      ctx.fillStyle = '#5b3a22'; for (let i = 0; i < 3; i++) { ctx.fillRect(22 + i * 72, 60, 8, gy - 60); }
-      ctx.fillStyle = '#3d6b2e'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#2f5524'; ctx.fillRect(0, gy + 6, W, H - gy - 6);
+      // ---- gelaagde jungle-lucht: donker bladerdak boven -> lichter naar de vloer ----
+      const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#123f22'); sky.addColorStop(0.5, '#2f6e3a'); sky.addColorStop(1, '#88ca70'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      // schuine zonneschacht door het bladerdak (diepte + sfeer)
+      ctx.save(); ctx.globalAlpha = 0.10; ctx.fillStyle = '#eaffc0'; ctx.beginPath(); ctx.moveTo(W * 0.56, 0); ctx.lineTo(W * 0.76, 0); ctx.lineTo(W * 0.52, gy); ctx.lineTo(W * 0.36, gy); ctx.closePath(); ctx.fill(); ctx.restore();
+      // verre, wazige boomlaag
+      ctx.globalAlpha = 0.5; ctx.fillStyle = '#1c5030'; for (let x = -8; x < W + 12; x += 34) { ctx.beginPath(); ctx.arc(x, 86, 24, 0, 6.2832); ctx.fill(); } ctx.globalAlpha = 1;
+      // ==== BOOMSTAMMEN EERST (achter de bladeren) ====
+      const trunks = [30, 128, 232, 322];
+      trunks.forEach((tx, i) => {
+        const tw = 9 + (i % 2) * 2;
+        ctx.fillStyle = '#4a2f1a'; ctx.fillRect(tx, 34, tw, gy - 34);
+        ctx.fillStyle = '#5e3d22'; ctx.fillRect(tx, 34, 3, gy - 34);              // licht-kant
+        ctx.fillStyle = '#33200f'; ctx.fillRect(tx + tw - 2, 34, 2, gy - 34);     // schaduw-kant
+        for (let y = 52; y < gy - 6; y += 14) Sprites.px(ctx, '#33200f', tx + 2, y, tw - 4, 2);   // bast-textuur
+        ctx.fillStyle = '#4a2f1a'; ctx.fillRect(tx - 4, gy - 7, tw + 8, 7);        // wortelvoet
+      });
+      // ==== BLADERDAK BOVENOP (dekt de stamtoppen af) ====
+      ctx.fillStyle = '#1e5a30'; for (let x = -10; x < W + 12; x += 22) { ctx.beginPath(); ctx.arc(x, 28, 22, 0, 6.2832); ctx.fill(); }   // donkere achterlaag
+      ctx.fillStyle = '#2e7a3f'; for (let x = 4; x < W + 12; x += 26) { ctx.beginPath(); ctx.arc(x, 44, 19, 0, 6.2832); ctx.fill(); }
+      ctx.fillStyle = '#3d9450'; for (let x = 14; x < W + 12; x += 30) { ctx.beginPath(); ctx.arc(x, 38, 12, 0, 6.2832); ctx.fill(); }    // lichte highlights
+      // hangende lianen met blaadje
+      ctx.strokeStyle = '#2b6b39'; ctx.lineWidth = 2; [70, 176, 292].forEach((vx, i) => { ctx.beginPath(); ctx.moveTo(vx, 40); for (let y = 40; y <= 92; y += 8) ctx.lineTo(vx + Math.sin((y + i * 20) / 14) * 4, y); ctx.stroke(); ctx.fillStyle = '#3d9450'; ctx.beginPath(); ctx.arc(vx + Math.sin((92 + i * 20) / 14) * 4, 94, 3, 0, 6.2832); ctx.fill(); });
+      // vloer + grassprietjes + varens
+      ctx.fillStyle = '#3d6b2e'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#2f5524'; ctx.fillRect(0, gy + 8, W, H - gy - 8);
+      ctx.fillStyle = '#4f8a38'; ctx.fillRect(0, gy, W, 3);
+      ctx.strokeStyle = '#5aa03f'; ctx.lineWidth = 1.3; for (let x = 6; x < W; x += 15) { const h = 4 + ((x * 7) % 5); ctx.beginPath(); ctx.moveTo(x, gy + 3); ctx.lineTo(x - 2, gy + 3 - h); ctx.moveTo(x, gy + 3); ctx.lineTo(x + 2, gy + 3 - h); ctx.moveTo(x, gy + 3); ctx.lineTo(x, gy + 3 - h - 1); ctx.stroke(); }
       return;
     }
-    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#8ad0f0'); sky.addColorStop(1, '#cde7f7'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#3f9fd0'; ctx.fillRect(0, gy - 30, W, 30); ctx.fillStyle = '#56b0dd'; ctx.fillRect(0, gy - 30, W, 5);
-    for (let x = 0; x < W; x += 14) { const wob = Math.round(Math.sin(t / 300 + x * 0.1) * 2); Sprites.px(ctx, '#cdeaf7', x + ((t * 0.03) % 14), gy - 22 + wob, 7, 2); }
-    ctx.fillStyle = '#e3c882'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#caa860'; ctx.fillRect(0, gy + 6, W, H - gy - 6);
-    ctx.fillStyle = '#ffe79a'; ctx.beginPath(); ctx.arc(W - 46, 30, 14, 0, 6.2832); ctx.fill();
+    // ---- STRAND: zonnige lucht, gelaagde zee, glinsterende golven, nat zand ----
+    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#6ec1ea'); sky.addColorStop(0.6, '#a9dcf3'); sky.addColorStop(1, '#e6f5fb'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    // zon met zachte gloed
+    ctx.globalAlpha = 0.28; ctx.fillStyle = '#fff2b0'; ctx.beginPath(); ctx.arc(W - 52, 32, 28, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff0a0'; ctx.beginPath(); ctx.arc(W - 52, 32, 14, 0, 6.2832); ctx.fill();
+    // pluizige wolkjes
+    const cloud = (cx, cy, s) => { ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, 8 * s, 0, 6.2832); ctx.arc(cx + 9 * s, cy + 2, 10 * s, 0, 6.2832); ctx.arc(cx + 20 * s, cy, 8 * s, 0, 6.2832); ctx.fill(); };
+    cloud(46 + (t * 0.004) % 30, 28, 1); cloud(150, 20, 0.75);
+    // verre zee met horizon + dieptekleur
+    const seaTop = gy - 32;
+    const sea = ctx.createLinearGradient(0, seaTop, 0, gy); sea.addColorStop(0, '#2f8fc4'); sea.addColorStop(1, '#58b8e0'); ctx.fillStyle = sea; ctx.fillRect(0, seaTop, W, gy - seaTop);
+    ctx.fillStyle = '#2477a8'; ctx.fillRect(0, seaTop, W, 2);   // horizonlijn
+    // glinsterende golfkammen (bewegen mee)
+    for (let y = seaTop + 7; y < gy - 3; y += 7) { for (let x = ((y * 3) % 18); x < W; x += 24) { const wob = Math.round(Math.sin(t / 300 + x * 0.1 + y) * 1.4); Sprites.px(ctx, 'rgba(255,255,255,0.45)', Math.round(x + (t * 0.02) % 24), y + wob, 6, 1); } }
+    // schuimrand tegen het zand
+    for (let x = 0; x < W; x += 10) { const f = Math.round(Math.sin(t / 260 + x * 0.14) * 2); Sprites.px(ctx, '#eef7fb', x, gy - 3 + f, 8, 2); }
+    // zand met korrel-textuur + schelpjes
+    ctx.fillStyle = '#e9d08a'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#d3b06a'; ctx.fillRect(0, gy + 8, W, H - gy - 8);
+    ctx.fillStyle = '#f0dca0'; ctx.fillRect(0, gy, W, 3);
+    for (let i = 0; i < 36; i++) { const gx = (i * 97) % W, gyy = gy + 6 + ((i * 53) % (H - gy - 8)); Sprites.px(ctx, 'rgba(120,90,40,0.32)', gx, gyy, 1, 1); }
+    Sprites.px(ctx, '#f2c9b0', 62, gy + 13, 3, 2); Sprites.px(ctx, '#e8a9c0', 214, gy + 18, 3, 2);
   },
   // de cutscene is opgedeeld in stukjes: animatie speelt, bevriest aan het eind,
   // toont de tekst + "Verder"-knop; pas na een klik gaat het volgende stukje spelen.
