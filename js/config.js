@@ -692,6 +692,17 @@ const TEMPLE_JOURNEY_LAYOUTS = [
   [{ x: 180, y: 152, w: 360 }, { x: 60, y: 124, w: 46 }, { x: 300, y: 124, w: 46 }, { x: 130, y: 92, w: 44 }, { x: 230, y: 92, w: 44 }, { x: 180, y: 56, w: 40 }],
   [{ x: 180, y: 152, w: 360 }, { x: 96, y: 108, w: 56 }, { x: 264, y: 108, w: 56 }, { x: 180, y: 74, w: 72 }],
 ];
+// tempel-BINNEN-arena (vanaf wereld 2 level 10): dichte vloer in het MIDDEN, maar smaller dan de map,
+// zodat er links en rechts een afgrond is -> je kunt er alleen via de ZIJKANT afgeslagen worden.
+// (map is 360 breed, speler geklemd op 8..352; vloer 48..312 -> ~40px afgrond aan elke kant.)
+const TEMPLE_INTERIOR_LAYOUTS = [
+  [{ x: 180, y: 152, w: 264 }, { x: 96, y: 112, w: 52 }, { x: 264, y: 112, w: 52 }],
+  [{ x: 180, y: 152, w: 264 }, { x: 180, y: 116, w: 80 }, { x: 92, y: 84, w: 44 }, { x: 268, y: 84, w: 44 }],
+  [{ x: 180, y: 152, w: 264 }, { x: 110, y: 118, w: 50 }, { x: 250, y: 118, w: 50 }, { x: 180, y: 86, w: 60 }],
+  [{ x: 180, y: 152, w: 264 }, { x: 130, y: 116, w: 52 }, { x: 230, y: 116, w: 52 }, { x: 180, y: 82, w: 52 }],
+  [{ x: 180, y: 152, w: 264 }, { x: 96, y: 120, w: 46 }, { x: 264, y: 120, w: 46 }, { x: 180, y: 92, w: 44 }, { x: 180, y: 58, w: 40 }],
+  [{ x: 180, y: 152, w: 264 }, { x: 104, y: 110, w: 54 }, { x: 256, y: 110, w: 54 }, { x: 180, y: 76, w: 68 }],
+];
 // jungle-varianten (vanaf level 10, dieper het oerwoud in); laatste = troonzaal-eindbaas
 const JUNGLE_LAYOUTS = [
   [{ x: 180, y: 150, w: 210 }, { x: 80, y: 112, w: 52 }, { x: 280, y: 112, w: 52 }],

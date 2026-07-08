@@ -1726,8 +1726,10 @@ const Game = {
     // ---- Temple-wereld: eigen tempel-arena met DICHTE ondergrond (geen gat), per level iets anders ----
     let mapObj;
     if (worldId === 2) {
-      const layout = TEMPLE_JOURNEY_LAYOUTS[(lv.layout || 0) % TEMPLE_JOURNEY_LAYOUTS.length];
       const interior = idx >= 10;    // vanaf level 10: de tempel van BINNEN (donkere zaal, dichte vloer, alleen via de zijkant eraf)
+      const layout = interior
+        ? TEMPLE_INTERIOR_LAYOUTS[(lv.layout || 0) % TEMPLE_INTERIOR_LAYOUTS.length]   // smalle vloer met afgrond aan de zijkanten
+        : TEMPLE_JOURNEY_LAYOUTS[(lv.layout || 0) % TEMPLE_JOURNEY_LAYOUTS.length];
       mapObj = {
         id: 'templeJ', name: lv.name, sky: interior ? ['#2c2016', '#0d0906'] : ['#f2b96a', '#9a5a4a'], void: '#0a0604', plat: 'stone', stone: true, temple: true, templeIn: interior, noPortals: true,
         w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
