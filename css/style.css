@@ -1512,12 +1512,17 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 body.is-touch.portrait.in-game #rotate-hint { display: flex; }
 
 /* ===== Training Lobby ===== */
+/* compacte hulpknoppen-rij (Training Lobby + Blacksmith) net boven de shop */
+.menu-utility-row { display: flex; justify-content: center; gap: clamp(6px, 1.5vw, 12px); flex: 0 0 auto; flex-wrap: wrap; }
 .train-lobby-btn {
-  display: block; width: 100%; margin: 0 0 8px 0;
+  display: inline-flex; align-items: center; gap: 5px; width: auto; margin: 0;
+  padding: clamp(4px, 1vh, 7px) clamp(10px, 2.4vw, 16px);
+  font-size: clamp(11px, 1.5vw, 14px); letter-spacing: .5px;
   border-color: #3a7a4a !important;
   background: linear-gradient(180deg, rgba(46,120,74,0.55), rgba(20,60,36,0.65)) !important;
-  color: #eafff0 !important; letter-spacing: 1px;
+  color: #eafff0 !important;
 }
+.train-lobby-btn .ic { width: 15px; height: 15px; }
 #train-hud { position: absolute; inset: 0; z-index: 24; pointer-events: none; }
 #train-hud > * { pointer-events: auto; }
 #train-topbar {
