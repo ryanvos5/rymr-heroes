@@ -11,9 +11,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0d0f14" />
   <title>Tiny Power Smashers</title>
-  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu154" />
-  <link rel="apple-touch-icon" href="icon.svg?v=menu154" />
-  <link rel="stylesheet" href="css/style.css?v=menu154" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg?v=menu155" />
+  <link rel="apple-touch-icon" href="icon.svg?v=menu155" />
+  <link rel="stylesheet" href="css/style.css?v=menu155" />
 </head>
 <body>
   <div id="game-root">
@@ -69,7 +69,7 @@
     </div>
 
     <!-- ===== Splash bij opstarten (logo, fadet vanzelf weg) ===== -->
-    <div id="splash"><img src="logo.svg?v=menu154" alt="Tiny Power Smashers" /></div>
+    <div id="splash"><img src="logo.svg?v=menu155" alt="Tiny Power Smashers" /></div>
 
     <!-- ===== Canvas (de spelwereld) ===== -->
     <canvas id="game-canvas"></canvas>
@@ -141,10 +141,10 @@
               <span id="menu-ruby-count">0</span>
             </span>
           </div>
-          <img class="menu-logo-img" src="logo.svg?v=menu154" alt="Tiny Power Smashers" />
+          <img class="menu-logo-img" src="logo.svg?v=menu155" alt="Tiny Power Smashers" />
           <div class="menu-hud">
             <span id="menu-userline" class="menu-userline">Gast | Lvl 1</span>
-            <button id="btn-settings" class="stone-icon" title="Instellingen" aria-label="Instellingen">
+            <button id="btn-settings" class="stone-icon" data-i18n-title="settings_word" data-i18n-aria="settings_word" title="Settings" aria-label="Settings">
               <svg class="px-icon" viewBox="0 0 8 8" width="20" height="20" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#cfd6df"/><rect x="0" y="3" width="8" height="2" fill="#cfd6df"/><rect x="2" y="2" width="4" height="4" fill="#9aa3ad"/><rect x="3" y="3" width="2" height="2" fill="#2a3242"/></svg>
             </button>
           </div>
@@ -237,7 +237,7 @@
           </div>
         </div>
         <div id="journey-grid" class="level-grid"></div>
-        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> TERUG</button>
+        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="back">Back</span></button>
       </div>
     </div>
 
@@ -251,18 +251,18 @@
     <!-- ===== Account (inloggen / registreren) ===== -->
     <div id="auth-screen" class="overlay hidden">
       <div class="overlay-box auth-box">
-        <h2 class="screen-title" id="auth-title">INLOGGEN</h2>
-        <p class="auth-sub">Optioneel — zo blijft je voortgang op elk toestel bewaard.</p>
+        <h2 class="screen-title" id="auth-title" data-i18n="auth_login">LOG IN</h2>
+        <p class="auth-sub" data-i18n="auth_sub">Optional — keeps your progress on every device.</p>
         <div id="auth-fields">
-          <input id="auth-nick" class="auth-input hidden" type="text" autocomplete="username" placeholder="Nickname" maxlength="20" />
-          <input id="auth-email" class="auth-input" type="email" autocomplete="email" placeholder="E-mail" />
-          <input id="auth-pass" class="auth-input" type="password" autocomplete="current-password" placeholder="Wachtwoord (min. 6 tekens)" />
+          <input id="auth-nick" class="auth-input hidden" type="text" autocomplete="username" data-i18n-ph="ph_nick" placeholder="Nickname" maxlength="20" />
+          <input id="auth-email" class="auth-input" type="email" autocomplete="email" data-i18n-ph="ph_email" placeholder="E-mail" />
+          <input id="auth-pass" class="auth-input" type="password" autocomplete="current-password" data-i18n-ph="ph_pass" placeholder="Password (min. 6 characters)" />
         </div>
         <div id="auth-msg" class="auth-msg"></div>
         <div class="menu-buttons">
-          <button id="btn-auth-submit" class="big-btn">INLOGGEN</button>
-          <button id="btn-auth-toggle" class="text-btn">Nog geen account? Registreren</button>
-          <button id="btn-auth-close" class="text-btn">Annuleren</button>
+          <button id="btn-auth-submit" class="big-btn" data-i18n="auth_login">LOG IN</button>
+          <button id="btn-auth-toggle" class="text-btn" data-i18n="auth_no_account">No account yet? Register</button>
+          <button id="btn-auth-close" class="text-btn" data-i18n="cancel">Cancel</button>
         </div>
       </div>
     </div>
@@ -272,9 +272,9 @@
       <div class="screen-inner">
         <h2 class="screen-title">KIES LEVEL</h2>
         <div id="world-tabs" class="world-tabs"></div>
-        <p class="screen-sub" id="world-sub">Wereld 1 — Verlaten Stad</p>
+        <p class="screen-sub" id="world-sub">World 1</p>
         <div id="level-grid" class="level-grid"></div>
-        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> TERUG</button>
+        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="back">Back</span></button>
       </div>
     </div>
 
@@ -337,7 +337,7 @@
         </div>
         <div id="lb-list" class="lb-list"></div>
         <p id="lb-msg" class="screen-sub"></p>
-        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> TERUG</button>
+        <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="back">Back</span></button>
       </div>
     </div>
 
@@ -346,10 +346,10 @@
       <div class="screen-inner friends-inner">
         <!-- lijst-weergave -->
         <div id="friends-main">
-          <h2 class="screen-title"><svg class="ic"><use href="#ic-char"/></svg> VRIENDEN</h2>
+          <h2 class="screen-title"><svg class="ic"><use href="#ic-char"/></svg> <span data-i18n="friends_title">FRIENDS</span></h2>
           <div id="friends-tabs" class="shop-tabs">
-            <button class="shop-tab active" data-ftab="list">Vrienden</button>
-            <button class="shop-tab" data-ftab="add">Toevoegen</button>
+            <button class="shop-tab active" data-ftab="list" data-i18n="ftab_list">Friends</button>
+            <button class="shop-tab" data-ftab="add" data-i18n="ftab_add">Add</button>
           </div>
           <!-- tab: vriendenlijst -->
           <div id="ftab-list">
@@ -359,27 +359,27 @@
           </div>
           <!-- tab: toevoegen -->
           <div id="ftab-add" class="hidden">
-            <p class="screen-sub">Voeg een vriend toe met zijn gebruikersnaam.</p>
+            <p class="screen-sub" data-i18n="add_friend_hint">Add a friend by their username.</p>
             <div class="chat-input-row">
-              <input id="friend-add-input" class="auth-input" type="text" maxlength="24" autocomplete="off" placeholder="Gebruikersnaam…" />
-              <button id="friend-add-btn" class="big-btn">Sturen</button>
+              <input id="friend-add-input" class="auth-input" type="text" maxlength="24" autocomplete="off" data-i18n-ph="ph_username" placeholder="Username…" />
+              <button id="friend-add-btn" class="big-btn" data-i18n="send">Send</button>
             </div>
             <p id="friend-add-msg" class="screen-sub"></p>
             <div id="friends-outgoing" class="friends-list"></div>
           </div>
-          <p id="friends-login-msg" class="screen-sub hidden">Log in via het menu (<svg class="ic"><use href="#ic-arrow-r"/></svg> account) om vrienden toe te voegen en te chatten.</p>
-          <button class="back-btn" id="btn-chat-back"><svg class="ic"><use href="#ic-arrow-l"/></svg> TERUG</button>
+          <p id="friends-login-msg" class="screen-sub hidden" data-i18n="friends_login">Log in via the menu (▸ account) to add friends and chat.</p>
+          <button class="back-btn" id="btn-chat-back"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="back">Back</span></button>
         </div>
         <!-- gespreks-weergave (DM met 1 vriend) -->
         <div id="friends-convo" class="hidden">
           <div class="convo-head">
             <button id="btn-convo-back" class="convo-back"><svg class="ic"><use href="#ic-arrow-l"/></svg></button>
             <span id="convo-name" class="convo-name"></span>
-            <button id="btn-convo-challenge" class="convo-challenge"><svg class="ic"><use href="#ic-swords"/></svg> Uitdagen</button>
+            <button id="btn-convo-challenge" class="convo-challenge"><svg class="ic"><use href="#ic-swords"/></svg> <span data-i18n="challenge">Challenge</span></button>
           </div>
           <div id="convo-messages" class="chat-messages"></div>
           <div class="chat-input-row">
-            <input id="convo-input" class="auth-input" type="text" maxlength="500" autocomplete="off" placeholder="Bericht…" />
+            <input id="convo-input" class="auth-input" type="text" maxlength="500" autocomplete="off" data-i18n-ph="ph_message" placeholder="Message…" />
             <button id="convo-send" class="big-btn"><svg class="ic"><use href="#ic-send"/></svg></button>
           </div>
           <p id="convo-msg" class="screen-sub"></p>
@@ -390,11 +390,11 @@
     <!-- ===== Invite-prompt (uit de chat) ===== -->
     <div id="invite-screen" class="overlay hidden">
       <div class="overlay-box">
-        <h2 class="screen-title">UITNODIGING</h2>
+        <h2 class="screen-title" data-i18n="invite_title">INVITE</h2>
         <p id="invite-text" class="auth-sub"></p>
         <div class="menu-buttons">
-          <button id="btn-invite-accept" class="big-btn">MEEDOEN</button>
-          <button id="btn-invite-ignore" class="big-btn secondary">NEGEREN</button>
+          <button id="btn-invite-accept" class="big-btn" data-i18n="join">JOIN</button>
+          <button id="btn-invite-ignore" class="big-btn secondary" data-i18n="ignore">IGNORE</button>
         </div>
       </div>
     </div>
@@ -403,37 +403,37 @@
     <div id="versus-screen" class="screen hidden">
       <div class="screen-inner">
         <h2 class="screen-title"><svg class="ic"><use href="#ic-swords"/></svg> 1 VS 1 ONLINE</h2>
-        <p class="screen-sub">Sla je tegenstander van het platform! Eerst bij 5 punten wint.</p>
+        <p class="screen-sub" data-i18n="vs_sub">Knock your opponent off the platform! First to 5 points wins.</p>
         <div id="versus-mm" class="hidden">
           <div class="mm-spinner"></div>
-          <p class="mm-title">Zoeken naar tegenstander…</p>
-          <p class="mm-sub">Nog <span id="mm-count">8</span>s — anders speel je tegen een sterke bot</p>
-          <button id="btn-mm-cancel" class="big-btn secondary">Annuleren</button>
+          <p class="mm-title" data-i18n="searching">Searching for an opponent…</p>
+          <p class="mm-sub"><span id="mm-count">8</span><span data-i18n="mm_post">s left — otherwise you face a strong bot</span></p>
+          <button id="btn-mm-cancel" class="big-btn secondary" data-i18n="cancel">Cancel</button>
         </div>
         <div id="versus-lobby">
-          <button id="btn-vs-host" class="big-btn">KAMER MAKEN</button>
+          <button id="btn-vs-host" class="big-btn" data-i18n="create_room">CREATE ROOM</button>
           <div class="vs-join-row">
-            <input id="vs-code-input" class="auth-input" type="text" placeholder="CODE" maxlength="4" autocomplete="off" />
-            <button id="btn-vs-join" class="big-btn secondary">MEEDOEN</button>
+            <input id="vs-code-input" class="auth-input" type="text" data-i18n-ph="code" placeholder="CODE" maxlength="4" autocomplete="off" />
+            <button id="btn-vs-join" class="big-btn secondary" data-i18n="join">JOIN</button>
           </div>
-          <button id="btn-vs-bot" class="big-btn secondary"><svg class="ic"><use href="#ic-bot"/></svg> SPEEL TEGEN BOT</button>
+          <button id="btn-vs-bot" class="big-btn secondary"><svg class="ic"><use href="#ic-bot"/></svg> <span data-i18n="play_vs_bot">PLAY VS BOT</span></button>
           <div id="versus-msg" class="auth-msg"></div>
         </div>
         <div id="versus-wait" class="hidden">
-          <p class="vs-wait-label">Kamercode: <span id="vs-room-code" class="vs-code-inline">----</span></p>
-          <p id="vs-peer-status" class="vs-wait-sub">Wachten op tegenstander…</p>
+          <p class="vs-wait-label"><span data-i18n="room_code">Room code: </span><span id="vs-room-code" class="vs-code-inline">----</span></p>
+          <p id="vs-peer-status" class="vs-wait-sub" data-i18n="waiting_opponent">Waiting for opponent…</p>
           <!-- matchmaking: map-roulette (willekeurige map) -->
           <div id="vs-roulette" class="hidden">
-            <p class="vs-section" id="vs-roulette-title">Willekeurige map wordt gekozen…</p>
+            <p class="vs-section" id="vs-roulette-title" data-i18n="random_map">Picking a random map…</p>
             <div id="vs-roulette-strip" class="vs-roulette-strip"></div>
           </div>
           <div id="vs-lobby-opts" class="hidden">
-            <p class="vs-section">Stem op een map: <span class="vs-mode-note"><svg class="ic"><use href="#ic-fire"/></svg> Power Smash</span></p>
+            <p class="vs-section"><span data-i18n="vote_map">Vote for a map: </span><span class="vs-mode-note"><svg class="ic"><use href="#ic-fire"/></svg> Power Smash</span></p>
             <div id="vs-map-list" class="vs-map-list"></div>
             <div id="vs-rounds-opt" class="hidden">
-              <p class="vs-section">Aantal rondes: <span id="vs-rounds-val">8</span></p>
+              <p class="vs-section"><span data-i18n="rounds_label">Rounds: </span><span id="vs-rounds-val">8</span></p>
               <input id="vs-rounds-slider" class="vs-slider" type="range" min="3" max="10" step="1" value="8" />
-              <p id="vs-rounds-note" class="vs-wait-sub hidden">De host kiest het aantal rondes.</p>
+              <p id="vs-rounds-note" class="vs-wait-sub hidden" data-i18n="host_rounds">The host chooses the number of rounds.</p>
             </div>
             <div id="vs-bot-diff" class="hidden">
               <p class="vs-section">Bot-moeilijkheid: <span id="vs-diff-val">5</span>/10 — <span id="vs-diff-name">Jager</span></p>
@@ -443,7 +443,7 @@
             <p id="vs-ready-status" class="vs-wait-sub"></p>
           </div>
         </div>
-        <button class="back-btn" id="btn-vs-back" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> TERUG</button>
+        <button class="back-btn" id="btn-vs-back" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="back">Back</span></button>
       </div>
     </div>
 
@@ -451,7 +451,7 @@
     <div id="vs-win" class="vs-win hidden">
       <div class="vs-win-inner">
         <div class="vs-win-trophy"><svg class="ic"><use href="#ic-trophy"/></svg></div>
-        <div class="vs-win-title">WINNAAR</div>
+        <div class="vs-win-title" data-i18n="winner">WINNER</div>
         <div id="vs-win-name" class="vs-win-name">—</div>
       </div>
     </div>
@@ -459,20 +459,20 @@
     <!-- ===== 1 vs 1 uitslag ===== -->
     <div id="versus-result" class="overlay hidden">
       <div class="overlay-box">
-        <h2 class="screen-title" id="vs-result-title">GEWONNEN!</h2>
+        <h2 class="screen-title" id="vs-result-title" data-i18n="won_title">YOU WON!</h2>
         <div class="result-stats">
-          <div>Eindstand: <span id="vs-result-score">0 – 0</span></div>
+          <div><span data-i18n="final_score">Final score: </span><span id="vs-result-score">0 – 0</span></div>
           <div id="vs-result-xp" class="hidden"></div>
         </div>
         <div id="vs-result-vote" class="vs-result-vote hidden">
-          <div class="vs-vote-title">Kies de volgende map:</div>
+          <div class="vs-vote-title" data-i18n="pick_next_map">Pick the next map:</div>
           <div id="vs-result-map-list" class="vs-map-list"></div>
         </div>
         <div class="menu-buttons">
-          <button id="btn-vs-rematch" class="big-btn"><svg class="ic"><use href="#ic-refresh"/></svg> REMATCH</button>
+          <button id="btn-vs-rematch" class="big-btn"><svg class="ic"><use href="#ic-refresh"/></svg> <span data-i18n="rematch_word">REMATCH</span></button>
           <p id="vs-rematch-status" class="vs-wait-sub"></p>
-          <button id="btn-vs-again" class="big-btn secondary"><svg class="ic"><use href="#ic-home"/></svg> LOBBY</button>
-          <button id="btn-vs-menu" class="big-btn secondary">MENU</button>
+          <button id="btn-vs-again" class="big-btn secondary"><svg class="ic"><use href="#ic-home"/></svg> <span data-i18n="lobby_word">LOBBY</span></button>
+          <button id="btn-vs-menu" class="big-btn secondary" data-i18n="menu_word">MENU</button>
         </div>
       </div>
     </div>
@@ -480,7 +480,7 @@
     <!-- ===== Beloning-popup (unlocks / munten / xp), met wachtrij ===== -->
     <div id="reward-pop" class="hidden">
       <div class="reward-card">
-        <div id="reward-title" class="reward-title">VRIJGESPEELD!</div>
+        <div id="reward-title" class="reward-title" data-i18n="unlocked">UNLOCKED!</div>
         <canvas id="reward-canvas" width="170" height="120"></canvas>
         <div id="reward-name" class="reward-name"></div>
         <div id="reward-count" class="reward-count"></div>
@@ -497,13 +497,13 @@
         <div id="vs-armor-me" class="vs-armor hidden"><div class="vs-armor-fill"></div></div>
         <div id="vs-guard-me" class="vs-guard hidden"><div class="vs-guard-fill"></div></div>
       </div>
-      <span class="vs-score-vs">JIJ · TEGEN</span>
+      <span class="vs-score-vs" data-i18n="you_vs">YOU · VS</span>
       <div class="vs-side vs-side-them">
         <span id="vs-score-them" class="vs-score">0</span>
         <div id="vs-shield-them" class="vs-shield hidden"><div class="vs-shield-fill"></div></div>
         <div class="vs-hp"><div id="vs-hp-them" class="vs-hp-fill them"></div></div>
       </div>
-      <button id="btn-vs-quit" title="Stoppen"><svg class="ic"><use href="#ic-x"/></svg></button>
+      <button id="btn-vs-quit" data-i18n-title="quit" title="Quit"><svg class="ic"><use href="#ic-x"/></svg></button>
       <div id="vs-countdown" class="vs-countdown hidden"></div>
       <div id="vs-round-banner" class="vs-round-banner hidden"></div>
     </div>
@@ -511,15 +511,15 @@
     <!-- ===== Training-lobby HUD ===== -->
     <div id="train-hud" class="hidden">
       <div id="train-topbar">
-        <span id="train-title">TRAINING LOBBY</span>
+        <span id="train-title" data-i18n="training_lobby_title">TRAINING LOBBY</span>
         <span id="train-count" class="train-count">1 online</span>
       </div>
-      <button id="btn-train-quit" title="Verlaten"><svg class="ic"><use href="#ic-x"/></svg></button>
-      <button id="train-computer-btn" class="train-computer-btn hidden">🖥 Power-ups kiezen</button>
+      <button id="btn-train-quit" data-i18n-title="leave" title="Leave"><svg class="ic"><use href="#ic-x"/></svg></button>
+      <button id="train-computer-btn" class="train-computer-btn hidden">🖥 <span data-i18n="choose_powerups">Choose power-ups</span></button>
       <div id="train-computer-panel" class="hidden">
         <div class="train-pu-box">
           <div class="train-pu-head">
-            <span>KIES EEN POWER-UP</span>
+            <span data-i18n="choose_a_powerup">CHOOSE A POWER-UP</span>
             <button id="train-computer-close" class="train-pu-close">✕</button>
           </div>
           <div id="train-pu-grid" class="train-pu-grid"></div>
@@ -541,7 +541,7 @@
         <div class="menu-buttons">
           <button id="btn-next" class="big-btn">VOLGENDE LEVEL</button>
           <button id="btn-win-shop" class="big-btn secondary">SHOP</button>
-          <button class="back-btn" data-back="level"><svg class="ic"><use href="#ic-arrow-l"/></svg> LEVELS</button>
+          <button class="back-btn" data-back="level"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="levels_word">LEVELS</span></button>
         </div>
       </div>
     </div>
@@ -550,16 +550,16 @@
     <div id="arena-screen" class="screen hidden">
       <div class="screen-inner">
         <h2 class="screen-title lose">KNOCK-OUT!</h2>
-        <div id="arena-record" class="arena-record hidden"><svg class="ic"><use href="#ic-trophy"/></svg> NIEUW RECORD!</div>
+        <div id="arena-record" class="arena-record hidden"><svg class="ic"><use href="#ic-trophy"/></svg> <span data-i18n="new_record">NEW RECORD!</span></div>
         <div class="result-stats">
-          <div>Ronde bereikt: <span id="arena-round">1</span></div>
-          <div>Munten verdiend: <span id="arena-coins">0</span> <svg class="ic"><use href="#ic-coin"/></svg></div>
-          <div>Record: ronde <span id="arena-best">0</span></div>
+          <div><span data-i18n="round_reached">Round reached: </span><span id="arena-round">1</span></div>
+          <div><span data-i18n="coins_earned2">Coins earned: </span><span id="arena-coins">0</span> <svg class="ic"><use href="#ic-coin"/></svg></div>
+          <div><span data-i18n="record_round">Record: round </span><span id="arena-best">0</span></div>
         </div>
-        <div class="arena-plays">Pogingen vandaag over: <span id="arena-left">0</span></div>
+        <div class="arena-plays"><span data-i18n="attempts_left">Attempts left today: </span><span id="arena-left">0</span></div>
         <div class="menu-buttons">
-          <button id="btn-arena-again" class="big-btn arena">NOG EEN KEER</button>
-          <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> MENU</button>
+          <button id="btn-arena-again" class="big-btn arena" data-i18n="again_word">AGAIN</button>
+          <button class="back-btn" data-back="menu"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="menu_word">MENU</span></button>
         </div>
       </div>
     </div>
@@ -567,15 +567,15 @@
     <!-- ===== Game over ===== -->
     <div id="lose-screen" class="screen hidden">
       <div class="screen-inner">
-        <h2 class="screen-title lose" id="lose-title">DOOD</h2>
+        <h2 class="screen-title lose" id="lose-title" data-i18n="dead">DEAD</h2>
         <div class="result-stats">
-          <div>Zombies gedood: <span id="lose-kills">0</span></div>
-          <div class="lost-coins">Munten misgelopen: <span id="lose-coins">0</span> <svg class="ic"><use href="#ic-coin"/></svg></div>
-          <div class="lose-note">Haal de finish om munten te verdienen!</div>
+          <div><span data-i18n="zombies_killed">Zombies killed: </span><span id="lose-kills">0</span></div>
+          <div class="lost-coins"><span data-i18n="coins_missed">Coins missed: </span><span id="lose-coins">0</span> <svg class="ic"><use href="#ic-coin"/></svg></div>
+          <div class="lose-note" data-i18n="reach_finish">Reach the finish to earn coins!</div>
         </div>
         <div class="menu-buttons">
-          <button id="btn-retry" class="big-btn">OPNIEUW</button>
-          <button class="back-btn" data-back="level"><svg class="ic"><use href="#ic-arrow-l"/></svg> LEVELS</button>
+          <button id="btn-retry" class="big-btn" data-i18n="retry_word">RETRY</button>
+          <button class="back-btn" data-back="level"><svg class="ic"><use href="#ic-arrow-l"/></svg> <span data-i18n="levels_word">LEVELS</span></button>
         </div>
       </div>
     </div>
@@ -595,11 +595,11 @@
     <!-- ===== Pauze-menu ===== -->
     <div id="pause-screen" class="overlay hidden">
       <div class="overlay-box">
-        <h2 class="screen-title">GEPAUZEERD</h2>
+        <h2 class="screen-title" data-i18n="paused">PAUSED</h2>
         <div class="menu-buttons">
-          <button id="btn-resume" class="big-btn">DOORGAAN</button>
-          <button id="btn-restart" class="big-btn secondary">OPNIEUW</button>
-          <button id="btn-quit" class="big-btn secondary">NAAR MENU</button>
+          <button id="btn-resume" class="big-btn" data-i18n="resume">CONTINUE</button>
+          <button id="btn-restart" class="big-btn secondary" data-i18n="restart">RETRY</button>
+          <button id="btn-quit" class="big-btn secondary" data-i18n="to_menu">TO MENU</button>
         </div>
       </div>
     </div>
@@ -607,11 +607,11 @@
     <!-- ===== Journey: dood-scherm (checkpoint of menu) ===== -->
     <div id="jdeath-screen" class="overlay hidden">
       <div class="overlay-box">
-        <h2 class="screen-title lose">AF!</h2>
-        <p class="screen-sub" id="jdeath-sub">Je bent verslagen.</p>
+        <h2 class="screen-title lose" data-i18n="out_word">OUT!</h2>
+        <p class="screen-sub" id="jdeath-sub">You were defeated.</p>
         <div class="menu-buttons">
-          <button id="btn-jdeath-checkpoint" class="big-btn"><svg class="ic"><use href="#ic-flag"/></svg> Start vanaf checkpoint</button>
-          <button id="btn-jdeath-menu" class="big-btn secondary"><svg class="ic"><use href="#ic-home"/></svg> Terug naar menu</button>
+          <button id="btn-jdeath-checkpoint" class="big-btn"><svg class="ic"><use href="#ic-flag"/></svg> <span data-i18n="from_checkpoint">Start from checkpoint</span></button>
+          <button id="btn-jdeath-menu" class="big-btn secondary"><svg class="ic"><use href="#ic-home"/></svg> <span data-i18n="back_to_menu">Back to menu</span></button>
         </div>
       </div>
     </div>
@@ -619,22 +619,22 @@
     <!-- ===== Draai-je-telefoon hint (portrait op touch) ===== -->
     <div id="rotate-hint">
       <div class="rotate-icon"><svg class="ic"><use href="#ic-phone"/></svg><svg class="ic"><use href="#ic-refresh"/></svg></div>
-      <div>Draai je telefoon<br><span>landscape speelt het lekkerst</span></div>
+      <div><span data-i18n="rotate_phone">Rotate your phone</span><br><span data-i18n="rotate_sub">landscape plays best</span></div>
     </div>
   </div>
 
-  <script src="vendor/supabase.min.js?v=menu154"></script>
-  <script src="js/i18n.js?v=menu154"></script>
-  <script src="js/config.js?v=menu154"></script>
-  <script src="js/storage.js?v=menu154"></script>
-  <script src="js/audio.js?v=menu154"></script>
-  <script src="js/net.js?v=menu154"></script>
-  <script src="js/input.js?v=menu154"></script>
-  <script src="js/sprites.js?v=menu154"></script>
-  <script src="js/menubg.js?v=menu154"></script>
-  <script src="js/entities.js?v=menu154"></script>
-  <script src="js/ui.js?v=menu154"></script>
-  <script src="js/game.js?v=menu154"></script>
-  <script src="js/main.js?v=menu154"></script>
+  <script src="vendor/supabase.min.js?v=menu155"></script>
+  <script src="js/i18n.js?v=menu155"></script>
+  <script src="js/config.js?v=menu155"></script>
+  <script src="js/storage.js?v=menu155"></script>
+  <script src="js/audio.js?v=menu155"></script>
+  <script src="js/net.js?v=menu155"></script>
+  <script src="js/input.js?v=menu155"></script>
+  <script src="js/sprites.js?v=menu155"></script>
+  <script src="js/menubg.js?v=menu155"></script>
+  <script src="js/entities.js?v=menu155"></script>
+  <script src="js/ui.js?v=menu155"></script>
+  <script src="js/game.js?v=menu155"></script>
+  <script src="js/main.js?v=menu155"></script>
 </body>
 </html>

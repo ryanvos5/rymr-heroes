@@ -484,7 +484,7 @@ const UI = {
     document.getElementById('ability-btn').classList.add('hidden');
     document.getElementById('versus-hud').classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + tl(' VERSLAGEN! ') + this._ic('trophy'); else t.textContent = won ? 'LEVEL GEHAALD!' : tl('VERLOREN');
+    if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + tl(' VERSLAGEN! ') + this._ic('trophy'); else t.textContent = won ? tl('LEVEL GEHAALD!') : tl('VERLOREN');
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = (myScore || 0) + ' – ' + (oppScore || 0);
     const xpEl = document.getElementById('vs-result-xp');
@@ -824,8 +824,8 @@ const UI = {
   openAuth(mode) {
     this.authMode = mode;
     const isReg = mode === 'register';
-    document.getElementById('auth-title').textContent = isReg ? 'REGISTREREN' : 'INLOGGEN';
-    document.getElementById('btn-auth-submit').textContent = isReg ? 'ACCOUNT AANMAKEN' : 'INLOGGEN';
+    document.getElementById('auth-title').textContent = isReg ? tl('REGISTREREN') : tl('INLOGGEN');
+    document.getElementById('btn-auth-submit').textContent = isReg ? tl('ACCOUNT AANMAKEN') : tl('INLOGGEN');
     document.getElementById('btn-auth-toggle').textContent = isReg ? tl('Al een account? Inloggen') : tl('Nog geen account? Registreren');
     document.getElementById('auth-nick').classList.toggle('hidden', !isReg);
     document.getElementById('auth-pass').setAttribute('autocomplete', isReg ? 'new-password' : 'current-password');
@@ -1246,7 +1246,7 @@ const UI = {
     this._vsStarted = false;
     document.getElementById('vs-lobby-opts').classList.add('hidden');
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.remove('hidden');
-    const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = 'Willekeurige map wordt gekozen…';
+    const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = tl('Willekeurige map wordt gekozen…');
     this._renderRoulette();
     this._spinRoulette();
     setTimeout(() => {
@@ -1370,7 +1370,7 @@ const UI = {
     document.getElementById('versus-wait').classList.remove('hidden');
     document.querySelector('.vs-wait-label').classList.remove('hidden');
     document.getElementById('vs-room-code').textContent = code;
-    document.getElementById('vs-peer-status').textContent = 'Wachten op tegenstander…';
+    document.getElementById('vs-peer-status').textContent = tl('Wachten op tegenstander…');
     document.getElementById('vs-lobby-opts').classList.add('hidden');
   },
 
@@ -1401,7 +1401,7 @@ const UI = {
   // ---- MATCHMAKING: map-roulette (willekeurige map, host beslist) ----
   _beginMmRoulette() {
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.remove('hidden');
-    const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = 'Willekeurige map wordt gekozen…';
+    const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = tl('Willekeurige map wordt gekozen…');
     this._renderRoulette();
     this._spinRoulette();
     if (this._vsRole === 'host') {
@@ -1812,7 +1812,7 @@ const UI = {
     document.body.classList.remove('in-game');
     this.el.touch.classList.add('hidden');
     const t = document.getElementById('vs-result-title');
-    if (won) t.innerHTML = 'GEWONNEN! ' + this._ic('trophy'); else t.textContent = tl('VERLOREN');
+    if (won) t.innerHTML = tl('GEWONNEN! ') + this._ic('trophy'); else t.textContent = tl('VERLOREN');
     t.className = 'screen-title ' + (won ? 'win' : 'lose');
     document.getElementById('vs-result-score').textContent = myScore + ' – ' + oppScore;
     const xpEl = document.getElementById('vs-result-xp');

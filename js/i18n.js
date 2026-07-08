@@ -46,6 +46,26 @@ const I18N = {
       chest_open_suffix: ' chest — open it in the menu!', level_up: 'LEVEL UP!', reward: 'REWARD',
       coins_word: 'coins', xp_word: 'XP', rubies_word: 'rubies',
       coop: 'Play together (co-op)', coop_hint: 'Invite an online friend, then pick a level together.',
+      // ---- friends / chat / lobby / training ----
+      friends_title: 'FRIENDS', ftab_list: 'Friends', ftab_add: 'Add', add: 'Add', send: 'Send',
+      add_friend_hint: 'Add a friend by their username.', ph_username: 'Username…', ph_message: 'Message…',
+      friends_login: 'Log in via the menu (▸ account) to add friends and chat.',
+      challenge: 'Challenge', invite_title: 'INVITE', join: 'JOIN', ignore: 'IGNORE',
+      vs_title: '1 VS 1 ONLINE', vs_sub: 'Knock your opponent off the platform! First to 5 points wins.',
+      searching: 'Searching for an opponent…', mm_post: 's left — otherwise you face a strong bot',
+      create_room: 'CREATE ROOM', play_vs_bot: 'PLAY VS BOT', code: 'CODE',
+      room_code: 'Room code: ', waiting_opponent: 'Waiting for opponent…',
+      random_map: 'Picking a random map…', vote_map: 'Vote for a map: ', rounds_label: 'Rounds: ',
+      host_rounds: 'The host chooses the number of rounds.', pick_next_map: 'Pick the next map:',
+      attempts_left: 'Attempts left today: ', from_checkpoint: 'Start from checkpoint', back_to_menu: 'Back to menu',
+      settings_word: 'Settings',
+      winner: 'WINNER', won_title: 'YOU WON!', lost_title: 'DEFEAT', final_score: 'Final score: ',
+      quit: 'Quit', leave: 'Leave', choose_powerups: 'Choose power-ups', choose_a_powerup: 'CHOOSE A POWER-UP',
+      paused: 'PAUSED', resume: 'CONTINUE', restart: 'RETRY', to_menu: 'TO MENU', lobby_word: 'LOBBY',
+      dead: 'DEAD', out_word: 'OUT!', zombies_killed: 'Zombies killed: ', coins_missed: 'Coins missed: ',
+      reach_finish: 'Reach the finish to earn coins!', retry_word: 'RETRY', levels_word: 'LEVELS', menu_word: 'MENU',
+      new_record: 'NEW RECORD!', round_reached: 'Round reached: ', coins_earned2: 'Coins earned: ', record_round: 'Record: round ', again_word: 'AGAIN',
+      rotate_phone: 'Rotate your phone', rotate_sub: 'landscape plays best', training_lobby_title: 'TRAINING LOBBY',
     },
     nl: {
       back: 'Terug', close: 'Sluiten', cancel: 'Annuleren', save: 'Opslaan', ok: 'OK', play: 'Play',
@@ -78,6 +98,25 @@ const I18N = {
       chest_open_suffix: '-kist — open in het menu!', level_up: 'LEVEL UP!', reward: 'BELONING',
       coins_word: 'munten', xp_word: 'XP', rubies_word: 'robijnen',
       coop: 'Samen spelen (co-op)', coop_hint: 'Nodig een online vriend uit; kies daarna samen een level.',
+      friends_title: 'VRIENDEN', ftab_list: 'Vrienden', ftab_add: 'Toevoegen', add: 'Toevoegen', send: 'Sturen',
+      add_friend_hint: 'Voeg een vriend toe met zijn gebruikersnaam.', ph_username: 'Gebruikersnaam…', ph_message: 'Bericht…',
+      friends_login: 'Log in via het menu (▸ account) om vrienden toe te voegen en te chatten.',
+      challenge: 'Uitdagen', invite_title: 'UITNODIGING', join: 'MEEDOEN', ignore: 'NEGEREN',
+      vs_title: '1 VS 1 ONLINE', vs_sub: 'Sla je tegenstander van het platform! Eerst bij 5 punten wint.',
+      searching: 'Zoeken naar tegenstander…', mm_post: 's — anders speel je tegen een sterke bot',
+      create_room: 'KAMER MAKEN', play_vs_bot: 'SPEEL TEGEN BOT', code: 'CODE',
+      room_code: 'Kamercode: ', waiting_opponent: 'Wachten op tegenstander…',
+      random_map: 'Willekeurige map wordt gekozen…', vote_map: 'Stem op een map: ', rounds_label: 'Aantal rondes: ',
+      host_rounds: 'De host kiest het aantal rondes.', pick_next_map: 'Kies de volgende map:',
+      attempts_left: 'Pogingen vandaag over: ', from_checkpoint: 'Start vanaf checkpoint', back_to_menu: 'Terug naar menu',
+      settings_word: 'Instellingen',
+      winner: 'WINNAAR', won_title: 'GEWONNEN!', lost_title: 'VERLOREN', final_score: 'Eindstand: ',
+      quit: 'Stoppen', leave: 'Verlaten', choose_powerups: 'Power-ups kiezen', choose_a_powerup: 'KIES EEN POWER-UP',
+      paused: 'GEPAUZEERD', resume: 'DOORGAAN', restart: 'OPNIEUW', to_menu: 'NAAR MENU', lobby_word: 'LOBBY',
+      dead: 'DOOD', out_word: 'AF!', zombies_killed: 'Zombies gedood: ', coins_missed: 'Munten misgelopen: ',
+      reach_finish: 'Haal de finish om munten te verdienen!', retry_word: 'OPNIEUW', levels_word: 'LEVELS', menu_word: 'MENU',
+      new_record: 'NIEUW RECORD!', round_reached: 'Ronde bereikt: ', coins_earned2: 'Munten verdiend: ', record_round: 'Record: ronde ', again_word: 'NOG EEN KEER',
+      rotate_phone: 'Draai je telefoon', rotate_sub: 'landscape speelt het lekkerst', training_lobby_title: 'TRAINING LOBBY',
     },
   },
   init() {
@@ -105,6 +144,7 @@ const I18N = {
     document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = this.t(el.getAttribute('data-i18n-html')); });
     document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.setAttribute('placeholder', this.t(el.getAttribute('data-i18n-ph'))); });
     document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', this.t(el.getAttribute('data-i18n-aria'))); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.setAttribute('title', this.t(el.getAttribute('data-i18n-title'))); });
   },
 };
 // ---- CONTENT-vertaling: config-strings staan in het Nederlands (NL-bron);
@@ -404,6 +444,9 @@ I18N.UI_EN = {
   'VERSLAGEN!': 'DEFEATED!', 'JIJ': 'YOU',
   'JIJ wint de ronde!': 'YOU win the round!', 'TEGENSTANDER wint de ronde': 'OPPONENT wins the round',
   'online': 'online', 'OVERLEEF!': 'SURVIVE!', 'VERSLA ZE!': 'DEFEAT THEM!',
+  'INLOGGEN': 'LOG IN', 'REGISTREREN': 'REGISTER', 'ACCOUNT AANMAKEN': 'CREATE ACCOUNT',
+  'LEVEL GEHAALD!': 'LEVEL CLEARED!', 'GEWONNEN! ': 'YOU WON! ',
+  'Willekeurige map wordt gekozen…': 'Picking a random map…', 'Wachten op tegenstander…': 'Waiting for opponent…',
   // versus-uitslag
   ' VERSLAGEN! ': ' DEFEATED! ', 'VERLOREN': 'DEFEAT', ' OPNIEUW': ' RETRY', ' REMATCH': ' REMATCH',
   'Beiden moeten op rematch drukken.': 'Both players must press rematch.',
