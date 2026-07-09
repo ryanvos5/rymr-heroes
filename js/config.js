@@ -993,7 +993,9 @@ const VERSUS_MAPS = [
       { x: 120, y: 176, w: 170 }, { x: 840, y: 176, w: 170 },   // grond links/rechts
       { x: 480, y: 176, w: 150 },                                // midden-grond
       { x: 300, y: 120, w: 76 }, { x: 660, y: 120, w: 76 },      // midden
-      { x: 160, y: 66, w: 52 }, { x: 800, y: 66, w: 52 },       // hoog
+      { x: 160, y: 66, w: 52 }, { x: 800, y: 66, w: 52 },       // hoog links/rechts
+      { x: 480, y: 80, w: 80 },                                  // centraal hoog platform
+      { x: 420, y: 132, w: 40 }, { x: 540, y: 132, w: 40 },      // kleine richels naast het midden
     ],
   },
   {
