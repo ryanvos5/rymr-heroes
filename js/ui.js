@@ -1150,7 +1150,7 @@ const UI = {
   openLeaderboard() {
     document.querySelectorAll('#lb-tabs [data-lb]').forEach((b, i) => b.classList.toggle('active', i === 0));
     this.show('leaderboard');
-    this.renderLeaderboard('xp');
+    this.renderLeaderboard('rank');
   },
 
   async renderLeaderboard(sortBy) {
@@ -1167,14 +1167,16 @@ const UI = {
     const statText = (r) => {
       if (sortBy === 'arena') return (r.arena_best || 0) + ' ronde';
       if (sortBy === 'wins') return (r.mp_wins || 0) + 'W ' + (r.mp_losses || 0) + 'L';
-      return (r.xp || 0) + ' XP';
+      if (sortBy === 'xp') return (r.xp || 0) + ' XP';
+      return (r.rp || 0) + ' RP';
     };
+    const rankChip = (rp) => { const rk = RANKS[rankForRp(rp || 0)]; return '<span class="lb-rankbadge" style="color:' + rk.col + ';border-color:' + rk.col + '">' + rk.name + '</span>'; };
     const makeRow = (r, rankText, me) => {
       const row = document.createElement('div');
       row.className = 'lb-row' + (me ? ' me' : '');
       row.innerHTML =
         '<span class="lb-rank">' + rankText + '</span>' +
-        '<span class="lb-name">' + this._esc(r.nickname) + '</span>' +
+        '<span class="lb-name">' + this._esc(r.nickname) + ' ' + rankChip(r.rp) + '</span>' +
         '<span class="lb-lvl">Lvl ' + playerLevel(r.xp || 0) + '</span>' +
         '<span class="lb-stat">' + statText(r) + '</span>';
       return row;
@@ -1200,6 +1202,16 @@ const UI = {
     }
   },
 
+  // eigen rank-badge in het menu (naam + RP-voortgangsbalk); klik = leaderboard
+  renderMenuRank() {
+    const el = document.getElementById('menu-rank'); if (!el) return;
+    const pr = Storage.rankProgress(), rk = pr.rank;
+    el.innerHTML =
+      '<span class="mr-badge" style="color:' + rk.col + '">' + rk.name + '</span>' +
+      '<span class="mr-bar"><span style="width:' + Math.round(pr.pct * 100) + '%;background:' + rk.col + '"></span></span>' +
+      '<span class="mr-rp">' + pr.rp + ' RP' + (pr.next ? (' · ' + pr.toNext + '→' + pr.next.name) : ' · MAX') + '</span>';
+    el.onclick = () => this.openLeaderboard();
+  },
   _esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; },
   // eigen pixel-icoon (vervangt standaard emoji) — als HTML-string voor innerHTML
   _ic(name) { return '<svg class="ic"><use href="#ic-' + name + '"/></svg>'; },
@@ -1835,7 +1847,7 @@ const UI = {
     el.classList.remove('hidden');
   },
 
-  showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot) {
+  showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot, rankRes) {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     // knop-bindingen herstellen (Journey kan ze hebben overschreven)
     document.getElementById('btn-vs-rematch').onclick = () => this.doRematch();
@@ -1853,14 +1865,20 @@ const UI = {
     document.getElementById('vs-result-score').textContent = myScore + ' – ' + oppScore;
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
-    if (!isBot || mmBot) {                       // online OF matchmaking-bot -> echte beloning tonen
-      xpEl.innerHTML = (mmBot ? this._ic('bot') + ' Bot verslagen!<br>' : '') + '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten<br>' +
-        'Level ' + playerLevel(Storage.data.xp || 0) +
-        (window.Net && Net.isLoggedIn() ? '' : '  (log in om mee te tellen)');
-    } else if (xpGained > 0 || coinsEarned > 0) {
-      xpEl.innerHTML = this._ic('bot') + ' Bot Lvl 10 verslagen!<br>+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
+    if (!isBot) {                                // echte online tegenstander -> XP + RP + rank
+      let html = '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
+      if (rankRes) {
+        const d = rankRes.delta, rk = RANKS[rankRes.newIdx];
+        html += '<br><span style="color:' + (d >= 0 ? '#7be07a' : '#ff7a6a') + ';font-weight:bold">' + (d >= 0 ? '+' : '') + d + ' RP</span>' +
+          '  ·  <span style="color:' + rk.col + '">' + rk.name + '</span> (' + rankRes.newRp + ' RP)';
+        if (rankRes.streakBonus) html += '<br><span style="color:#ffd24a">🔥 Win streak! +' + rankRes.streakBonus + ' RP</span>';
+        if (rankRes.higherBonus) html += (rankRes.streakBonus ? ' · ' : '<br>') + '<span style="color:#ffd24a">Hogere rank verslagen +' + rankRes.higherBonus + ' RP</span>';
+        if (rankRes.rankedUp) html += '<br><span style="color:' + rk.col + ';font-weight:bold">⬆ NIEUWE RANK: ' + rk.name + (rk.title ? ' — ' + rk.title : '') + '!</span>';
+      }
+      html += (window.Net && Net.isLoggedIn() ? '' : '<br>(log in om je rank & munten mee te tellen)');
+      xpEl.innerHTML = html;
     } else {
-      xpEl.innerHTML = this._ic('bot') + ' Oefenpotje tegen de bot — geen XP';
+      xpEl.innerHTML = this._ic('bot') + ' Tegen de bot — telt niet mee voor rank of XP' + (coinsEarned > 0 ? '<br>+' + coinsEarned + ' ● munten' : '');
     }
     // rematch-knop voorbereiden
     this._rematchMine = false; this._rematchPeer = false; this._vsStarted = false; this._isBotResult = !!isBot;
@@ -1894,7 +1912,13 @@ const UI = {
     // gewonnen met beloning -> munten/xp-popup bovenop de uitslag
     const rlist = [];
     if (won && (xpGained > 0 || coinsEarned > 0)) rlist.push({ type: 'earn', coins: coinsEarned, xp: xpGained });
-    if (chestDrop) { rlist.push({ type: 'chest', rarity: chestDrop }); this.renderChests(); }   // nieuwe kist in het menu
+    if (chestDrop) rlist.push({ type: 'chest', rarity: chestDrop });   // losse kist
+    let gotChest = !!chestDrop;
+    if (rankRes && rankRes.rewards) for (const rw of rankRes.rewards) {   // rank-up-beloningen (munten + kist)
+      if (rw.coins) rlist.push({ type: 'earn', coins: rw.coins, xp: 0, rank: rw.rank.name });
+      if (rw.chest) { rlist.push({ type: 'chest', rarity: rw.chest }); gotChest = true; }
+    }
+    if (gotChest) this.renderChests();
     rlist.push(...this._levelUpRewards());
     if (rlist.length) this.showRewards(rlist);
   },
@@ -1976,7 +2000,7 @@ const UI = {
     // vulkaan-achtergrond alleen laten draaien op de menuschermen (niet in het spel)
     if (window.MenuBg) { if (!inGame) MenuBg.start(); else MenuBg.stop(); }
     // kisten + live timer alleen op het hoofdmenu
-    if (name === 'menu') { this.renderChests(); this._startChestTimer(); } else this._stopChestTimer();
+    if (name === 'menu') { this.renderChests(); this.renderMenuRank(); this._startChestTimer(); } else this._stopChestTimer();
     if (name !== 'blacksmith') this._stopForgeTimer();
     if (name !== 'versus') this._stopMatchmaking();   // buiten het versus-scherm nooit blijven zoeken
 

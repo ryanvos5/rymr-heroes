@@ -468,6 +468,12 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .menu-coins-top #menu-coin-count { color: var(--gold); font-weight: bold; }
 .menu-rubies-top #menu-ruby-count { color: #ff8aa0; font-weight: bold; }
 .px-icon { display: block; image-rendering: pixelated; }
+.menu-rank { display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: var(--pixel-font); text-align: left;
+  background: linear-gradient(180deg, rgba(30,22,16,.72), rgba(14,9,7,.82)); border: 1px solid rgba(90,70,45,.7); border-radius: 999px; padding: 2px clamp(6px,1.4vw,10px); }
+.menu-rank .mr-badge { font-size: clamp(11px,1.7vw,14px); font-weight: bold; letter-spacing: .3px; text-shadow: 1px 1px 0 #000; }
+.menu-rank .mr-rp { font-size: 10px; color: #cbb89a; text-shadow: 1px 1px 0 #000; }
+.menu-rank .mr-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; }
+.menu-rank .mr-bar > span { display: block; height: 100%; }
 
 /* drie tegels in het midden — gecentreerd, niet beeldvullend (zoals de mockup) */
 .menu-tiles {
@@ -980,6 +986,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .lb-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-lvl { color: #8fd0ff; font-size: 12px; min-width: 48px; text-align: right; }
 .lb-stat { color: var(--text-dim); font-size: 12px; min-width: 64px; text-align: right; }
+.lb-rankbadge { display: inline-block; font-size: 10px; font-weight: bold; letter-spacing: .3px; border: 1px solid; border-radius: 5px; padding: 0 5px; margin-left: 4px; vertical-align: middle; background: rgba(0,0,0,.28); }
 
 .screen-title {
   font-size: clamp(28px, 6vw, 48px);

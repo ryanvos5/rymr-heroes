@@ -26,8 +26,11 @@ const DEFAULT_SAVE = {
   chests: [],                   // kist-slots (max 3): { r: rarity, u: unlockAt(ms) 0=nog niet begonnen }
   xp: 0,                        // ervaring uit multiplayer-duels (level = playerLevel(xp))
   level: 1,                     // laatst-uitgekeerde level (voor de level-up-popup + beloning)
-  mpWins: 0,                    // gewonnen 1v1-duels
-  mpLosses: 0,                  // verloren 1v1-duels
+  mpWins: 0,                    // gewonnen 1v1-duels (alleen tegen echte spelers)
+  mpLosses: 0,                  // verloren 1v1-duels (alleen tegen echte spelers)
+  rp: 0,                        // rank-punten (matchmaking-ranking)
+  winStreak: 0,                 // huidige win-streak (voor de +10 bonus)
+  rankRewarded: 0,              // hoogste rank-index waarvoor al munten/kisten zijn uitgekeerd
   charXp: {},                   // XP per character (voor de level-balk): { id: xp }
   charLevel: {},                // level per character (1..20): { id: lvl }
   materials: { leather: 0, nails: 0, iron: 0, steel: 0 },   // smeed-materialen (uit kisten)
@@ -106,6 +109,9 @@ const Storage = {
     if (Array.isArray(cloud.chests) && cloud.chests.length > (d.chests || []).length) d.chests = cloud.chests;
     d.mpWins = Math.max(d.mpWins || 0, cloud.mpWins || 0);
     d.mpLosses = Math.max(d.mpLosses || 0, cloud.mpLosses || 0);
+    d.rp = Math.max(d.rp || 0, cloud.rp || 0);
+    d.rankRewarded = Math.max(d.rankRewarded || 0, cloud.rankRewarded || 0);
+    if (typeof cloud.winStreak === 'number' && (d.winStreak || 0) === 0) d.winStreak = cloud.winStreak;
     for (const w of (cloud.ownedWeapons || [])) if (!d.ownedWeapons.includes(w)) d.ownedWeapons.push(w);
     for (const c of (cloud.ownedCharacters || [])) if (!d.ownedCharacters.includes(c)) d.ownedCharacters.push(c);
     for (const h of (cloud.ownedHats || [])) if (!(d.ownedHats || (d.ownedHats = ['none'])).includes(h)) d.ownedHats.push(h);
@@ -411,6 +417,48 @@ const Storage = {
   addChest(rarity) {
     if (!CHEST_TYPES[rarity] || !this.canReceiveChest()) return false;
     this.chests().push({ r: rarity, u: 0 }); this.save(); return true;
+  },
+
+  // ---- rank (matchmaking) ----
+  rp() { return this.data.rp || 0; },
+  rankIndex() { return rankForRp(this.rp()); },
+  rank() { return RANKS[this.rankIndex()]; },
+  winStreak() { return this.data.winStreak || 0; },
+  rankProgress() {
+    const rp = this.rp(), idx = rankForRp(rp), cur = RANKS[idx], next = RANKS[idx + 1] || null;
+    const floor = cur.rp, ceil = next ? next.rp : cur.rp;
+    const pct = next ? Math.max(0, Math.min(1, (rp - floor) / (ceil - floor))) : 1;
+    return { rp, idx, rank: cur, next, toNext: next ? Math.max(0, ceil - rp) : 0, pct };
+  },
+  // een afgeronde matchmaking-match verwerken -> RP + eventuele rank-up-beloningen
+  applyRankedResult(opts) {
+    opts = opts || {};
+    const d = this.data;
+    const oldRp = d.rp || 0, oldIdx = rankForRp(oldRp);
+    let delta = 0, streakBonus = 0, higherBonus = 0;
+    if (opts.quit) { delta = RANK_RP.quit; d.winStreak = 0; }
+    else if (opts.won) {
+      delta = RANK_RP.win;
+      d.winStreak = (d.winStreak || 0) + 1;
+      if (d.winStreak >= 3 && d.winStreak % 3 === 0) { streakBonus = RANK_RP.streakBonus; delta += streakBonus; }
+      if (typeof opts.oppRp === 'number' && rankForRp(opts.oppRp) > oldIdx) { higherBonus = RANK_RP.higherRankBonus; delta += higherBonus; }
+    } else { delta = RANK_RP.loss; d.winStreak = 0; }
+    const newRp = Math.max(0, oldRp + delta);
+    d.rp = newRp;
+    const newIdx = rankForRp(newRp);
+    // beloningen: eenmalig per bereikte rank (rankRewarded = hoogste ooit uitgekeerd)
+    const rewarded = d.rankRewarded || 0, rewards = [];
+    if (newIdx > rewarded) {
+      for (let i = rewarded + 1; i <= newIdx; i++) {
+        const rk = RANKS[i]; let gotChest = false;
+        if (rk.coins) d.coins = (d.coins || 0) + rk.coins;
+        if (rk.chest && this.canReceiveChest()) { this.chests().push({ r: rk.chest, u: 0 }); gotChest = true; }
+        rewards.push({ rank: rk, coins: rk.coins || 0, chest: gotChest ? rk.chest : null });
+      }
+      d.rankRewarded = newIdx;
+    }
+    this.save();
+    return { delta, streakBonus, higherBonus, oldRp, newRp, oldIdx, newIdx, rankedUp: newIdx > oldIdx, demoted: newIdx < oldIdx, rewards, streak: d.winStreak };
   },
   startChest(i) {
     const c = this.chests()[i]; if (!c || c.u > 0) return false;

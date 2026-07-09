@@ -176,6 +176,7 @@ const Net = {
           save_data: Storage.data,
           mp_wins: Storage.data.mpWins || 0,
           mp_losses: Storage.data.mpLosses || 0,
+          rp: Storage.data.rp || 0,
           xp: Storage.data.xp || 0,
           arena_best: Storage.data.arenaBest || 0,
           updated_at: new Date().toISOString(),

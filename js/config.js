@@ -826,6 +826,25 @@ const CHEST_TYPES = {
   legendary: { name: 'Legendary', col: '#e8a81c', band: '#fff0a0', dur: 14 * 3600e3,  gold: [500, 1000], xp: [250, 700] },
 };
 const CHEST_ORDER = ['common', 'rare', 'epic', 'legendary'];
+
+/* ---------- RANK-systeem (alleen echte online matchmaking-potjes; bots tellen niet) ---------- */
+const RANKS = [
+  { name: 'Bronze I',   rp: 0,    tier: 'bronze',   sub: 1, col: '#cd7f32', glow: '#e59b52', coins: 0,    chest: null },
+  { name: 'Bronze II',  rp: 100,  tier: 'bronze',   sub: 2, col: '#cd7f32', glow: '#e59b52', coins: 100,  chest: 'common' },
+  { name: 'Bronze III', rp: 200,  tier: 'bronze',   sub: 3, col: '#cd7f32', glow: '#e59b52', coins: 150,  chest: 'common' },
+  { name: 'Silver I',   rp: 350,  tier: 'silver',   sub: 1, col: '#c3ccd6', glow: '#eaf1f8', coins: 250,  chest: 'rare' },
+  { name: 'Silver II',  rp: 500,  tier: 'silver',   sub: 2, col: '#c3ccd6', glow: '#eaf1f8', coins: 300,  chest: 'rare' },
+  { name: 'Silver III', rp: 650,  tier: 'silver',   sub: 3, col: '#c3ccd6', glow: '#eaf1f8', coins: 400,  chest: 'rare',      title: 'Arena Fighter' },
+  { name: 'Gold I',     rp: 850,  tier: 'gold',     sub: 1, col: '#ffcf40', glow: '#ffe680', coins: 600,  chest: 'epic',      title: 'Kampioen' },
+  { name: 'Gold II',    rp: 1050, tier: 'gold',     sub: 2, col: '#ffcf40', glow: '#ffe680', coins: 700,  chest: 'epic' },
+  { name: 'Gold III',   rp: 1250, tier: 'gold',     sub: 3, col: '#ffcf40', glow: '#ffe680', coins: 850,  chest: 'epic' },
+  { name: 'Platinum',   rp: 1500, tier: 'platinum', sub: 0, col: '#5fe6d0', glow: '#a9fff2', coins: 1200, chest: 'epic' },
+  { name: 'Diamond',    rp: 1800, tier: 'diamond',  sub: 0, col: '#6fb2ff', glow: '#c4e2ff', coins: 1600, chest: 'legendary' },
+  { name: 'Champion',   rp: 2200, tier: 'champion', sub: 0, col: '#b06bff', glow: '#e2c8ff', coins: 2200, chest: 'legendary' },
+  { name: 'Elite',      rp: 2700, tier: 'elite',    sub: 0, col: '#ff5a5a', glow: '#ffd0d0', coins: 3000, chest: 'legendary' },
+];
+const RANK_RP = { win: 30, loss: -15, streakBonus: 10, higherRankBonus: 5, quit: -30 };
+function rankForRp(rp) { rp = rp || 0; let idx = 0; for (let i = 0; i < RANKS.length; i++) if (rp >= RANKS[i].rp) idx = i; return idx; }
 const CHEST_WIN_CHANCE = 0.5, CHEST_LOSS_CHANCE = 0.15;               // kans op een kist na een online match
 const CHEST_RARITY_WEIGHTS = { common: 62, rare: 26, epic: 9, legendary: 3 };   // betere kisten veel zeldzamer
 const CHEST_SLOTS = 3;                                                // je kunt er max 3 hebben

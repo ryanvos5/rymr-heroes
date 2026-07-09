@@ -5211,6 +5211,7 @@ const Game = {
     r._fireHold = s.fb === 1;                     // tegenstander houdt een vuurbal vast
     if (typeof s.h === 'number') r.hp = s.h;
     if (typeof s.mh === 'number') r.maxHp = s.mh;
+    if (typeof s.rp === 'number') { r.rp = s.rp; if (this.vs) this.vs.oppRp = s.rp; }   // tegenstander-RP (rank-badge + hogere-rank-bonus)
     r.lastSeen = this.time;
   },
 
@@ -5227,6 +5228,7 @@ const Game = {
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
       iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
       fb: p.fireballs > 0 ? 1 : 0,
+      rp: Storage.data.rp || 0,
     });
   },
 
@@ -5282,8 +5284,8 @@ const Game = {
     }
     // online: kanaal OPEN houden zodat een rematch mogelijk is (kanaal sluit pas bij menu/lobby)
     // tegen de bot: GEEN XP/wins. Echt duel: XP + wins (sync't naar de leaderboard).
-    let gained = 0, coinsEarned = 0, chestDrop = null;
-    const realStakes = !isBot || this._mmBot;                  // online OF matchmaking-bot = echte inzet
+    let gained = 0, coinsEarned = 0, chestDrop = null, rankRes = null;
+    const realStakes = !isBot;                                 // alleen een échte online tegenstander telt (bots niet meer)
     if (realStakes) {
       gained = (won ? 100 : XP_LOSS) + (this._comboXp || 0);   // winst 100 XP + verdiende combo-XP
       coinsEarned = won ? 75 : 20;                              // winnaar 75 munten, verliezer 20
@@ -5291,18 +5293,20 @@ const Game = {
       Storage.data.coins = (Storage.data.coins || 0) + coinsEarned;
       if (won) Storage.data.mpWins = (Storage.data.mpWins || 0) + 1;
       else Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
+      // RANK: RP-verandering + eventuele rank-up-beloningen (munten/kisten)
+      rankRes = Storage.applyRankedResult({ won: won, quit: false, oppRp: (this.vs && typeof this.vs.oppRp === 'number') ? this.vs.oppRp : undefined });
       Storage.save();
-      chestDrop = Storage.rollChestDrop(won);                  // soms een kist (ook tegen de matchmaking-bot)
-    } else if (won && this.botLevel === 10) {           // win van de zwaarste OEFEN-bot -> kleine beloning
-      gained = 30; coinsEarned = 50;
-      Storage.data.xp = (Storage.data.xp || 0) + gained;
+      chestDrop = Storage.rollChestDrop(won);                  // soms nog een losse kist
+      Storage.addCharXp(Storage.data.equippedCharacter, won ? 15 : 6);   // character-XP alleen bij echte potjes
+    } else {
+      // tegen een bot: GEEN XP/RP/wins/kisten — alleen een kleine munt-fooi
+      coinsEarned = won ? 40 : 10;
       Storage.data.coins = (Storage.data.coins || 0) + coinsEarned;
       Storage.save();
     }
-    // je character krijgt óók XP door mee te spelen — langzaam (klein vast bedrag per potje)
-    Storage.addCharXp(Storage.data.equippedCharacter, won ? (realStakes ? 15 : 12) : (realStakes ? 6 : 5));
+    this._lastRankResult = rankRes;
     const myScore = this.vs ? this.vs.myScore : 0, oppScore = this.vs ? this.vs.oppScore : 0;
-    if (peerLeft) { UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft, chestDrop, this._mmBot); return; }
+    if (peerLeft) { UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft, chestDrop, this._mmBot, rankRes); return; }
     // korte win-celebratie met de naam van de winnaar, dan pas het uitslagscherm
     const winnerName = won
       ? ((window.Net && Net.isLoggedIn && Net.isLoggedIn()) ? Net.nickname() : 'Jij')
@@ -5312,7 +5316,7 @@ const Game = {
     const self = this;
     setTimeout(function () {
       if (self.state !== 'versusOver') return;   // intussen weggegaan
-      UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft, chestDrop, this._mmBot);
+      UI.showVersusResult(won, myScore, oppScore, gained, isBot, coinsEarned, peerLeft, chestDrop, self._mmBot, self._lastRankResult);
     }, 2600);
   },
 
@@ -5320,6 +5324,7 @@ const Game = {
   forfeitVersus() {
     if (this.vs && !this.vsBot) {
       Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
+      Storage.applyRankedResult({ quit: true });   // leaven = -30 RP (streak reset)
       Storage.save();
     }
     this.quitVersus();   // Net.leaveVersus() stuurt 'bye' -> tegenstander wint
@@ -5487,6 +5492,7 @@ const Game = {
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
       if (r.rooted) this.drawRooted(ctx, Math.round(r.x), Math.round(r.y));
       this.drawVsMarker(ctx, Math.round(r.x), Math.round(r.y), rc.build, '#ff5a5a');
+      if (this.vs && !this.vsBot && !this.journey && typeof r.rp === 'number') this.drawRankBadge(ctx, Math.round(r.x), Math.round(r.y), rc.build, rankForRp(r.rp));   // rank-icoon tegenstander
     }
 
     // eigen speler — GROEN pijltje erboven (knippert tijdens respawn)
@@ -5521,6 +5527,7 @@ const Game = {
         if (p._rootedUntil && this.time < p._rootedUntil) this.drawRooted(ctx, Math.round(p.x), Math.round(p.y));
       }
       this.drawVsMarker(ctx, Math.round(p.x), Math.round(p.y), p.build, '#5aff7a');
+      if (this.vs && !this.vsBot && !this.journey) this.drawRankBadge(ctx, Math.round(p.x), Math.round(p.y), p.build, Storage.rankIndex());   // rank-icoon eigen speler
     }
     ctx.globalAlpha = 1;   // onzichtbaar-alpha resetten
 
@@ -6354,6 +6361,36 @@ const Game = {
     ctx.beginPath(); ctx.moveTo(x - 5, ty - 1); ctx.lineTo(x + 5, ty - 1); ctx.lineTo(x, ty + 6); ctx.closePath(); ctx.fill();
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(x - 4, ty); ctx.lineTo(x + 4, ty); ctx.lineTo(x, ty + 5); ctx.closePath(); ctx.fill();
+  },
+  // rank-embleem boven de speler (met gloed + effecten bij hogere ranks)
+  drawRankBadge(ctx, x, footY, build, idx) {
+    const rk = RANKS[idx]; if (!rk) return;
+    const head = build === 'tall' ? 46 : (build === 'small' ? 28 : 36);
+    const bob = Math.round(Math.sin(this.time / 280) * 1.5);
+    const cy = footY - head - 17 + bob;                 // midden van het embleem, boven het pijltje
+    const px = (c, xx, yy, w, h) => Sprites.px(ctx, c, Math.round(xx), Math.round(yy), w, h);
+    const col = rk.col, glow = rk.glow, high = idx >= 6;   // Gold I (idx 6) en hoger -> gloed
+    if (high) {
+      const g = ctx.createRadialGradient(x, cy, 1, x, cy, 15);
+      g.addColorStop(0, glow); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save(); ctx.globalAlpha = 0.4 + 0.32 * Math.abs(Math.sin(this.time / 240));
+      ctx.fillStyle = g; ctx.fillRect(x - 15, cy - 15, 30, 30); ctx.restore();
+    }
+    // edelsteen / schild
+    px('#12100a', x - 5, cy - 6, 10, 12);               // donkere rand
+    px(col, x - 4, cy - 5, 8, 10);                       // body
+    px(glow, x - 4, cy - 5, 8, 2);                       // top-highlight
+    px('rgba(0,0,0,0.30)', x - 4, cy + 3, 8, 2);         // onderrand-schaduw
+    px('#12100a', x - 2, cy + 6, 4, 2); px(col, x - 1, cy + 6, 2, 1);   // punt onderaan
+    if (rk.sub >= 1) {                                   // Brons/Silver/Gold: I/II/III als pipjes
+      const n = rk.sub, sx = x - (n * 2 - 1);
+      for (let i = 0; i < n; i++) px('#fff', sx + i * 4, cy + 9, 2, 2);
+    } else {                                             // Platinum+: kroontje van gloed-kleur
+      px(glow, x - 1, cy - 9, 2, 2); px(glow, x - 4, cy - 8, 2, 2); px(glow, x + 2, cy - 8, 2, 2);
+    }
+    if (idx >= 11) {                                     // Champion/Elite: fonkelingen eromheen
+      for (let i = 0; i < 3; i++) { const a = this.time / 300 + i * 2.1; px('#ffffff', x + Math.cos(a) * 11, cy + Math.sin(a) * 11, 1, 1); }
+    }
   },
 
   // ================= TRAINING LOBBY (online sandbox, N spelers) =================
