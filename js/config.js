@@ -796,8 +796,7 @@ const SHOP_POWERUPS = {
   speed:    { name: 'Speed',    cost: 70,  kind: 'speed',    icon: '⚡', desc: 'Even een stuk sneller.' },
   rage:     { name: 'Rage',     cost: 100, kind: 'rage',     icon: '⚔', desc: 'Even veel meer klap-schade.' },
   fireball: { name: 'Vuurbal',  cost: 120, kind: 'fireball', icon: '🔥', desc: '3 vuurballen die ook laten branden.' },
-  giant:    { name: 'Reus',     cost: 350, kind: 'giant',    icon: '👊', desc: 'Word even een enorme reus.' },
-  dragon:   { name: 'Draak',    cost: 350, kind: 'dragon',   icon: '🐉', desc: 'Roep een draak op die vuur spuwt naar je tegenstander.' },
+  dragon:   { name: 'Draak',    cost: 1000, kind: 'dragon',  icon: '🐉', desc: 'Roep een draak op die vuur spuwt naar je tegenstander.' },
   ak47:      { name: 'AK47',        cost: 0, kind: 'ak47',      icon: '🔫', desc: 'Machinegeweer met 50 kogels. Alleen uit kisten.', chestOnly: true },
   rocket:    { name: 'Raket',       cost: 0, kind: 'rocket',    icon: '🚀', desc: 'Raketwerper. Alleen uit kisten.', chestOnly: true },
   cannon:    { name: 'Kanon',       cost: 0, kind: 'cannon',    icon: '💣', desc: 'Kanonskogel die richt op je tegenstander. Alleen uit kisten.', chestOnly: true },
@@ -813,9 +812,9 @@ const SHOP_POWERUPS = {
   crossbow:   { name: 'Kruisboog',     cost: 0, kind: 'crossbow',  icon: '🏹', desc: 'Schiet pijlen: 35 schade, 7 pijlen.', trainingOnly: true },
   chainsaw:   { name: 'Kettingzaag',   cost: 0, kind: 'chainsaw',  icon: '🪚', desc: 'Melee: 60 schade, maar traag.', trainingOnly: true },
 };
-const POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'rocket', 'cannon', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
+const POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'dragon', 'ak47', 'rocket', 'cannon', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
 // volgorde in de Training-lobby-computer: alles wat je kunt uitproberen (incl. training-only wapens)
-const TRAINING_POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'giant', 'dragon', 'ak47', 'deagle', 'crossbow', 'rocket', 'cannon', 'ninjastar', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
+const TRAINING_POWERUP_ORDER = ['heal', 'shield', 'speed', 'rage', 'fireball', 'dragon', 'ak47', 'deagle', 'crossbow', 'rocket', 'cannon', 'ninjastar', 'beachball', 'coco', 'boom', 'dart', 'rock', 'lightning'];
 // melee-wapens die je in de Training-lobby-computer kunt kiezen (blijven na respawn)
 const TRAINING_MELEE_ORDER = ['bat', 'club', 'machete', 'sword', 'dagger', 'axe', 'spear', 'mace', 'flail', 'bostaff', 'katana', 'halberd', 'chainsaw'];
 

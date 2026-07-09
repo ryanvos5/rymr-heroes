@@ -4171,10 +4171,10 @@ const Game = {
       }
       if (mid === 'beach') pool.push({ kind: 'beachball', w: 10 });                     // strandbal op Beach
       if (mid === 'temple') pool.push({ kind: 'ninjastar', w: 12 });                    // ninja-sterren op Temple
-      if (mid === 'jungle') { pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 }); pool.push({ kind: 'crossbow', w: 9 }); }  // Giant + AK47 + Kruisboog op Jungle
+      if (mid === 'jungle') { pool.push({ kind: 'ak47', w: 9 }); pool.push({ kind: 'crossbow', w: 9 }); }  // AK47 + Kruisboog op Jungle
       if (mid === 'dohyo') {                                                          // Dohyo: ALLE power-ups
         pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'rock', w: 8 }); pool.push({ kind: 'cannon', w: 9 });
-        pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'giant', w: 6 }); pool.push({ kind: 'ak47', w: 9 });
+        pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'ak47', w: 9 });
       }
     }
     if (this._dragonUsed) pool = pool.filter((d) => d.kind !== 'dragon');   // max 1 draak per match

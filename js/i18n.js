@@ -224,7 +224,6 @@ I18N.CONTENT = {
       speed: { name: 'Speed', desc: 'Move a lot faster for a bit.' },
       rage: { name: 'Rage', desc: 'A lot more hit damage for a bit.' },
       fireball: { name: 'Fireball', desc: '3 fireballs that also set enemies alight.' },
-      giant: { name: 'Giant', desc: 'Become a huge giant for a bit.' },
       dragon: { name: 'Dragon', desc: 'Summon a dragon that breathes fire at your opponent.' },
       ak47: { desc: 'Machine gun with 50 bullets. Chests only.' },
       rocket: { name: 'Rocket', desc: 'Rocket launcher. Chests only.' },
