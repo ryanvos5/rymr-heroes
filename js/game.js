@@ -5747,6 +5747,15 @@ const Game = {
       Sprites.px(ctx, '#8a929c', x - 2, y - 2, 4, 4);            // naaf
       Sprites.px(ctx, '#2a2f36', x - 1, y - 1, 2, 2);            // gaatje
     }
+    else if (d.kind === 'crossbow') {
+      // kruisboog (zelfde vorm als in de inventaris/shop)
+      Sprites.px(ctx, '#7a5230', x - 4, y - 1, 12, 3); Sprites.px(ctx, '#9a6a34', x - 4, y - 1, 12, 1);   // lade (stock) + highlight
+      Sprites.px(ctx, '#4a3320', x - 8, y - 6, 2, 13);                                                    // boog-arm (verticaal)
+      Sprites.px(ctx, '#4a3320', x - 8, y - 6, 3, 2); Sprites.px(ctx, '#4a3320', x - 8, y + 5, 3, 2);      // boog-uiteinden
+      Sprites.px(ctx, '#888f99', x - 7, y, 12, 1);                                                         // pees
+      Sprites.px(ctx, '#cfd6df', x + 4, y - 1, 5, 2); Sprites.px(ctx, '#ffffff', x + 7, y - 1, 2, 1);      // geladen pijl
+      Sprites.px(ctx, '#3a2f22', x - 2, y + 2, 2, 3);                                                      // trekker/greep
+    }
   },
 
   // draken tekenen (scherm-ruimte): de draak vliegt bovenin en spuugt vuur naar het doel
