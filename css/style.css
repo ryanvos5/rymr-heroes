@@ -468,12 +468,13 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .menu-coins-top #menu-coin-count { color: var(--gold); font-weight: bold; }
 .menu-rubies-top #menu-ruby-count { color: #ff8aa0; font-weight: bold; }
 .px-icon { display: block; image-rendering: pixelated; }
-.menu-rank { display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: var(--pixel-font); text-align: left;
-  background: linear-gradient(180deg, rgba(30,22,16,.72), rgba(14,9,7,.82)); border: 1px solid rgba(90,70,45,.7); border-radius: 999px; padding: 2px clamp(6px,1.4vw,10px); }
-.menu-rank .mr-badge { font-size: clamp(11px,1.7vw,14px); font-weight: bold; letter-spacing: .3px; text-shadow: 1px 1px 0 #000; }
-.menu-rank .mr-rp { font-size: 10px; color: #cbb89a; text-shadow: 1px 1px 0 #000; }
-.menu-rank .mr-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; }
-.menu-rank .mr-bar > span { display: block; height: 100%; }
+/* rank + RP-voortgang, verwerkt in de Power Smash-knop */
+.tile-rank { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 3px; width: 100%; pointer-events: none; }
+.tile-rank .tr-badge { font-size: clamp(10px, 1.5vw, 13px); font-weight: bold; letter-spacing: .3px; text-shadow: 1px 1px 0 #000; line-height: 1; }
+.tile-rank .tr-bar { width: min(78%, 120px); height: 5px; border-radius: 3px; background: rgba(0,0,0,.45); border: 1px solid rgba(0,0,0,.4); overflow: hidden; }
+.tile-rank .tr-bar > span { display: block; height: 100%; border-radius: 3px; }
+.tile-rank .tr-rp { font-size: clamp(8px, 1.1vw, 10px); color: #eadfce; text-shadow: 1px 1px 0 #000; line-height: 1; }
+@media (max-height: 480px) { .tile-rank .tr-rp { display: none; } }   /* heel lage schermen: alleen naam + balk */
 
 /* drie tegels in het midden — gecentreerd, niet beeldvullend (zoals de mockup) */
 .menu-tiles {

@@ -1202,15 +1202,14 @@ const UI = {
     }
   },
 
-  // eigen rank-badge in het menu (naam + RP-voortgangsbalk); klik = leaderboard
+  // eigen rank + RP-voortgang, verwerkt in de Power Smash-knop
   renderMenuRank() {
-    const el = document.getElementById('menu-rank'); if (!el) return;
+    const el = document.getElementById('tile-rank'); if (!el) return;
     const pr = Storage.rankProgress(), rk = pr.rank;
     el.innerHTML =
-      '<span class="mr-badge" style="color:' + rk.col + '">' + rk.name + '</span>' +
-      '<span class="mr-bar"><span style="width:' + Math.round(pr.pct * 100) + '%;background:' + rk.col + '"></span></span>' +
-      '<span class="mr-rp">' + pr.rp + ' RP' + (pr.next ? (' · ' + pr.toNext + '→' + pr.next.name) : ' · MAX') + '</span>';
-    el.onclick = () => this.openLeaderboard();
+      '<span class="tr-badge" style="color:' + rk.col + '">' + rk.name + '</span>' +
+      '<span class="tr-bar"><span style="width:' + Math.round(pr.pct * 100) + '%;background:' + rk.col + '"></span></span>' +
+      '<span class="tr-rp">' + pr.rp + ' RP' + (pr.next ? (' · ' + pr.toNext + ' → ' + pr.next.name) : ' · MAX') + '</span>';
   },
   _esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; },
   // eigen pixel-icoon (vervangt standaard emoji) — als HTML-string voor innerHTML
