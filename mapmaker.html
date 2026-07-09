@@ -85,6 +85,17 @@
     </div>
   </details>
 
+  <div class="card" id="loadCard">
+    <div class="hd">Bestaande map bewerken</div>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2 1 220px"><label>Kies een map uit de game om aan te passen</label>
+        <select id="loadMap"></select>
+      </div>
+      <div><button id="loadBtn" class="btn-gold">📥 Laden</button></div>
+    </div>
+    <div class="mini-note">Je bewerkt dan de échte map-coördinaten van de game (dus andere getallen dan een nieuwe 1200×400-map). Klik daarna “Kopieer voor Claude” om je aanpassing door te sturen.</div>
+  </div>
+
   <div class="card">
     <div class="hd">Map-instellingen</div>
     <div class="row">
@@ -185,6 +196,8 @@
 
   <p class="foot">Tiny Power Smashers · Map Maker — alles blijft lokaal in je browser tot je op “Kopieer voor Claude” klikt.</p>
 
+<!-- de echte game-config: geeft toegang tot VERSUS_MAPS zodat je bestaande maps kunt laden -->
+<script src="js/config.js?v=menu174"></script>
 <script>
 (function(){
   "use strict";
@@ -550,8 +563,61 @@
     uid=1; state=defaultState(); pushSettingsToUI(); buildPU(); syncProp(); layout(); commit();
   });
 
+  // ---------- bestaande maps laden (uit de echte game-config) ----------
+  // welke power-ups op welke map vallen (voor een handige start; je kunt ze aanpassen)
+  var MAP_PU = {
+    jungle:['heal','speed','rage','ak47','crossbow'],
+    dohyo:['heal','speed','rage','shield','lightning','rock','cannon','ak47'],
+    pirate:['heal','speed','rage','cannon','shield'],
+    temple:['heal','speed','rage','ninjastar'],
+    lava:['heal','speed','rage'],
+    cave:['heal','speed','rage','lightning','rock'],
+    beach:['heal','speed','rage','beachball'],
+    airplane:['heal','speed','rage','lightning','cannon','shield','ak47'],
+    castle:['heal','speed','rage','shield','crossbow','fireball','lightning','dragon']
+  };
+  var MAP_EVENTS = {
+    jungle:'Af en toe schieten er stun-darts door de map (verdoven kort wie ze raakt).',
+    pirate:'Af en toe komt er een zeemonster-tentakel uit het water die je platslaat of van de boot af mept.',
+    lava:'Lavastraal in het midden die af en toe uitbarst; schuine platforms waar je vanaf glijdt.',
+    temple:'Twee deuren teleporteren je naar de overkant.',
+    airplane:'Vogels scheren door de map; wolk-platforms zakken na ~5s in.',
+    castle:'Af en toe maakt een draak een snoekduik dwars over de map — raakt hij je, dan word je hard van de map af geknald.'
+  };
+  function existingMaps(){ return (typeof VERSUS_MAPS!=='undefined' && Array.isArray(VERSUS_MAPS)) ? VERSUS_MAPS : []; }
+  function populateLoad(){
+    var sel=$('loadMap'); if(!sel) return;
+    var maps=existingMaps();
+    if(!maps.length){ var c=$('loadCard'); if(c) c.style.display='none'; return; }   // config niet geladen
+    sel.innerHTML='';
+    maps.forEach(function(m){ var o=document.createElement('option'); o.value=m.id; o.textContent=m.name+'  ('+m.w+'px, '+ (m.platforms?m.platforms.length:0) +' platf.)'; sel.appendChild(o); });
+  }
+  function loadGameMap(id){
+    var m=existingMaps().find(function(x){return x.id===id;}); if(!m) return;
+    var plats=m.platforms||[];
+    var groundY=plats.reduce(function(mx,p){return Math.max(mx,p.y);},0);
+    loadObj({
+      name:m.name, w:m.w, h:Math.max(240,(m.fallY||230)+30),
+      sideKnockoff:true, fallY:m.fallY||230, sky:m.sky,
+      spawnL:m.spawnL, spawnR:m.spawnR,
+      platforms:plats.map(function(p){
+        var type = p.wall?'wall':(p.mast?'mast':(p.y>=groundY-6?'ground':'platform'));
+        return {x:p.x, y:p.y, w:p.w, type:type};
+      }),
+      powerups:(MAP_PU[id]||['heal','speed','rage','shield']).slice(),
+      background:'', events:(MAP_EVENTS[id]||'')
+    });
+  }
+  $('loadBtn').addEventListener('click', function(){
+    var sel=$('loadMap'); var id=sel && sel.value; if(!id) return;
+    var label=sel.options[sel.selectedIndex].text;
+    if(!confirm('Huidige map vervangen door “'+label+'” om te bewerken?')) return;
+    loadGameMap(id);
+  });
+
   // ---------- init ----------
   (function init(){
+    populateLoad();
     var saved=null; try{ saved=JSON.parse(localStorage.getItem(SAVE)); }catch(e){}
     if(saved && saved.platforms){ loadObj(saved); }
     else { pushSettingsToUI(); buildPU(); syncProp(); layout(); commit(); }
