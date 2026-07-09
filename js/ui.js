@@ -1188,6 +1188,7 @@ const UI = {
     document.getElementById('versus-wait').classList.add('hidden');
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-mm').classList.remove('hidden');
+    document.getElementById('btn-vs-back').classList.add('hidden');   // tijdens zoeken: alleen Cancel, geen Back
     this.show('versus');
     this._mmSearching = true;
     let left = 8; const cnt = document.getElementById('mm-count'); if (cnt) cnt.textContent = left;
@@ -1208,6 +1209,7 @@ const UI = {
   _matchmakingConnected() {
     this._stopMatchmaking();
     document.getElementById('versus-mm').classList.add('hidden');
+    document.getElementById('btn-vs-back').classList.remove('hidden');
     this._vsStarted = false; this._myReady = false;
     this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-wait').classList.remove('hidden');
@@ -1219,6 +1221,7 @@ const UI = {
     this._stopMatchmaking();
     if (window.Net) Net.leaveVersus();   // eventuele half-open verbinding opruimen
     document.getElementById('versus-mm').classList.add('hidden');
+    document.getElementById('btn-vs-back').classList.remove('hidden');
     this._matchType = 'mm';              // matchmaking -> random map (ook tegen de bot)
     this._botSetup = false; this._vsStarted = false;
     this._botDiff = 10;
@@ -1253,6 +1256,7 @@ const UI = {
 
   openVersusLobby() {
     this.leaveLobby();
+    document.getElementById('btn-vs-back').classList.remove('hidden');
     document.getElementById('versus-lobby').classList.remove('hidden');
     document.getElementById('versus-wait').classList.add('hidden');
     document.getElementById('versus-result').classList.add('hidden');
