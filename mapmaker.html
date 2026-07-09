@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Tiny Power Smashers — Map Maker</title>
+<style>
+  :root{
+    --bg:#140a09; --panel:#20130f; --panel2:#2a1a14; --line:#4a2f22;
+    --ink:#f3e9dc; --sub:#c9a98c; --gold:#ffc23c; --gold2:#e8852a;
+    --green:#7be07a; --red:#e5533c; --blue:#6fb6e8;
+    --mono:'Courier New',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:radial-gradient(140% 120% at 50% -10%,#3a1512 0%,#140a09 70%);
+    color:var(--ink); font-family:var(--mono); min-height:100vh; padding:14px;
+    -webkit-text-size-adjust:100%;
+  }
+  h1{font-size:20px;margin:0;letter-spacing:1px}
+  h1 .sm{color:var(--gold);}
+  .subtitle{color:var(--sub);font-size:12px;margin:4px 0 14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+  .card > .hd{font-weight:bold;color:var(--gold);letter-spacing:1px;font-size:12px;margin-bottom:8px;text-transform:uppercase}
+  label{display:block;font-size:11px;color:var(--sub);margin-bottom:3px}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;background:#160d0a;border:1px solid var(--line);border-radius:7px;color:var(--ink);
+    font-family:var(--mono);font-size:14px;padding:8px;outline:none;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+  textarea{resize:vertical;min-height:64px;line-height:1.4}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row > div{flex:1 1 120px;min-width:0}
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}}
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  button{font-family:var(--mono);cursor:pointer;border-radius:8px;border:2px solid var(--line);
+    background:var(--panel2);color:var(--ink);padding:8px 10px;font-size:13px;font-weight:bold;letter-spacing:.5px}
+  button:hover{border-color:var(--gold)}
+  .tool.active{background:var(--gold);color:#2a1608;border-color:var(--gold2)}
+  .tool .sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .btn-gold{background:var(--gold);color:#2a1608;border-color:var(--gold2)}
+  .btn-green{background:var(--green);color:#0d240c;border-color:#3a8a39}
+  .btn-red{background:var(--red);color:#2a0d08;border-color:#a33322}
+  .canvas-wrap{background:#0b0705;border:1px solid var(--line);border-radius:10px;padding:6px;overflow:auto}
+  canvas{display:block;width:100%;image-rendering:pixelated;border-radius:6px;touch-action:none;background:#0b0705}
+  .hint{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.5}
+  .hint b{color:var(--gold)}
+  .pu-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .pu{display:flex;align-items:center;gap:6px;background:#160d0a;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:12px;cursor:pointer;user-select:none}
+  .pu.on{background:#2a2008;border-color:var(--gold);color:var(--gold)}
+  .pu .emo{font-size:14px}
+  .switch{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:13px}
+  .switch .track{width:44px;height:24px;border-radius:14px;background:#3a241b;border:1px solid var(--line);position:relative;transition:.15s}
+  .switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--sub);transition:.15s}
+  .switch.on .track{background:#3a6a2e;border-color:var(--green)}
+  .switch.on .knob{left:23px;background:var(--green)}
+  .prop{display:none}
+  .prop.show{display:block}
+  .prop .row > div{flex:1 1 60px}
+  .out{white-space:pre-wrap;font-size:11px;line-height:1.45;background:#0b0705;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:280px;overflow:auto;color:#d8ccbe}
+  .foot{color:var(--sub);font-size:11px;text-align:center;margin-top:16px}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:6px}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  .legend i{width:11px;height:11px;border-radius:2px;display:inline-block}
+  details{margin-bottom:12px}
+  summary{cursor:pointer;color:var(--gold);font-size:12px}
+  .mini-note{font-size:11px;color:var(--sub);margin-top:4px}
+</style>
+</head>
+<body>
+  <h1>🥊 Tiny Power Smashers — <span class="sm">Map Maker</span></h1>
+  <p class="subtitle">Ontwerp je eigen arena. Sla op → stuur de tekst naar Claude → ik bouw de map (achtergrond, art & speciale gebeurtenissen) na in de game.</p>
+
+  <details>
+    <summary>▸ Hoe werkt het?</summary>
+    <div class="hint" style="margin-top:8px">
+      1. Kies een <b>gereedschap</b> en <b>teken</b> op het speelveld door te slepen (platform / grond / muur / mast).<br>
+      2. Met <b>Select</b> versleep je een blok; sleep de <b>zijkant</b> om de breedte aan te passen. Boven → smaller.<br>
+      3. <b>Gaten</b> maak je door de grond in losse stukken te leggen met ruimte ertussen.<br>
+      4. Zet de <b>naam</b>, <b>grootte</b>, <b>power-ups</b> en of je <b>van de zijkanten af geslagen</b> kunt worden.<br>
+      5. Vul de <b>beschrijvingen</b> in (achtergrond/thema + speciale gebeurtenissen zoals de vogels bij Airplane).<br>
+      6. Klik <b>“Kopieer voor Claude”</b> en plak dat in de chat. Klaar!
+    </div>
+  </details>
+
+  <div class="card">
+    <div class="hd">Map-instellingen</div>
+    <div class="row">
+      <div style="flex:2 1 200px"><label>Naam van de map</label><input id="mName" type="text" placeholder="bijv. Sky Fortress" /></div>
+      <div><label>Breedte (px)</label><input id="mW" type="number" min="280" max="2000" step="20" /></div>
+      <div><label>Hoogte (px)</label><input id="mH" type="number" min="180" max="360" step="10" /></div>
+    </div>
+    <div class="row" style="margin-top:10px;align-items:center">
+      <div style="flex:1 1 240px">
+        <label>Van de zijkanten af te slaan? (ring-out)</label>
+        <div class="switch on" id="mKnock"><div class="track"><div class="knob"></div></div><span id="mKnockLbl">Ja — open randen, je valt eraf</span></div>
+      </div>
+      <div><label>Val-grens y (fallY)</label><input id="mFall" type="number" min="120" max="360" step="4" /></div>
+      <div><label>Lucht boven</label><input id="mSkyTop" type="color" value="#1f4e7a" style="height:38px;padding:2px" /></div>
+      <div><label>Lucht onder</label><input id="mSkyBot" type="color" value="#0c1d33" style="height:38px;padding:2px" /></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- EDITOR -->
+    <div class="card">
+      <div class="hd">Speelveld</div>
+      <div class="toolbar" id="tools">
+        <button class="tool active" data-tool="select">✥ Select</button>
+        <button class="tool" data-tool="ground"><span class="sw" style="background:#b0813f"></span>Grond</button>
+        <button class="tool" data-tool="platform"><span class="sw" style="background:#7be07a"></span>Platform</button>
+        <button class="tool" data-tool="wall"><span class="sw" style="background:#9aa4ae"></span>Muur</button>
+        <button class="tool" data-tool="mast"><span class="sw" style="background:#caa060"></span>Mast</button>
+        <button class="tool" data-tool="erase"><span class="sw" style="background:#e5533c"></span>Gum</button>
+      </div>
+      <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+      <div class="legend">
+        <span><i style="background:#b0813f"></i>Grond</span>
+        <span><i style="background:#7be07a"></i>Platform</span>
+        <span><i style="background:#9aa4ae"></i>Muur</span>
+        <span><i style="background:#caa060"></i>Mast</span>
+        <span><i style="background:#7be07a;border-radius:50%"></i>Spawn L</span>
+        <span><i style="background:#e5533c;border-radius:50%"></i>Spawn R</span>
+      </div>
+      <div class="hint">Teken door te <b>slepen</b>. Met <b>Select</b>: sleep het midden = verplaatsen, sleep de <b>rand</b> = breedte. Alles klikt op een raster van 4px.</div>
+
+      <div class="prop card" id="propCard" style="margin-top:10px;background:var(--panel2)">
+        <div class="hd">Geselecteerd blok</div>
+        <div class="row">
+          <div><label>Type</label>
+            <select id="pType"><option value="ground">Grond</option><option value="platform">Platform</option><option value="wall">Muur</option><option value="mast">Mast</option></select>
+          </div>
+          <div><label>x (midden)</label><input id="pX" type="number" step="4" /></div>
+          <div><label>y (bovenkant)</label><input id="pY" type="number" step="4" /></div>
+          <div><label>breedte</label><input id="pW" type="number" step="4" /></div>
+        </div>
+        <div class="toolbar" style="margin-top:10px">
+          <button id="pDup">⧉ Dupliceren</button>
+          <button id="pDel" class="btn-red">🗑 Verwijderen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div>
+      <div class="card">
+        <div class="hd">Power-ups op deze map</div>
+        <div class="pu-grid" id="puGrid"></div>
+        <div class="mini-note">Kies welke power-ups hier vallen/te vinden zijn.</div>
+      </div>
+
+      <div class="card">
+        <div class="hd">Achtergrond &amp; thema — voor Claude</div>
+        <label>Beschrijf de sfeer, achtergrond, kleuren, decor…</label>
+        <textarea id="mBg" placeholder="bijv. Een zwevend stenen fort boven de wolken bij zonsondergang. Op de achtergrond drijvende eilandjes en verre bergtoppen. Warme oranje/paarse lucht."></textarea>
+      </div>
+
+      <div class="card">
+        <div class="hd">Speciale gebeurtenissen — voor Claude</div>
+        <label>Bewegende hazards / events (zoals de vogels bij Airplane)…</label>
+        <textarea id="mEvents" placeholder="bijv. Af en toe vliegt er een zwerm vogels van rechts naar links door het midden die je omver duwt. Elke ~8s. En soms slaat de bliksem in op een willekeurig platform."></textarea>
+      </div>
+
+      <div class="card">
+        <div class="hd">Opslaan &amp; delen</div>
+        <div class="toolbar">
+          <button id="btnCopy" class="btn-gold">📋 Kopieer voor Claude</button>
+          <button id="btnJson" class="btn-green">⬇ Download JSON</button>
+        </div>
+        <div class="toolbar">
+          <button id="btnLoad">📂 JSON laden…</button>
+          <button id="btnClear" class="btn-red">✖ Leegmaken</button>
+        </div>
+        <div class="mini-note" id="saveNote">Automatisch opgeslagen in je browser.</div>
+      </div>
+
+      <div class="card">
+        <div class="hd">Voorbeeld-uitvoer</div>
+        <div class="out" id="outBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Tiny Power Smashers · Map Maker — alles blijft lokaal in je browser tot je op “Kopieer voor Claude” klikt.</p>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var GRID = 4, GROUND_REF = 173;
+  var POWERUPS = [
+    ['heal','Medipack','❤'],['shield','Shield','🛡'],['speed','Speed','⚡'],['rage','Rage','⚔'],
+    ['fireball','Fireball','🔥'],['dragon','Dragon','🐉'],['ak47','AK47','🔫'],['rocket','Rocket','🚀'],
+    ['cannon','Cannon','💣'],['beachball','Beach ball','🏐'],['coco','Coconut bomb','🥥'],['boom','Boomerang','🪃'],
+    ['dart','Poison dart','🎯'],['rock','Falling rock','🪨'],['lightning','Lightning','🌩'],['ninjastar','Ninja stars','🌟'],['crossbow','Crossbow','🏹']
+  ];
+  var TYPE_COL = { ground:'#b0813f', platform:'#7be07a', wall:'#9aa4ae', mast:'#caa060' };
+  var TYPE_H   = { ground:14, platform:9, wall:44, mast:60 };
+
+  var uid = 1;
+  function nid(){ return uid++; }
+  function snap(v){ return Math.round(v/GRID)*GRID; }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  var state = defaultState();
+  function defaultState(){
+    return {
+      name:'My Map', w:720, h:240, sideKnockoff:true, fallY:232,
+      skyTop:'#1f4e7a', skyBottom:'#0c1d33',
+      spawnL:{x:160,y:176}, spawnR:{x:560,y:176},
+      platforms:[
+        {id:nid(),x:360,y:176,w:520,type:'ground'},
+        {id:nid(),x:220,y:120,w:90,type:'platform'},
+        {id:nid(),x:500,y:120,w:90,type:'platform'}
+      ],
+      powerups:['heal','shield','speed','rage'],
+      background:'', events:''
+    };
+  }
+
+  // ---------- canvas ----------
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var scale = 1, dpr = Math.min(2, window.devicePixelRatio||1);
+  function layout(){
+    var cssW = cv.parentElement.clientWidth - 12;
+    scale = cssW / state.w;
+    var cssH = state.h * scale;
+    cv.style.height = cssH + 'px';
+    cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+    ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0); // now we draw in logical coords
+    render();
+  }
+  window.addEventListener('resize', layout);
+
+  function render(){
+    var w=state.w,h=state.h;
+    ctx.clearRect(0,0,w,h);
+    // sky
+    var g=ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,state.skyTop); g.addColorStop(1,state.skyBottom);
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    // grid
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1/scale;
+    for(var x=0;x<=w;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke(); }
+    for(var y=0;y<=h;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+    // ground reference + fall line
+    ctx.strokeStyle='rgba(255,194,60,0.35)'; ctx.setLineDash([6/scale,4/scale]); ctx.lineWidth=1/scale;
+    ctx.beginPath();ctx.moveTo(0,GROUND_REF);ctx.lineTo(w,GROUND_REF);ctx.stroke();
+    ctx.strokeStyle='rgba(229,83,60,0.5)';
+    ctx.beginPath();ctx.moveTo(0,state.fallY);ctx.lineTo(w,state.fallY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,194,60,0.6)'; ctx.font=(9/scale)+'px monospace';
+    ctx.fillText('grond '+GROUND_REF, 3, GROUND_REF-2/scale);
+    ctx.fillStyle='rgba(229,83,60,0.75)';
+    ctx.fillText('fallY '+state.fallY, 3, state.fallY-2/scale);
+    // side edges
+    if(state.sideKnockoff){
+      ctx.strokeStyle='rgba(229,83,60,0.55)'; ctx.setLineDash([5/scale,4/scale]); ctx.lineWidth=2/scale;
+      ctx.strokeRect(0.5,0.5,w-1,h-1); ctx.setLineDash([]);
+    } else {
+      ctx.fillStyle='rgba(154,164,174,0.35)';
+      ctx.fillRect(0,0,4,h); ctx.fillRect(w-4,0,4,h);
+    }
+    // platforms
+    state.platforms.forEach(function(p){
+      var ph = p.h || TYPE_H[p.type] || 9;
+      var left = p.x - p.w/2;
+      ctx.fillStyle = TYPE_COL[p.type] || '#7be07a';
+      ctx.fillRect(left, p.y, p.w, ph);
+      ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.fillRect(left, p.y, p.w, Math.max(1,2));
+      if(p.id===selId){
+        ctx.strokeStyle='#fff'; ctx.lineWidth=1.5/scale; ctx.strokeRect(left, p.y, p.w, ph);
+        // width handles
+        ctx.fillStyle='#fff';
+        ctx.fillRect(left-3, p.y+ph/2-3, 6,6);
+        ctx.fillRect(left+p.w-3, p.y+ph/2-3, 6,6);
+      }
+    });
+    // spawns
+    drawSpawn(state.spawnL,'#7be07a','L');
+    drawSpawn(state.spawnR,'#e5533c','R');
+    // drawing preview
+    if(draft){
+      ctx.globalAlpha=0.6; ctx.fillStyle=TYPE_COL[draft.type];
+      ctx.fillRect(draft.x-draft.w/2, draft.y, draft.w, TYPE_H[draft.type]||9);
+      ctx.globalAlpha=1;
+    }
+  }
+  function drawSpawn(s,col,ch){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(s.x, s.y-6, 6, 0, 6.2832); ctx.fill();
+    ctx.fillStyle='#111'; ctx.font='bold '+(8/scale)+'px monospace'; ctx.textAlign='center';
+    ctx.fillText(ch, s.x, s.y-3.5); ctx.textAlign='left';
+  }
+
+  // ---------- interaction ----------
+  var tool='select', selId=null, drag=null, draft=null;
+  function evPos(e){
+    var r=cv.getBoundingClientRect();
+    return { x: snap((e.clientX-r.left)/scale), y: snap((e.clientY-r.top)/scale) };
+  }
+  function hitPlatform(x,y){
+    for(var i=state.platforms.length-1;i>=0;i--){
+      var p=state.platforms[i], ph=p.h||TYPE_H[p.type]||9;
+      if(x>=p.x-p.w/2-4 && x<=p.x+p.w/2+4 && y>=p.y-4 && y<=p.y+ph+4) return p;
+    }
+    return null;
+  }
+  function hitSpawn(x,y){
+    if(Math.abs(x-state.spawnL.x)<10 && Math.abs(y-6-state.spawnL.y)<12) return 'L';
+    if(Math.abs(x-state.spawnR.x)<10 && Math.abs(y-6-state.spawnR.y)<12) return 'R';
+    return null;
+  }
+
+  cv.addEventListener('pointerdown', function(e){
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    var pos=evPos(e);
+    if(tool==='select'){
+      var sp=hitSpawn(pos.x,pos.y);
+      if(sp){ drag={kind:'spawn',which:sp}; return; }
+      var p=hitPlatform(pos.x,pos.y);
+      if(p){
+        selId=p.id; syncProp();
+        var edge = Math.abs(pos.x-(p.x-p.w/2))<8 ? 'L' : (Math.abs(pos.x-(p.x+p.w/2))<8 ? 'R' : null);
+        drag = edge ? {kind:'resize',side:edge,id:p.id} : {kind:'move',id:p.id,ox:pos.x-p.x,oy:pos.y-p.y};
+      } else { selId=null; syncProp(); }
+      render(); return;
+    }
+    if(tool==='erase'){
+      var pe=hitPlatform(pos.x,pos.y);
+      if(pe){ state.platforms=state.platforms.filter(function(q){return q.id!==pe.id;}); if(selId===pe.id)selId=null; syncProp(); commit(); }
+      return;
+    }
+    // drawing tools
+    draft={type:tool, x0:pos.x, y:pos.y, x:pos.x, w:GRID};
+    render();
+  });
+  cv.addEventListener('pointermove', function(e){
+    if(!drag && !draft) return;
+    var pos=evPos(e);
+    if(draft){
+      var left=Math.min(draft.x0,pos.x), right=Math.max(draft.x0,pos.x);
+      draft.w=Math.max(GRID,right-left); draft.x=(left+right)/2; draft.y=pos.y;
+      render(); return;
+    }
+    if(drag.kind==='spawn'){
+      var s = drag.which==='L'?state.spawnL:state.spawnR;
+      s.x=clampX(pos.x); s.y=Math.max(20,Math.min(state.h-2,pos.y)); render(); return;
+    }
+    var p=byId(drag.id); if(!p) return;
+    if(drag.kind==='move'){ p.x=clampX(pos.x-drag.ox); p.y=Math.max(0,Math.min(state.h-4,pos.y-drag.oy)); }
+    else if(drag.kind==='resize'){
+      if(drag.side==='R'){ var l=p.x-p.w/2; var nr=Math.max(l+GRID,pos.x); p.w=nr-l; p.x=l+p.w/2; }
+      else { var r=p.x+p.w/2; var nl=Math.min(r-GRID,pos.x); p.w=r-nl; p.x=nl+p.w/2; }
+    }
+    syncProp(); render();
+  });
+  function endDrag(){
+    if(draft){
+      if(draft.w>=GRID){ var np={id:nid(),x:snap(draft.x),y:snap(draft.y),w:snap(draft.w),type:draft.type}; state.platforms.push(np); selId=np.id; setTool('select'); syncProp(); }
+      draft=null; commit();
+    }
+    if(drag){ drag=null; commit(); }
+  }
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+  function byId(id){ return state.platforms.find(function(p){return p.id===id;}); }
+  function clampX(x){ return Math.max(0,Math.min(state.w,x)); }
+
+  // ---------- tools ----------
+  function setTool(t){
+    tool=t;
+    Array.prototype.forEach.call(document.querySelectorAll('.tool'),function(b){ b.classList.toggle('active', b.dataset.tool===t); });
+  }
+  $('tools').addEventListener('click', function(e){
+    var b=e.target.closest('.tool'); if(!b) return; setTool(b.dataset.tool);
+  });
+
+  // ---------- property panel ----------
+  function syncProp(){
+    var p=byId(selId);
+    $('propCard').classList.toggle('show', !!p);
+    if(!p) return;
+    $('pType').value=p.type; $('pX').value=p.x; $('pY').value=p.y; $('pW').value=p.w;
+  }
+  ['pType','pX','pY','pW'].forEach(function(id){
+    $(id).addEventListener('input', function(){
+      var p=byId(selId); if(!p) return;
+      p.type=$('pType').value;
+      p.x=snap(+$('pX').value||0); p.y=snap(+$('pY').value||0); p.w=Math.max(GRID,snap(+$('pW').value||GRID));
+      render(); commit();
+    });
+  });
+  $('pDel').addEventListener('click', function(){
+    state.platforms=state.platforms.filter(function(q){return q.id!==selId;}); selId=null; syncProp(); render(); commit();
+  });
+  $('pDup').addEventListener('click', function(){
+    var p=byId(selId); if(!p) return; var c=clone(p); c.id=nid(); c.x=clampX(p.x+24); c.y=p.y; state.platforms.push(c); selId=c.id; syncProp(); render(); commit();
+  });
+
+  // ---------- power-ups ----------
+  function buildPU(){
+    var g=$('puGrid'); g.innerHTML='';
+    POWERUPS.forEach(function(pu){
+      var el=document.createElement('div'); el.className='pu'+(state.powerups.indexOf(pu[0])>=0?' on':'');
+      el.innerHTML='<span class="emo">'+pu[2]+'</span> '+pu[1];
+      el.addEventListener('click', function(){
+        var i=state.powerups.indexOf(pu[0]);
+        if(i>=0) state.powerups.splice(i,1); else state.powerups.push(pu[0]);
+        el.classList.toggle('on'); commit();
+      });
+      g.appendChild(el);
+    });
+  }
+
+  // ---------- settings bindings ----------
+  function bindText(id, key, isNum, cb){
+    $(id).addEventListener('input', function(){
+      state[key]= isNum ? (+$(id).value||0) : $(id).value;
+      if(cb) cb(); commit();
+    });
+  }
+  bindText('mName','name',false);
+  bindText('mW','w',true, layout);
+  bindText('mH','h',true, layout);
+  bindText('mFall','fallY',true, render);
+  bindText('mSkyTop','skyTop',false, render);
+  bindText('mSkyBot','skyBottom',false, render);
+  bindText('mBg','background',false);
+  bindText('mEvents','events',false);
+  $('mKnock').addEventListener('click', function(){
+    state.sideKnockoff=!state.sideKnockoff;
+    this.classList.toggle('on', state.sideKnockoff);
+    $('mKnockLbl').textContent = state.sideKnockoff ? 'Ja — open randen, je valt eraf' : 'Nee — muren aan de zijkanten, je valt er niet af';
+    render(); commit();
+  });
+
+  function pushSettingsToUI(){
+    $('mName').value=state.name; $('mW').value=state.w; $('mH').value=state.h;
+    $('mFall').value=state.fallY; $('mSkyTop').value=state.skyTop; $('mSkyBot').value=state.skyBottom;
+    $('mBg').value=state.background; $('mEvents').value=state.events;
+    $('mKnock').classList.toggle('on', state.sideKnockoff);
+    $('mKnockLbl').textContent = state.sideKnockoff ? 'Ja — open randen, je valt eraf' : 'Nee — muren aan de zijkanten, je valt er niet af';
+  }
+
+  // ---------- gaps detection ----------
+  function groundGaps(){
+    var segs=state.platforms.filter(function(p){return p.type==='ground';})
+      .map(function(p){return [p.x-p.w/2,p.x+p.w/2];}).sort(function(a,b){return a[0]-b[0];});
+    var gaps=[], cursor=0;
+    segs.forEach(function(s){
+      if(s[0]>cursor+2) gaps.push([Math.round(cursor),Math.round(s[0])]);
+      cursor=Math.max(cursor,s[1]);
+    });
+    if(cursor<state.w-2) gaps.push([Math.round(cursor),state.w]);
+    return gaps;
+  }
+
+  // ---------- output ----------
+  function summary(){
+    var puNames=state.powerups.map(function(id){var f=POWERUPS.find(function(p){return p[0]===id;});return f?f[1]:id;});
+    var gaps=groundGaps();
+    var L=[];
+    L.push('MAP: '+state.name);
+    L.push('Grootte: '+state.w+' x '+state.h+' px');
+    L.push('Van de zijkanten af te slaan (ring-out): '+(state.sideKnockoff?'JA':'NEE — muren aan de zijkanten'));
+    L.push('Val-grens (fallY): '+state.fallY);
+    L.push('Spawn links: x'+state.spawnL.x+' y'+state.spawnL.y+'   Spawn rechts: x'+state.spawnR.x+' y'+state.spawnR.y);
+    L.push('Lucht-kleuren (indicatie): boven '+state.skyTop+' → onder '+state.skyBottom);
+    L.push('');
+    L.push('PLATFORMEN (x=midden, y=bovenkant, w=breedte):');
+    ['ground','platform','wall','mast'].forEach(function(t){
+      var list=state.platforms.filter(function(p){return p.type===t;});
+      if(!list.length) return;
+      var lbl={ground:'Grond',platform:'Platform',wall:'Muur',mast:'Mast'}[t];
+      list.sort(function(a,b){return a.x-b.x;}).forEach(function(p){
+        L.push('  - '+lbl+':  x'+p.x+'  y'+p.y+'  w'+p.w);
+      });
+    });
+    L.push('');
+    L.push('GATEN in de grond: '+(gaps.length? gaps.map(function(g){return 'x'+g[0]+'–'+g[1];}).join(', ') : 'geen (dichte vloer)'));
+    L.push('POWER-UPS: '+(puNames.length?puNames.join(', '):'geen'));
+    L.push('');
+    L.push('ACHTERGROND / THEMA (voor Claude):');
+    L.push('  '+(state.background.trim()||'(niet ingevuld)'));
+    L.push('');
+    L.push('SPECIALE GEBEURTENISSEN (voor Claude):');
+    L.push('  '+(state.events.trim()||'(niet ingevuld)'));
+    L.push('');
+    L.push('--- JSON ---');
+    L.push(JSON.stringify(exportObj()));
+    return L.join('\n');
+  }
+  function exportObj(){
+    return {
+      name:state.name, w:state.w, h:state.h, sideKnockoff:state.sideKnockoff, fallY:state.fallY,
+      sky:[state.skyTop,state.skyBottom],
+      spawnL:state.spawnL, spawnR:state.spawnR,
+      platforms:state.platforms.map(function(p){return {x:p.x,y:p.y,w:p.w,type:p.type};}),
+      powerups:state.powerups.slice(),
+      background:state.background, events:state.events
+    };
+  }
+
+  // ---------- persistence & actions ----------
+  var SAVE='tps_mapmaker_v1';
+  function commit(){
+    try{ localStorage.setItem(SAVE, JSON.stringify(exportObj())); }catch(e){}
+    $('outBox').textContent=summary();
+  }
+  function loadObj(o){
+    try{
+      state.name=o.name||'My Map'; state.w=o.w||720; state.h=o.h||240;
+      state.sideKnockoff = o.sideKnockoff!==false; state.fallY=o.fallY||232;
+      if(o.sky){ state.skyTop=o.sky[0]||state.skyTop; state.skyBottom=o.sky[1]||state.skyBottom; }
+      state.spawnL=o.spawnL||{x:160,y:176}; state.spawnR=o.spawnR||{x:560,y:176};
+      state.platforms=(o.platforms||[]).map(function(p){return {id:nid(),x:p.x,y:p.y,w:p.w,type:p.type||'platform'};});
+      state.powerups=o.powerups||[]; state.background=o.background||''; state.events=o.events||'';
+      selId=null;
+      pushSettingsToUI(); buildPU(); syncProp(); layout(); commit();
+    }catch(e){ alert('Kon deze JSON niet laden.'); }
+  }
+  $('btnCopy').addEventListener('click', function(){
+    var txt=summary();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(flashCopied, fallbackCopy.bind(null,txt));
+    } else fallbackCopy(txt);
+  });
+  function flashCopied(){ var b=$('btnCopy'); var o=b.textContent; b.textContent='✓ Gekopieerd!'; setTimeout(function(){b.textContent=o;},1400); }
+  function fallbackCopy(txt){
+    var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); flashCopied(); }catch(e){ alert('Kopiëren mislukte — selecteer de tekst in het uitvoer-vak.'); }
+    document.body.removeChild(ta);
+  }
+  $('btnJson').addEventListener('click', function(){
+    var blob=new Blob([JSON.stringify(exportObj(),null,2)],{type:'application/json'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=(state.name||'map').replace(/[^a-z0-9]+/gi,'_').toLowerCase()+'.json'; a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+  });
+  $('btnLoad').addEventListener('click', function(){
+    var txt=prompt('Plak hier je map-JSON (of het hele “voor Claude”-blok):');
+    if(!txt) return;
+    var m=txt.match(/\{[\s\S]*\}/); if(!m){ alert('Geen JSON gevonden.'); return; }
+    try{ loadObj(JSON.parse(m[0])); }catch(e){ alert('Ongeldige JSON.'); }
+  });
+  $('btnClear').addEventListener('click', function(){
+    if(!confirm('Hele map leegmaken en opnieuw beginnen?')) return;
+    uid=1; state=defaultState(); pushSettingsToUI(); buildPU(); syncProp(); layout(); commit();
+  });
+
+  // ---------- init ----------
+  (function init(){
+    var saved=null; try{ saved=JSON.parse(localStorage.getItem(SAVE)); }catch(e){}
+    if(saved && saved.platforms){ loadObj(saved); }
+    else { pushSettingsToUI(); buildPU(); syncProp(); layout(); commit(); }
+  })();
+})();
+</script>
+</body>
+</html>
