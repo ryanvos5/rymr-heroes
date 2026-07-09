@@ -14,7 +14,6 @@ const CONFIG = {
   GROUND_Y: 173,        // y van de grond (voeten staan hier)
   GRAVITY: 0.6,
   JUMP_VELOCITY: -11,
-  FAST_FALL_VY: 9,          // in de lucht op down/shield -> snelle duik naar beneden (aanvallen ontwijken)
 };
 
 /* ---------- WAPENS ----------
