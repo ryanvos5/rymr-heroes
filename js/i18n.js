@@ -31,6 +31,7 @@ const I18N = {
       coins: 'Coins', rubies: 'Rubies',
       buy: 'BUY', equip: 'EQUIP', equipped: 'EQUIPPED', in_loadout: 'IN LOADOUT', choose: 'CHOOSE',
       put_on: 'PUT ON', take_off: 'OFF', broken: 'BROKEN', health_word: 'Health',
+      test_map_label: 'Test map (vs bot)', test_map_random: 'Random',
       too_few: '(not enough)', made: 'MADE', forge_btn: 'FORGE', repair_btn: 'REPAIR', smith_busy: 'SMITH BUSY',
       collect: 'COLLECT', out_loadout: 'REMOVE', buy_in_shop: 'Buy in shop', collect_ready: 'COLLECT!',
       // ---- journey ----
@@ -91,6 +92,7 @@ const I18N = {
       coins: 'Munten', rubies: 'Robijnen',
       buy: 'KOOP', equip: 'UITRUSTEN', equipped: 'UITGERUST', in_loadout: 'IN LOADOUT', choose: 'KIES',
       put_on: 'OPZETTEN', take_off: 'AF', broken: 'KAPOT', health_word: 'Health',
+      test_map_label: 'Test-map (vs bot)', test_map_random: 'Willekeurig',
       too_few: '(te weinig)', made: 'GEMAAKT', forge_btn: 'SMEED', repair_btn: 'REPAREER', smith_busy: 'SMID BEZIG',
       collect: 'OPHALEN', out_loadout: 'UIT LOADOUT', buy_in_shop: 'Koop in shop', collect_ready: 'OPHALEN!',
       journey_title: 'JOURNEY', world: 'Wereld', story_next: 'Verder', story_skip: 'Overslaan',
