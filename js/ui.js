@@ -1834,8 +1834,8 @@ const UI = {
     if (rb) {
       if (v.roundMsg && v.roundFreezeUntil > Game.time) {
         rb.classList.remove('hidden');
-        rb.textContent = tl(v.roundMsg);
-        rb.className = 'vs-round-banner ' + (v.roundMsg.indexOf('JIJ') === 0 ? 'win' : 'lose');
+        rb.innerHTML = '<span class="rb-title">' + tl('WINNER ROUND') + '</span><span class="rb-name">' + this._esc(v.roundWinName || '') + '</span>';
+        rb.className = 'vs-round-banner ' + (v.roundWonByMe ? 'win' : 'lose');
       } else rb.classList.add('hidden');
     }
   },

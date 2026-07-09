@@ -833,6 +833,8 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 }
 .vs-round-banner.win { color: #6fd06a; }
 .vs-round-banner.lose { color: #ff6a6a; }
+.vs-round-banner .rb-title { display: block; font-size: clamp(20px, 5.6vw, 40px); letter-spacing: 2px; }
+.vs-round-banner .rb-name { display: block; margin-top: 4px; color: #fff; font-size: clamp(15px, 4vw, 26px); text-shadow: 0 3px 0 #000; }
 .auth-box { width: min(340px, 92%); }
 .auth-sub { color: var(--text-dim); font-size: 12px; margin: 6px 0 14px; line-height: 1.4; }
 #auth-fields { display: flex; flex-direction: column; gap: 10px; }

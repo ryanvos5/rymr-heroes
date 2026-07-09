@@ -4716,6 +4716,11 @@ const Game = {
   beginRoundFreeze(msg) {
     this.vs.roundFreezeUntil = this.time + 2200;       // ~2,2s freeze
     this.vs.roundMsg = msg;
+    const iWon = !!(msg && msg.indexOf('JIJ') === 0);   // ronde-winnaar-naam voor de banner
+    this.vs.roundWonByMe = iWon;
+    this.vs.roundWinName = iWon
+      ? ((window.Net && Net.isLoggedIn && Net.isLoggedIn()) ? Net.nickname() : tl('Jij'))
+      : (this.vsBot ? 'Bot' : (this.vs.oppName || tl('Tegenstander')));
     if (window.Sfx) Sfx.play((msg && msg.indexOf('JIJ') === 0) ? 'roundwin' : 'roundlose');
     this.dragons = [];                                  // draken stoppen bij rondewissel
     this.rocks = [];
@@ -5212,6 +5217,7 @@ const Game = {
     if (typeof s.h === 'number') r.hp = s.h;
     if (typeof s.mh === 'number') r.maxHp = s.mh;
     if (typeof s.rp === 'number') { r.rp = s.rp; if (this.vs) this.vs.oppRp = s.rp; }   // tegenstander-RP (rank-badge + hogere-rank-bonus)
+    if (s.nk && this.vs) this.vs.oppName = s.nk;   // tegenstander-nickname (voor de ronde-winnaar-banner)
     r.lastSeen = this.time;
   },
 
@@ -5229,6 +5235,7 @@ const Game = {
       iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
       fb: p.fireballs > 0 ? 1 : 0,
       rp: Storage.data.rp || 0,
+      nk: (window.Net && Net.isLoggedIn && Net.isLoggedIn()) ? (Net.nickname() || '') : '',
     });
   },
 
