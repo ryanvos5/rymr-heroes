@@ -2651,6 +2651,8 @@ const Game = {
     this.vulcanSmoke = []; this.vulcanBg = [];
     // Pirate: zeemonster-tentakel
     this.tentacle = map.pirate ? { state: 'idle', nextAt: this.time + PIRATE_TENT_EVERY, x: 360, mode: 'flat', hitP: false, hitB: false } : null;
+    // Sky Castle: draak-snoekduik
+    this.castleDragons = []; this._cDragonAt = map.castle ? this.time + CASTLE_DRAGON_EVERY + Math.random() * 4000 : 0;
     // Beach: getij + strandbal
     this.tide = map.beach ? { state: 'idle', nextAt: this.time + BEACH_TIDE_EVERY, level: 0, dir: 1, _sloshAt: 0 } : null;
     this.beachFx = [];
@@ -2852,6 +2854,7 @@ const Game = {
       if (this.vsMap && this.vsMap.beach) this.updateTide(dt);      // strand: getij/vloed
       if (this.ball) this.updateBall(dt);                           // strandbal
       if (this.vsMap && this.vsMap.darts) this.updateStunDarts(dt);    // Jungle: stun-darts schieten door de map
+      if (this.vsMap && this.vsMap.castle) this.updateCastleDragon(dt); // Sky Castle: draak-snoekduik
       if (this.vsMap && this.vsMap.airplane) this.updateAirplane(dt);  // Airplane: wolk-timers + vogels
       if (this.player.giant) { if (this.time >= (this.player._giantUntil || 0)) this._endGiant(this.player); else this.giantContact(dt); }   // reus: 8s, dan terug
       if (this.vsBot) this.updateBot(dt);              // de AI-tegenstander
@@ -3822,6 +3825,107 @@ const Game = {
     Sprites.px(ctx, '#e8a83a', x + 4, y, 2, 1);                        // snavel (kijkt naar achter/rechts)
     Sprites.px(ctx, '#ff3030', x + 2, y - 1, 1, 1);                    // oog
   },
+  // ---- Sky Castle: draak maakt af en toe een snoekduik dwars over de map ----
+  updateCastleDragon(dt) {
+    if (!this.castleDragons) this.castleDragons = [];
+    if (!this._cDragonAt) { this._cDragonAt = this.time + CASTLE_DRAGON_EVERY + Math.random() * 4000; return; }   // eerste keer: scherpstellen
+    if (this.time >= this._cDragonAt) {
+      this._cDragonAt = this.time + CASTLE_DRAGON_EVERY + Math.random() * 6000;   // ~9–15s tussen duiken
+      this.castleDragons.push({ fromLeft: Math.random() < 0.5, born: this.time, dur: CASTLE_DRAGON_DUR, x: 0, y: 0, hitP: false, hitB: false });
+      if (window.Sfx) Sfx.play('swing');
+    }
+    const w = this.vsMap.w, gy = (this.vsMap.spawnL && this.vsMap.spawnL.y) || 178;
+    for (const d of this.castleDragons) {
+      const t = Math.max(0, Math.min(1, (this.time - d.born) / d.dur));
+      d.t = t; d.dir = d.fromLeft ? 1 : -1;
+      const x0 = d.fromLeft ? -60 : w + 60, x1 = d.fromLeft ? w + 60 : -60;
+      d.x = x0 + (x1 - x0) * t;
+      d.y = (this.vsMap.camTop - 6) + ((gy - 8) - (this.vsMap.camTop - 6)) * Math.sin(Math.PI * t);   // hoog -> laag in het midden -> hoog
+      const hit = (e) => e && !e.dead && e.respawnInvuln <= 0 && Math.abs(e.x - d.x) < 22 && Math.abs((e.y - 14) - d.y) < 20;
+      if (t > 0.12 && t < 0.88) {
+        if (!d.hitP && hit(this.player)) { d.hitP = true; this._skyDragonHit(this.player, d); }
+        if (!d.hitB && this.vsBot && hit(this.bot)) { d.hitB = true; this._skyDragonHit(this.bot, d); }
+      }
+    }
+    this.castleDragons = this.castleDragons.filter((d) => (this.time - d.born) < d.dur + 250);
+  },
+  // draak-duik raakt je -> harde knockback (van de map af) in de vliegrichting
+  _skyDragonHit(e, d) {
+    e.knockVx = d.dir * 52; e.vy = -8.5; e.onGround = false; e.combo = 0; e.stunUntil = this.time + 260;
+    this.shake = Math.max(this.shake, 12); if (window.Sfx) Sfx.play('hit');
+    for (let i = 0; i < 16; i++) this.particles.push(new Particle(e.x, e.y - 12, (Math.random() - 0.5) * 4.5, -Math.random() * 3, i % 3 ? '#ffce6a' : '#ff6a2a', 380, 2));
+    if (e === this.player) this.hurtFlash = Math.max(this.hurtFlash, 200);
+  },
+  drawSkyDragon(ctx, d) {
+    const x = Math.round(d.x), y = Math.round(d.y), dir = d.dir;
+    const flap = Math.sin((this.time + d.born) / 70) * 6;
+    const body = '#2f7a3a', bodyDk = '#1e5528', belly = '#8fd06a', wing = '#256a30', wingLt = '#3a9a44', horn = '#e8dcc0';
+    // vleugels (klappen)
+    ctx.globalAlpha = 0.95;
+    Sprites.px(ctx, wing, x - dir * 14, y - 10 - Math.round(flap), 20, 12);
+    Sprites.px(ctx, wingLt, x - dir * 14, y - 10 - Math.round(flap), 20, 3);
+    Sprites.px(ctx, wing, x - dir * 6, y + 4 + Math.round(flap), 16, 10);
+    ctx.globalAlpha = 1;
+    // staart (achter)
+    Sprites.px(ctx, bodyDk, x - dir * 26, y + 2, 16, 4);
+    Sprites.px(ctx, body, x - dir * 18, y, 14, 6);
+    // lijf
+    Sprites.px(ctx, body, x - 8, y - 4, 22, 12);
+    Sprites.px(ctx, belly, x - 6, y + 4, 18, 3);
+    Sprites.px(ctx, bodyDk, x - 8, y - 4, 22, 2);
+    // nek + kop (voor, in vliegrichting)
+    Sprites.px(ctx, body, x + dir * 10, y - 8, 8, 8);
+    Sprites.px(ctx, body, x + dir * 14, y - 10, 9, 8);
+    Sprites.px(ctx, horn, x + dir * 15, y - 14, 2, 4);                 // hoorn
+    Sprites.px(ctx, '#ffe14a', x + dir * 20, y - 8, 2, 2);            // oog
+    // vuur-adem-gloed vóór de kop
+    ctx.globalAlpha = 0.6; Sprites.px(ctx, '#ff8a2a', x + dir * 23, y - 7, 4, 3);
+    ctx.globalAlpha = 0.35; Sprites.px(ctx, '#ffd06a', x + dir * 26, y - 7, 5, 3); ctx.globalAlpha = 1;
+  },
+  // Sky Castle-achtergrond: zon, verre wolken/horizon met kastelen, zwevende eilandjes,
+  // een verre vliegende draak en de achter-torens van het eigen kasteel.
+  drawCastleBg(ctx) {
+    const W = this.vsMapW, t = this.time;
+    // zon-gloed hoog links
+    const sx = Math.round(W * 0.24);
+    const sg = ctx.createRadialGradient(sx, 26, 6, sx, 26, 84);
+    sg.addColorStop(0, 'rgba(255,240,200,0.55)'); sg.addColorStop(1, 'rgba(255,240,200,0)');
+    ctx.fillStyle = sg; ctx.fillRect(sx - 92, -44, 184, 156);
+    Sprites.px(ctx, '#fff2c8', sx - 7, 18, 14, 14);
+    // hazige verre grond + kastelen in de verte
+    ctx.globalAlpha = 0.26; Sprites.px(ctx, '#6a86b0', 0, 160, W, 12); ctx.globalAlpha = 1;
+    ctx.globalAlpha = 0.4;
+    const farCastle = (bx) => { Sprites.px(ctx, '#41597e', bx, 150, 22, 14); Sprites.px(ctx, '#41597e', bx - 3, 146, 5, 18); Sprites.px(ctx, '#41597e', bx + 20, 146, 5, 18); Sprites.px(ctx, '#33486a', bx + 8, 143, 6, 21); Sprites.px(ctx, '#6a86b0', bx, 150, 22, 1); };
+    farCastle(Math.round(W * 0.12)); farCastle(Math.round(W * 0.55)); farCastle(Math.round(W * 0.82));
+    ctx.globalAlpha = 1;
+    // drijvende wolken
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 8; i++) { const cx = ((i * 127) + t * 0.006) % (W + 120) - 60; Sprites.px(ctx, '#cfe0f2', Math.round(cx), 150 + ((i * 13) % 10), 46, 6); }
+    ctx.globalAlpha = 1;
+    // verre, langzaam driftende draak
+    const fx = ((t * 0.02) % (W + 160)) - 80, fy = 58 + Math.sin(t / 900) * 10;
+    ctx.globalAlpha = 0.5; const f = Math.sin(t / 220) * 3;
+    Sprites.px(ctx, '#24405e', Math.round(fx) - 8, Math.round(fy - f), 10, 3);
+    Sprites.px(ctx, '#24405e', Math.round(fx) + 2, Math.round(fy + f), 10, 3);
+    Sprites.px(ctx, '#1c3350', Math.round(fx) - 2, Math.round(fy) - 1, 8, 3);
+    ctx.globalAlpha = 1;
+    // zwevende eilandjes (parallax)
+    ctx.globalAlpha = 0.85;
+    const isle = (bx, by, bw) => { Sprites.px(ctx, '#6b5f4a', bx, by, bw, 6); Sprites.px(ctx, '#4f4636', bx + 3, by + 6, bw - 6, 5); Sprites.px(ctx, '#3a3226', bx + Math.round(bw / 2) - 3, by + 11, 6, 5); Sprites.px(ctx, '#3a7a3f', bx, by - 3, bw, 3); };
+    isle(Math.round(W * 0.06), 96, 40); isle(Math.round(W * 0.70), 74, 46); isle(Math.round(W * 0.42), 50, 34);
+    ctx.globalAlpha = 1;
+    // achter-torens van het eigen kasteel (achter de platforms)
+    const tower = (cx, top, w) => {
+      Sprites.px(ctx, '#5a5040', cx - w / 2, top, w, 178 - top + 6);
+      Sprites.px(ctx, '#6a5f4a', cx - w / 2, top, w, 3);
+      Sprites.px(ctx, '#443c30', cx + w / 2 - 3, top + 3, 3, 178 - top);
+      for (let i = 0; i < w; i += 8) Sprites.px(ctx, '#5a5040', cx - w / 2 + i, top - 4, 4, 4);   // kantelen
+      for (let yy = top + 10; yy < 168; yy += 18) Sprites.px(ctx, '#20304a', cx - 2, yy, 4, 7);   // raampjes
+    };
+    ctx.globalAlpha = 0.92;
+    tower(154, 128, 30); tower(548, 128, 30); tower(351, 108, 26);
+    ctx.globalAlpha = 1;
+  },
   onVersusApe(p) {
     const a = this.jungleApe; if (!a || !p) return;
     if (p.x != null) a.x = p.x;
@@ -4173,6 +4277,10 @@ const Game = {
       if (mid === 'beach') pool.push({ kind: 'beachball', w: 10 });                     // strandbal op Beach
       if (mid === 'temple') pool.push({ kind: 'ninjastar', w: 12 });                    // ninja-sterren op Temple
       if (mid === 'jungle') { pool.push({ kind: 'ak47', w: 9 }); pool.push({ kind: 'crossbow', w: 9 }); }  // AK47 + Kruisboog op Jungle
+      if (mid === 'castle') {                                                          // Sky Castle: door de speler gekozen power-ups
+        pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'crossbow', w: 9 }); pool.push({ kind: 'fireball', w: 8 });
+        pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'dragon', w: 5 });
+      }
       if (mid === 'dohyo') {                                                          // Dohyo: ALLE power-ups
         pool.push({ kind: 'lightning', w: 8 }); pool.push({ kind: 'rock', w: 8 }); pool.push({ kind: 'cannon', w: 9 });
         pool.push({ kind: 'shield', w: 9 }); pool.push({ kind: 'ak47', w: 9 });
@@ -4370,7 +4478,7 @@ const Game = {
   // sfeer-deeltjes per map (embers/bladeren/zeenevel/stof) — geven de arena leven
   _updateAmbient(dt) {
     const map = this.vsMap; if (!map) return;
-    const kind = map.vulcan ? 'ember' : (map.jungle2 ? 'leaf' : ((map.beach || map.pirate) ? 'spray' : (map.airplane ? 'spark' : ((map.cave || map.dohyo) ? 'dust' : null))));
+    const kind = map.vulcan ? 'ember' : (map.jungle2 ? 'leaf' : ((map.beach || map.pirate) ? 'spray' : ((map.airplane || map.castle) ? 'spark' : ((map.cave || map.dohyo) ? 'dust' : null))));
     if (kind) {
       this._ambClock += dt;
       if (this._ambClock >= 150 && this.ambient.length < 55) {
@@ -5244,6 +5352,7 @@ const Game = {
     if (map.vulcan) this.drawVulcanBg(ctx);             // verre uitbarstingen + rook
     if (map.pirate) this.drawPirateBg(ctx);             // piratenschip-achtergrond + water
     if (map.jungle2) this.drawJungleBg(ctx);            // oerwoud-achtergrond + papegaaien
+    if (map.castle) this.drawCastleBg(ctx);             // Sky Castle: zwevend kasteel, verre draak + kastelen
     if (map.jbg) this.drawJungleBg(ctx);                // Journey-jungle: zelfde oerwoud-achtergrond (zonder kooi-gimmick)
     if (map.dohyo) this.drawDohyoBg(ctx);               // Japanse dojo + hangend dak met kwasten
     if (map.beach) this.drawBeachBg(ctx);               // strand: zee + golven achter
@@ -5399,6 +5508,7 @@ const Game = {
     if (map.jungle2 && this.jungleApe) this.drawJungleApe(ctx);  // wilde aap in het midden (vóór de spelers)
     if (map.airplane && this.birds) for (const b of this.birds) this.drawBird(ctx, b);   // vogels vóór de spelers
     if (map.darts && this.darts) for (const d of this.darts) this.drawStunDart(ctx, d);  // Jungle: stun-darts vóór de spelers
+    if (map.castle && this.castleDragons) for (const d of this.castleDragons) this.drawSkyDragon(ctx, d);  // Sky Castle: duikende draak vóór de spelers
     if (this.ball) this.drawBall(ctx);                       // strandbal
     if (map.beach && this.tide) this.drawTideWater(ctx);     // vloed-water over de spelers
     // Ryan zap-dash: bliksemboog van start -> eind
@@ -6227,7 +6337,7 @@ const Game = {
     this.ghostBullets = []; this.botBullets = []; this.drops = []; this.traps = []; this.portals = []; this.dragons = [];
     this.abilityFx = []; this.impacts = []; this.floatTexts = []; this.ambient = []; this.zapFx = null; this.ko = null;
     this.hitStop = 0; this.hurtFlash = 0; this.smashFlash = 0; this._ambClock = 0;
-    this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null; this.birds = []; this._birdAt = 0; this.darts = []; this._dartAt = 0;
+    this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null; this.birds = []; this._birdAt = 0; this.darts = []; this._dartAt = 0; this.castleDragons = []; this._cDragonAt = 0;
     this.tentacle = null; this.vulcan = null; this.tide = null; this.nuke = null;
     this.buildVersusPlatforms(map);
     // veilige stub zodat gedeelde helpers (applyDrop/smashFire) geen null-this.vs raken

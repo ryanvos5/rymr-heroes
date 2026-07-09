@@ -952,6 +952,10 @@ const PIRATE_TENT_EVERY = 7000;    // ms tussen tentakels
 const PIRATE_TENT_WARN = 1100;     // waarschuwing (water borrelt) vóór de slag
 const PIRATE_TENT_STRIKE = 700;    // duur van de slag
 
+/* ---------- Sky Castle-map: draak die af en toe een snoekduik maakt ---------- */
+const CASTLE_DRAGON_EVERY = 9000;   // ms tussen duiken (+ random)
+const CASTLE_DRAGON_DUR = 1500;     // duur van één duik (van de ene kant naar de andere)
+
 /* ---------- Vulcan-map: lavastraal + schuine platforms ---------- */
 const VULCAN_EVERY = 6500;     // ms tussen uitbarstingen
 const VULCAN_BUBBLE = 1300;    // borrel-waarschuwing vóór de uitbarsting
@@ -990,6 +994,23 @@ const VERSUS_MAPS = [
       { x: 480, y: 176, w: 150 },                                // midden-grond
       { x: 300, y: 120, w: 76 }, { x: 660, y: 120, w: 76 },      // midden
       { x: 160, y: 66, w: 52 }, { x: 800, y: 66, w: 52 },       // hoog
+    ],
+  },
+  {
+    // Sky Castle: een zwevend kasteel hoog in de lucht (ontworpen in de Map Maker).
+    // Twee grond-vleugels met een lagere midden-plaat, gaten ertussen (je valt eraf),
+    // een stenen middentoren en 4 zwevende platforms. Af en toe maakt een draak een
+    // snoekduik dwars over de map -> raakt hij je, dan word je hard van de map af geknald.
+    id: 'castle', name: 'Sky Castle', sky: ['#2a4a86', '#0e1c3a'], void: '#0a1226',
+    plat: 'stone', stone: true, castle: true,
+    w: 702, fallY: 230, camTop: -46, camBottom: 30,
+    spawnL: { x: 130, y: 178 }, spawnR: { x: 572, y: 178 },
+    platforms: [
+      { x: 154, y: 178, w: 168 }, { x: 548, y: 178, w: 168 },   // grond-vleugels links/rechts
+      { x: 351, y: 182, w: 140 },                                // lagere midden-plaat
+      { x: 190, y: 140, w: 54 }, { x: 512, y: 140, w: 54 },      // lage zwevende platforms
+      { x: 283, y: 117, w: 54 }, { x: 419, y: 117, w: 54 },      // hoge zwevende platforms
+      { x: 351, y: 94, w: 48, wall: true },                      // stenen middentoren
     ],
   },
   {
