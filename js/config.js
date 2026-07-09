@@ -1303,3 +1303,16 @@ function arenaRound(round) {
     bonus: 5 + round * 3,                                     // munten per voltooide ronde (bescheiden)
   };
 }
+
+/* ---------- Map-rotatie: welke maps staan uit (beheerd via de Map Maker, gesynct via de cloud) ----------
+   window.MAP_DISABLED bevat de uitgezette map-id's. activeVersusMaps() geeft de actieve maps. */
+try {
+  var _tpsRot = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('tps_maprotation')) || '{}');
+  window.MAP_DISABLED = new Set((_tpsRot && _tpsRot.disabled) || []);
+} catch (e) { window.MAP_DISABLED = new Set(); }
+function activeVersusMaps() {
+  var dis = (typeof window !== 'undefined' && window.MAP_DISABLED) ? window.MAP_DISABLED : null;
+  if (!dis || !dis.size) return VERSUS_MAPS;
+  var a = VERSUS_MAPS.filter(function (m) { return !dis.has(m.id); });
+  return a.length ? a : VERSUS_MAPS;   // altijd minstens 1 map actief houden
+}

@@ -96,6 +96,12 @@
     <div class="mini-note">Je bewerkt dan de échte map-coördinaten van de game (dus andere getallen dan een nieuwe 1200×400-map). Klik daarna “Kopieer voor Claude” om je aanpassing door te sturen.</div>
   </div>
 
+  <div class="card" id="rotCard">
+    <div class="hd">Maps aan / uit in de game</div>
+    <div class="pu-grid" id="rotGrid"></div>
+    <div class="mini-note" id="rotStatus">Laden…</div>
+  </div>
+
   <div class="card">
     <div class="hd">Map-instellingen</div>
     <div class="row">
@@ -202,8 +208,9 @@
 
   <p class="foot">Tiny Power Smashers · Map Maker — alles blijft lokaal in je browser tot je op “Kopieer voor Claude” klikt.</p>
 
-<!-- de echte game-config: geeft toegang tot VERSUS_MAPS zodat je bestaande maps kunt laden -->
-<script src="js/config.js?v=menu177"></script>
+<!-- de echte game-config + supabase-client: bestaande maps laden én aan/uit zetten (gesynct via de cloud) -->
+<script src="vendor/supabase.min.js?v=menu178"></script>
+<script src="js/config.js?v=menu178"></script>
 <script>
 (function(){
   "use strict";
@@ -664,9 +671,65 @@
     loadGameMap(id);
   });
 
+  // ---------- maps aan/uit (rotatie) — lokaal + cloud-sync via supabase ----------
+  var SUPA_URL='https://ldzdfgfaqiwwdogpltsu.supabase.co';
+  var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkemRmZ2ZhcWl3d2RvZ3BsdHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzgwNzQsImV4cCI6MjA5NjA1NDA3NH0.bzoEhgQB727gjS0JfEqxjLlqyam0fuy0J7UovCeg6oY';
+  var OWNER_ID='2fedd0ac-f67a-4deb-9dff-7a9c7b5f92f9';
+  var SB=null;
+  try { if(window.supabase && window.supabase.createClient) SB=window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true, autoRefreshToken:true}}); } catch(e){}
+  var rotDisabled=(function(){ try{ var r=JSON.parse(localStorage.getItem('tps_maprotation')||'{}'); return new Set((r&&r.disabled)||[]); }catch(e){ return new Set(); } })();
+  var rotOwner=false;
+  function rotSaveLocal(){ try{ localStorage.setItem('tps_maprotation', JSON.stringify({disabled:Array.from(rotDisabled)})); }catch(e){} if(typeof window.MAP_DISABLED!=='undefined') window.MAP_DISABLED=new Set(rotDisabled); }
+  function rotStatus(){
+    var s=$('rotStatus'); if(!s) return;
+    if(!SB){ s.textContent='Cloud niet beschikbaar — wijzigingen gelden alleen op dit apparaat.'; return; }
+    if(rotOwner) s.innerHTML='✅ Ingelogd als eigenaar — wijzigingen worden meteen gesynct naar de cloud (web én iOS).';
+    else s.innerHTML='⚠️ Niet als eigenaar ingelogd. Wijzigingen gelden nu alleen op dit apparaat. Log in de <b>game</b> in met je eigen account (in dezelfde browser) en herlaad deze pagina om ook iOS/andere apparaten te syncen.';
+  }
+  function renderRot(){
+    var g=$('rotGrid'); if(!g) return; g.innerHTML='';
+    var maps=existingMaps();
+    if(!maps.length){ var c=$('rotCard'); if(c) c.style.display='none'; return; }
+    maps.forEach(function(m){
+      var on=!rotDisabled.has(m.id);
+      var el=document.createElement('div'); el.className='pu'+(on?' on':'');
+      el.innerHTML='<span class="emo">'+(on?'🟢':'⚪')+'</span> '+m.name+(on?'':'  (uit)');
+      el.addEventListener('click', function(){
+        if(rotDisabled.has(m.id)){ rotDisabled.delete(m.id); }
+        else {
+          if(rotDisabled.size >= maps.length-1){ alert('Minstens één map moet aan blijven.'); return; }
+          rotDisabled.add(m.id);
+        }
+        rotSaveLocal(); renderRot(); rotPush();
+      });
+      g.appendChild(el);
+    });
+    rotStatus();
+  }
+  function rotPush(){
+    if(!SB || !rotOwner) return;
+    SB.from('app_config').upsert({key:'rotation', value:{disabled:Array.from(rotDisabled)}, updated_at:new Date().toISOString()}, {onConflict:'key'})
+      .then(function(res){ if(res && res.error){ var s=$('rotStatus'); if(s) s.innerHTML='❌ Cloud-sync mislukte (geen rechten?). Lokaal wél opgeslagen.'; } });
+  }
+  function rotInit(){
+    renderRot();
+    if(!SB) return;
+    SB.auth.getSession().then(function(r){
+      var u=r&&r.data&&r.data.session&&r.data.session.user;
+      rotOwner=!!(u && u.id===OWNER_ID);
+      rotStatus();
+    }).catch(function(){});
+    SB.from('app_config').select('value').eq('key','rotation').maybeSingle().then(function(r){
+      if(r&&r.data&&r.data.value&&Array.isArray(r.data.value.disabled)){
+        rotDisabled=new Set(r.data.value.disabled); rotSaveLocal(); renderRot();
+      }
+    }).catch(function(){});
+  }
+
   // ---------- init ----------
   (function init(){
     populateLoad();
+    rotInit();
     var saved=null; try{ saved=JSON.parse(localStorage.getItem(SAVE)); }catch(e){}
     if(saved && saved.platforms){ loadObj(saved); }
     else { pushSettingsToUI(); buildPU(); renderMelee(); syncProp(); layout(); commit(); }

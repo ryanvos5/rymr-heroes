@@ -1238,7 +1238,7 @@ const UI = {
     document.getElementById('versus-mm').classList.add('hidden');
     document.getElementById('btn-vs-back').classList.remove('hidden');
     this._vsStarted = false; this._myReady = false;
-    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
+    this._myVote = { map: activeVersusMaps()[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-wait').classList.remove('hidden');
     document.querySelector('.vs-wait-label').classList.add('hidden');   // geen code bij matchmaking
     document.getElementById('vs-bot-diff').classList.add('hidden');
@@ -1262,7 +1262,7 @@ const UI = {
     this._botSetup = false; this._vsStarted = false;
     this._botDiff = 10;
     this._mmBotLevel = 10 + Math.floor(Math.random() * 11);   // Bot Lv 10..20
-    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
+    this._myVote = { map: activeVersusMaps()[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-lobby').classList.add('hidden');
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
@@ -1286,7 +1286,7 @@ const UI = {
     this._spinRoulette();
     setTimeout(() => {
       if (this._vsStarted) return;
-      const map = forced || VERSUS_MAPS[Math.floor(Math.random() * VERSUS_MAPS.length)].id;
+      const map = forced || activeVersusMaps()[Math.floor(Math.random() * activeVersusMaps().length)].id;
       this._myVote = this._myVote || { mode: 'smash', rounds: SMASH_ROUNDS };
       this._myVote.map = map;
       this._landRoulette(map, () => this.startBotMatch());
@@ -1359,7 +1359,7 @@ const UI = {
     this._botSetup = true;
     this._matchType = 'bot';             // oefen-bot: zelf map kiezen (rematch = zelfde map)
     this._mmBotLevel = 0;                 // oefen-bot: geen echte inzet (geen XP/munten/kisten)
-    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
+    this._myVote = { map: activeVersusMaps()[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-lobby').classList.add('hidden');
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
@@ -1392,7 +1392,7 @@ const UI = {
     this._vsStarted = true;
     this._stopRoulette();
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.add('hidden');
-    const v = this._myVote || { map: (Game.vsMap && Game.vsMap.id) || VERSUS_MAPS[0].id };
+    const v = this._myVote || { map: (Game.vsMap && Game.vsMap.id) || activeVersusMaps()[0].id };
     Game.startVersus('host', { mapId: v.map, mode: 'smash', bot: true, diff: this._botDiff || 5, mmLevel: this._mmBotLevel || 0, swapSides: Math.random() < 0.5, rounds: this._lastRounds || SMASH_ROUNDS });
   },
 
@@ -1400,7 +1400,7 @@ const UI = {
   _enterRoom(code) {
     this._vsStarted = false; this._peer = null; this._myReady = false;
     this._matchType = 'room';
-    this._myVote = { map: VERSUS_MAPS[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
+    this._myVote = { map: activeVersusMaps()[0].id, mode: 'smash', rounds: SMASH_ROUNDS };
     document.getElementById('versus-msg').textContent = '';
     document.getElementById('versus-lobby').classList.add('hidden');
     document.getElementById('versus-wait').classList.remove('hidden');
@@ -1443,7 +1443,7 @@ const UI = {
     if (this._vsRole === 'host') {
       setTimeout(() => {
         if (this._vsStarted) return;
-        const map = VERSUS_MAPS[Math.floor(Math.random() * VERSUS_MAPS.length)].id;
+        const map = activeVersusMaps()[Math.floor(Math.random() * activeVersusMaps().length)].id;
         const swap = Math.random() < 0.5;
         if (window.Net) Net.versusSend('begin', { map, mode: 'smash', swap, rounds: SMASH_ROUNDS, roulette: 1 });
         this._landRoulette(map, () => this._beginMatch(map, 'smash', swap, SMASH_ROUNDS));
@@ -1453,7 +1453,7 @@ const UI = {
   _renderRoulette() {
     const strip = document.getElementById('vs-roulette-strip'); if (!strip) return;
     strip.innerHTML = '';
-    VERSUS_MAPS.forEach((m) => {
+    activeVersusMaps().forEach((m) => {
       const tile = document.createElement('div'); tile.className = 'vs-roul-tile'; tile.dataset.map = m.id;
       tile.textContent = m.name; strip.appendChild(tile);
     });
@@ -1527,7 +1527,7 @@ const UI = {
       const list = document.getElementById(listId);
       if (!list) return;
       list.innerHTML = '';
-      VERSUS_MAPS.forEach((m) => {
+      activeVersusMaps().forEach((m) => {
         const b = document.createElement('button');
         b.className = 'vs-map-btn' + (this._myVote.map === m.id ? ' picked' : '');
         b.dataset.map = m.id;
@@ -1571,7 +1571,7 @@ const UI = {
 
   refreshLobby() {
     // map-stemmen tonen (in beide lijsten: lobby + uitslag)
-    VERSUS_MAPS.forEach((m) => {
+    activeVersusMaps().forEach((m) => {
       let n = 0; if (this._myVote.map === m.id) n++; if (this._peer && this._peer.map === m.id) n++;
       document.querySelectorAll('[data-mv="' + m.id + '"]').forEach((el) => { el.textContent = n ? '●'.repeat(n) : ''; });
     });
@@ -1876,7 +1876,7 @@ const UI = {
       rbtn.disabled = false; rbtn.innerHTML = this._ic('refresh') + ' REMATCH'; rbtn.classList.remove('hidden');
       rs.textContent = isBot ? '' : tl('Beiden moeten op rematch drukken.');
       // map-stemmen voor de volgende pot: standaard de huidige map
-      const curMap = (Game.vsMap && Game.vsMap.id) || VERSUS_MAPS[0].id;
+      const curMap = (Game.vsMap && Game.vsMap.id) || activeVersusMaps()[0].id;
       const rr = this._lastRounds || SMASH_ROUNDS;
       this._myVote = { map: curMap, mode: 'smash', rounds: rr };
       this._myReady = false;
@@ -1942,11 +1942,11 @@ const UI = {
     if (this._vsRole === 'host') {
       const mode = 'smash', swap = Math.random() < 0.5, rounds = this._effectiveRounds();
       if (this._matchType === 'mm') {                        // matchmaking-rematch: opnieuw willekeurige map
-        const map = VERSUS_MAPS[Math.floor(Math.random() * VERSUS_MAPS.length)].id;
+        const map = activeVersusMaps()[Math.floor(Math.random() * activeVersusMaps().length)].id;
         if (window.Net) Net.versusSend('begin', { map, mode, swap, rounds });
         this._beginMatch(map, mode, swap, rounds);
       } else {
-        const cur = (Game.vsMap && Game.vsMap.id) || VERSUS_MAPS[0].id;
+        const cur = (Game.vsMap && Game.vsMap.id) || activeVersusMaps()[0].id;
         const mine = (this._myVote && this._myVote.map) || cur;
         const peer = (this._peer && this._peer.map) || mine;
         const map = (mine === peer) ? mine : (Math.random() < 0.5 ? mine : peer);   // oneens -> loting
