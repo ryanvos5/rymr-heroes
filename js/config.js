@@ -1003,14 +1003,15 @@ const VERSUS_MAPS = [
     // snoekduik dwars over de map -> raakt hij je, dan word je hard van de map af geknald.
     id: 'castle', name: 'Sky Castle', sky: ['#2a4a86', '#0e1c3a'], void: '#0a1226',
     plat: 'stone', stone: true, castle: true,
-    w: 702, fallY: 230, camTop: -46, camBottom: 30,
+    w: 702, fallY: 230, camTop: -56, camBottom: 30,
     spawnL: { x: 130, y: 178 }, spawnR: { x: 572, y: 178 },
     platforms: [
       { x: 154, y: 178, w: 168 }, { x: 548, y: 178, w: 168 },   // grond-vleugels links/rechts
       { x: 351, y: 182, w: 140 },                                // lagere midden-plaat
       { x: 190, y: 140, w: 54 }, { x: 512, y: 140, w: 54 },      // lage zwevende platforms
-      { x: 283, y: 117, w: 54 }, { x: 419, y: 117, w: 54 },      // hoge zwevende platforms
-      { x: 351, y: 94, w: 48, wall: true },                      // stenen middentoren
+      { x: 283, y: 117, w: 54 }, { x: 419, y: 117, w: 54 },      // midden zwevende platforms
+      { x: 351, y: 70, w: 54 },                                  // hoog midden
+      { x: 222, y: 42, w: 54 }, { x: 480, y: 42, w: 54 },        // hoge toppen links/rechts
     ],
   },
   {
