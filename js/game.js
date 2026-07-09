@@ -3067,6 +3067,7 @@ const Game = {
   // ---- POWER SMASH: vuurknop, drops, pickups ----
   smashFire() {
     const p = this.player;
+    if (p.respawnInvuln > 0) return;                  // knippert (net gespawnd) -> je kunt niet vuren/raken
     if (!p.dead && Input.state.attack) {
       if (p.giant) { /* reus kan niet aanvallen */ }
       else if (p.cannon > 0) {                              // kanonskogel: altijd vuren; alleen richting de tegenstander = homing
@@ -4608,6 +4609,7 @@ const Game = {
     const p = this.player, r = this.vs.remote;
     if (p.giant || p.heli) return;                    // reus/heli gebruiken geen melee-swing
     if (!r.alive) return;
+    if (p.respawnInvuln > 0) return;                  // knippert (net gespawnd) -> je kunt zelf ook niet raken/comboën
     // alleen op het moment dat een NIEUWE mep begint (1 mep = 1 treffer)
     const sw = p.swingUntil || 0;
     if (sw && sw !== this.vs.lastSwing && this.time < sw) {
@@ -4748,7 +4750,7 @@ const Game = {
       v.botLastSwing = bsw;
       const dxp = (this.player.x - b.x) * b.dir;
       const bClose = Math.abs(this.player.x - b.x) < 24;     // bijna in elkaar -> altijd raak
-      if ((bClose || (dxp > -16 && dxp < 40)) && Math.abs(this.player.y - b.y) < 34 && this.player.respawnInvuln <= 0 && !this.player.dead) {
+      if ((bClose || (dxp > -16 && dxp < 40)) && Math.abs(this.player.y - b.y) < 34 && this.player.respawnInvuln <= 0 && !this.player.dead && b.respawnInvuln <= 0) {
         const kd = this.player.x >= b.x ? 1 : -1;
         b.combo = (this.time < (b.comboUntil || 0)) ? Math.min(COMBO_MAX, (b.combo || 0) + 1) : 1;
         b.comboUntil = this.time + COMBO_WINDOW;
