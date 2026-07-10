@@ -4831,6 +4831,7 @@ const Game = {
   updateFleePunish(dt) {
     const v = this.vs;
     if (!v || v.over || v.timeUp || v.countdown > 0 || !v.roundPlayStart) return;
+    if (this.nuke) { v.myLastHit = this.time; v.oppLastHit = this.time; v._fleeWarnAt = 0; return; }   // tijdens een nuke mag je vrij vluchten (klok pauzeert, verse 10s erna)
     const lead = (v.myScore || 0) - (v.oppScore || 0);
     let target = null, iAmFleer = false, since = 0;
     if (lead >= 2) {                                    // ik sta voor -> mijn uitgaande schade telt
