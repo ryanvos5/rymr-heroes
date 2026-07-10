@@ -105,6 +105,7 @@ const Sfx = {
       case 'win': [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this._tone(f, 0.16, 'square', 0.26), i * 110)); break;
       case 'lose': [392, 330, 262].forEach((f, i) => setTimeout(() => this._tone(f, 0.2, 'square', 0.24, f * 0.85), i * 150)); break;
       case 'mapintro': this._noise(0.5, 0.5, 2400, 320); this._tone(180, 0.5, 'sawtooth', 0.16, 900); setTimeout(() => { this._tone(70, 0.42, 'square', 0.42, 34); this._noise(0.36, 0.5, 620, 130); }, 400); break;   // map-intro: opzwepende whoosh + boem
+      case 'drumroll': for (let i = 0; i < 30; i++) setTimeout(() => { this._tone(95 + (i % 2) * 22, 0.05, 'square', 0.16 + i * 0.004, 60); this._noise(0.04, 0.28, 900); }, i * 68); setTimeout(() => { this._tone(64, 0.4, 'square', 0.5, 30); this._noise(0.4, 0.5, 500, 120); }, 2050); break;   // tromgeroffel + slotklap
       case 'roundwin': this._tone(660, 0.1, 'square', 0.26); setTimeout(() => this._tone(880, 0.14, 'square', 0.26), 90); break;
       case 'roundlose': this._tone(440, 0.12, 'square', 0.24); setTimeout(() => this._tone(294, 0.16, 'square', 0.24, 250), 100); break;
     }

@@ -1424,7 +1424,7 @@ const UI = {
     this._stopRoulette();
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.add('hidden');
     const v = this._myVote || { map: (Game.vsMap && Game.vsMap.id) || activeVersusMaps()[0].id };
-    Game.startVersus('host', { mapId: v.map, mode: 'smash', bot: true, diff: this._botDiff || 5, mmLevel: this._mmBotLevel || 0, swapSides: Math.random() < 0.5, rounds: this._lastRounds || SMASH_ROUNDS });
+    Game.startVersus('host', { mapId: v.map, mode: 'smash', bot: true, diff: this._botDiff || 5, mmLevel: this._mmBotLevel || 0, swapSides: Math.random() < 0.5, rounds: this._lastRounds || SMASH_ROUNDS, timed: this._matchType === 'mm' });
   },
 
   // in een kamer: toon code, wacht op tegenstander
@@ -1663,7 +1663,7 @@ const UI = {
     this.cancelCountdown();
     this._lastRounds = Math.max(3, Math.min(10, rounds || this._lastRounds || SMASH_ROUNDS));
     document.getElementById('versus-result').classList.add('hidden');   // uitslag weg bij (re)start
-    Game.startVersus(this._vsRole || 'host', { mapId: map, mode: mode, swapSides: !!swap, rounds: this._lastRounds });
+    Game.startVersus(this._vsRole || 'host', { mapId: map, mode: mode, swapSides: !!swap, rounds: this._lastRounds, timed: this._matchType === 'mm' });
   },
 
   leaveLobby() {
@@ -1822,6 +1822,15 @@ const UI = {
     const them = document.getElementById('vs-score-them');
     if (me) me.textContent = v.myScore;
     if (them) them.textContent = v.oppScore;
+    // matchmaking-tijdklok (mm:ss)
+    const tm = document.getElementById('vs-timer');
+    if (tm) {
+      if (v.timed && !v.timeUp) {
+        tm.classList.remove('hidden');
+        if (v.suddenDeath) { tm.textContent = tl('SUDDEN DEATH'); tm.className = 'vs-timer sd'; }
+        else { const s = Math.max(0, Math.ceil(v.matchTimer / 1000)); tm.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); tm.className = 'vs-timer' + (s <= 20 ? ' urgent' : ''); }
+      } else tm.classList.add('hidden');
+    }
     // HP-balken
     const hpMe = document.getElementById('vs-hp-me');
     const hpThem = document.getElementById('vs-hp-them');
@@ -1877,6 +1886,14 @@ const UI = {
     el.classList.remove('vmi-in'); void el.offsetWidth; el.classList.add('vmi-in');   // animatie herstarten
   },
   hideMapIntro() { const el = document.getElementById('vs-map-intro'); if (el) el.classList.add('hidden'); },
+  // grote midden-banner (TIJD! / SUDDEN DEATH)
+  showBigMsg(text, kind, autoHideMs) {
+    const el = document.getElementById('vs-bigmsg'); if (!el) return;
+    el.textContent = text; el.className = 'vs-round-banner ' + (kind || 'win'); el.classList.remove('hidden');
+    clearTimeout(this._bigMsgT);
+    if (autoHideMs) this._bigMsgT = setTimeout(() => el.classList.add('hidden'), autoHideMs);
+  },
+  hideBigMsg() { const el = document.getElementById('vs-bigmsg'); if (el) el.classList.add('hidden'); },
   // korte melding onderin (bv. AFK-kick)
   toast(text) {
     let el = document.getElementById('tps-toast');
@@ -2034,6 +2051,8 @@ const UI = {
     const vh = document.getElementById('versus-hud'); if (vh) vh.classList.add('hidden');
     const vrb = document.getElementById('vs-round-banner'); if (vrb) vrb.classList.add('hidden');
     const vmi = document.getElementById('vs-map-intro'); if (vmi) vmi.classList.add('hidden');
+    const vtm = document.getElementById('vs-timer'); if (vtm) vtm.classList.add('hidden');
+    const vbm = document.getElementById('vs-bigmsg'); if (vbm) vbm.classList.add('hidden');
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     const lb = document.getElementById('loadout-bar'); if (lb) lb.classList.add('hidden');   // loadout niet op menu's
     // vulkaan-achtergrond alleen laten draaien op de menuschermen (niet in het spel)

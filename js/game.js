@@ -2688,6 +2688,7 @@ const Game = {
       myScore: 0, oppScore: 0, target: (mode === 'smash' && opts.rounds) ? Math.max(3, Math.min(10, opts.rounds | 0)) : (mode === 'smash' ? SMASH_ROUNDS : 5),
       countdown: 3000, lastSwing: 0, botLastSwing: 0, netTimer: 0, over: false,
       introUntil: this.time + VERSUS_INTRO_MS, introShown: false, musicStarted: false,   // map-intro vóór het aftellen
+      timed: !!opts.timed, matchTimer: opts.timed ? MATCH_TIME_MS : 0, timeUp: false, suddenDeath: false, zoomTarget: null,   // matchmaking: 3-min tijdslimiet
       roundFreezeUntil: 0, roundMsg: '',
       remote: {
         x: rb.x, y: rb.y, tx: rb.x, ty: rb.y,
@@ -2823,6 +2824,15 @@ const Game = {
     }
     if (v.introUntil) { v.introUntil = 0; if (window.UI && UI.hideMapIntro) UI.hideMapIntro(); }   // intro klaar -> nu het aftellen
 
+    // tijd op (matchmaking): bevriezen, drumroll + camera zoomt op de winnaar
+    if (v.timeUp) {
+      for (const p of this.particles) p.update(dt, this);
+      this.particles = this.particles.filter((p) => p.life > 0);
+      this.updateVersusCamera();
+      if (window.UI && UI.updateVersusHUD) UI.updateVersusHUD(v);
+      return;
+    }
+
     // ronde-freeze: even stilstaan met grote "wint de ronde"-tekst
     if (v.roundFreezeUntil > this.time) {
       for (const p of this.particles) p.update(dt, this);
@@ -2844,6 +2854,12 @@ const Game = {
     if (!this.vsBot && !v.over) {
       if (v.countdown > 0 || this.vsPaused) this._lastInputTime = Date.now();   // tijdens aftellen/pauze telt AFK niet
       else { this._checkVersusAfk(v); if (v.over) return; }
+    }
+
+    // matchmaking-tijdslimiet (3 min) -> meeste rondes wint (gelijk = sudden death)
+    if (v.timed && !v.suddenDeath && v.matchTimer > 0 && v.countdown <= 0) {
+      v.matchTimer -= dt;
+      if (v.matchTimer <= 0) { v.matchTimer = 0; this._matchTimeUp(); if (v.timeUp) return; }
     }
 
     if (v.countdown > 0) {                             // korte aftelling vóór de start
@@ -3035,6 +3051,17 @@ const Game = {
     const opp = this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
     const oppLive = !!(opp && (this.vsBot ? !opp.dead : opp.alive));
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+    // tijd op: dramatisch inzoomen op de winnaar
+    if (this.vs && this.vs.timeUp && this.vs.zoomTarget) {
+      const zt = this.vs.zoomTarget, zz = (this.vsCamZoom += (2.0 - this.vsCamZoom) * 0.1);
+      const visW = W / zz, visH = H / zz;
+      const tx = clamp(zt.x - visW / 2, 0, Math.max(0, mapW - visW));
+      const ty = clamp(zt.y - 20 - visH / 2, -200, (GY + 28) - visH);
+      this.vsCamX += (tx - this.vsCamX) * 0.14;
+      this.vsCamY += (ty - this.vsCamY) * 0.14;
+      return;
+    }
 
     // aftelling (3s): strak inzoomen op JEZELF zodat je ziet welke kant je start
     if (this.vs && this.vs.countdown > 0) {
@@ -5161,7 +5188,7 @@ const Game = {
     this.vs.oppScore++;
     // absolute score meesturen -> zelfherstellend tegen verloren/dubbele meldingen
     if (window.Net && !this.vsBot) Net.versusSend('fell', { winScore: this.vs.oppScore });
-    if (this.vs.oppScore >= this.vs.target) { this.endVersus(false); return; }
+    if (this.vs.oppScore >= this.vs.target || this.vs.suddenDeath) { this.endVersus(false); return; }   // 8 rondes of sudden-death-ronde -> einde
     this._vsMusicTick();
     this.beginRoundFreeze('TEGENSTANDER wint de ronde');
   },
@@ -5196,7 +5223,7 @@ const Game = {
     if (payload && typeof payload.winScore === 'number') this.vs.myScore = Math.max(this.vs.myScore, payload.winScore);
     else this.vs.myScore++;
     if (this.vs.myScore > before) this.triggerKO(this.vs.remote.x, this.vs.remote.y, true);   // KO-cinematic (tegenstander eraf)
-    if (this.vs.myScore >= this.vs.target) { this.endVersus(true); return; }
+    if (this.vs.myScore >= this.vs.target || (this.vs.suddenDeath && this.vs.myScore > before)) { this.endVersus(true); return; }   // 8 rondes of sudden-death -> einde
     this._vsMusicTick();
     if (this.vs.roundFreezeUntil <= this.time) this.beginRoundFreeze('JIJ wint de ronde!');
   },
@@ -5364,6 +5391,27 @@ const Game = {
     if (r && r.lastSeen > 0 && now - r.lastSeen > AFK_KICK_MS) { this.endVersus(true, true); return; }   // peerLeft -> "tegenstander weg, jij wint"
     // 2) jij bent zelf >15s AFK (of net terug na lang weg) -> JIJ verliest; tegenstander wint (via 'bye')
     if (now - this._lastInputTime > AFK_KICK_MS) { this._afkKicked = true; this.forfeitVersus(); return; }
+  },
+  // matchmaking-tijd op: gelijk = sudden death, anders drumroll + zoom op de winnaar en einde
+  _matchTimeUp() {
+    const v = this.vs; if (!v || v.over || v.timeUp) return;
+    if (v.myScore === v.oppScore) {                    // GELIJK -> sudden death (volgende ronde beslist)
+      v.suddenDeath = true;
+      if (window.Sfx) Sfx.play('zap');
+      if (window.UI && UI.showBigMsg) UI.showBigMsg(tl('SUDDEN DEATH!'), 'lose', 2600);
+      return;
+    }
+    const iWon = v.myScore > v.oppScore;
+    v.timeUp = true;
+    v.zoomTarget = iWon ? this.player : v.remote;       // camera zoomt op de winnaar
+    if (window.Sfx) Sfx.play('drumroll');
+    if (window.UI && UI.showBigMsg) UI.showBigMsg(tl('TIJD!'), 'win', 2400);
+    const self = this;
+    setTimeout(function () {
+      if (!self.vs || self.vs.over) return;
+      if (window.UI && UI.hideBigMsg) UI.hideBigMsg();
+      self.endVersus(iWon);                             // win/lose-celebratie + uitslag (win-sound + naam)
+    }, 2400);
   },
   // online match zelf verlaten: jij krijgt een loss (geen XP/munten), tegenstander wint (via 'bye')
   forfeitVersus() {
