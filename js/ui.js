@@ -2570,6 +2570,12 @@ const UI = {
       this._puIcon(cv, pu.kind);
       const nEl = document.createElement('span'); nEl.className = 'lo-n'; nEl.textContent = n;
       slot.appendChild(cv); slot.appendChild(nEl);
+      // controller gekoppeld: toon met welke D-pad-richting je 'm inzet (boven ↑ / midden → / onder ↓)
+      if (typeof Input !== 'undefined' && Input.padConnected) {
+        const key = document.createElement('span'); key.className = 'lo-key';
+        key.textContent = ['↑', '→', '↓'][i] || '';
+        slot.appendChild(key);
+      }
     });
     bar.classList.toggle('hidden', lo.length === 0);
   },

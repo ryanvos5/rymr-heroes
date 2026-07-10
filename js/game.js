@@ -4383,6 +4383,12 @@ const Game = {
   },
 
   // power-up uit je loadout activeren tijdens een match -> effect toepassen + 1 uit je voorraad
+  // controller: zet de powerup uit loadout-slot i in (D-pad ↑=0 / →=1 / ↓=2)
+  deployLoadout(i) {
+    const lo = (window.Storage && Storage.loadout) ? Storage.loadout() : [];
+    const id = lo[i];
+    if (id) this.usePowerupSlot(id);
+  },
   usePowerupSlot(id) {
     if (this.state !== 'versus' || this.vsPaused) return false;
     const p = this.player; if (!p || p.dead) return false;

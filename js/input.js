@@ -14,8 +14,9 @@ const Input = {
   _kb:    { left: false, right: false, jump: false, duck: false, attack: false, melee: false },
   _touch: { left: false, right: false, jump: false, duck: false, attack: false, melee: false },
   _pad:   { left: false, right: false, jump: false, duck: false, attack: false, melee: false },
-  _padPrev: {},        // vorige-frame knopstatus (edge-detectie voor ability + pauze)
+  _padPrev: {},        // vorige-frame knopstatus (edge-detectie voor ability + pauze + powerups)
   _pointerKey: {},
+  padConnected: false, // is er een game controller gekoppeld? -> touch-knoppen verbergen, D-pad = powerups
 
   // toetsenbord + touch + controller combineren -> Input.state (+ jump edge-trigger)
   _apply() {
@@ -113,13 +114,21 @@ const Input = {
     window.addEventListener('blur', () => releaseAll());
 
     // ---- game controller (Backbone / Xbox / PlayStation via Gamepad API) ----
-    window.addEventListener('gamepadconnected', () => { this._gpActive = true; });
+    window.addEventListener('gamepadconnected', () => { this._setPadConnected(true); });
     window.addEventListener('gamepaddisconnected', () => {
-      this._gpActive = false;
       for (const k of this.ACTKEYS) this._pad[k] = false;
       this._padPrev = {};
       this._apply();
+      this._setPadConnected(false);
     });
+  },
+
+  // controller aan/uit: touch-knoppen verbergen (behalve ability/powerups/pauze) + loadout-pijltjes verversen
+  _setPadConnected(on) {
+    if (this.padConnected === on) return;
+    this.padConnected = on;
+    if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('pad-connected', on);
+    if (typeof UI !== 'undefined' && UI.renderLoadoutBar) UI.renderLoadoutBar();   // ↑/→/↓-badges tonen/verbergen
   },
 
   // Elke frame aanroepen: leest de controller en vertaalt de knoppen naar Input.state.
@@ -138,23 +147,27 @@ const Input = {
       }
       return;
     }
+    if (!this.padConnected) this._setPadConnected(true);   // controller actief (voor het geval het connect-event gemist is)
     const btn = (i) => { const b = gp.buttons[i]; return !!b && (b.pressed || b.value > 0.35); };
     const ax = gp.axes && gp.axes.length ? (gp.axes[0] || 0) : 0;
     const DEAD = 0.35;
-    // continue acties
-    this._pad.left   = ax < -DEAD || btn(14);            // joystick links of d-pad links
-    this._pad.right  = ax > DEAD || btn(15);             // joystick rechts of d-pad rechts
+    // continue acties — bewegen via de joystick (de D-pad is voor de powerups)
+    this._pad.left   = ax < -DEAD;                       // linker joystick naar links
+    this._pad.right  = ax > DEAD;                        // linker joystick naar rechts
     this._pad.jump   = btn(0);                           // X / Cross = springen
-    this._pad.duck   = btn(2) || btn(13);                // Vierkant (of d-pad omlaag) = bukken/schild
+    this._pad.duck   = btn(2);                           // Vierkant = bukken/schild
     this._pad.melee  = btn(1);                           // Rondje = slaan
     this._pad.attack = btn(7) || btn(5);                 // R2 (of R1) = schieten / powerup afvuren
     this._apply();
-    // edge-triggers (1x per druk): speciale ability + pauze
+    // edge-triggers (1x per druk)
     const rise = (i) => { const now = btn(i); const was = !!this._padPrev[i]; this._padPrev[i] = now; return now && !was; };
     const abL2 = rise(6), abL1 = rise(4);               // L2/L1 = speciale character-ability
-    if (abL2 || abL1) { if (typeof Game !== 'undefined' && Game.abilityButton) Game.abilityButton(); }
-    if (rise(9)) {                                       // Start = pauze / hervatten (alleen in een potje)
-      if (typeof Game !== 'undefined' && Game.togglePause && (Game.state === 'versus' || Game.state === 'training' || Game.state === 'playing')) Game.togglePause();
+    const dUp = rise(12), dRight = rise(15), dDown = rise(13);   // D-pad = powerups uit de loadout (↑=boven, →=midden, ↓=onder)
+    const start = rise(9);                              // Start = pauze
+    if (typeof Game !== 'undefined') {
+      if ((abL2 || abL1) && Game.abilityButton) Game.abilityButton();
+      if (Game.deployLoadout) { if (dUp) Game.deployLoadout(0); if (dRight) Game.deployLoadout(1); if (dDown) Game.deployLoadout(2); }
+      if (start && Game.togglePause && (Game.state === 'versus' || Game.state === 'training' || Game.state === 'playing')) Game.togglePause();
     }
   },
 
