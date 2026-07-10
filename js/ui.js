@@ -1843,7 +1843,7 @@ const UI = {
         const secs = Math.max(0, Math.ceil((Game.nuke.until - Game.time) / 1000));
         nt.textContent = '☢ ' + secs + 's · ' + (Game.nuke.mine ? tl('OVERLEEF!') : tl('VERSLA ZE!'));
         nt.className = 'vs-nuke-timer ' + (Game.nuke.mine ? 'mine' : 'foe') + (secs <= 5 ? ' urgent' : '');
-        nt.style.top = (tm && !tm.classList.contains('hidden')) ? '76px' : '8px';   // ruim onder de normale timer, of bovenaan als die er niet is
+        nt.style.top = (tm && !tm.classList.contains('hidden')) ? '100px' : '8px';   // ruim onder de normale timer, of bovenaan als die er niet is
       } else nt.classList.add('hidden');
     }
     // HP-balken

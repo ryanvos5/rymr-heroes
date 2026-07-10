@@ -843,7 +843,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .vs-timer.sd { color: #ff5a5a; font-size: clamp(13px, 2.8vw, 20px); }
 @keyframes vtpulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.14); } }
 #vs-bigmsg { font-size: clamp(26px, 7vw, 52px); letter-spacing: 3px; z-index: 41; }
-.vs-nuke-timer { position: fixed; left: 50%; top: 76px; transform: translateX(-50%); z-index: 30; font-family: var(--pixel-font); font-weight: 900; font-size: clamp(13px, 2.8vw, 19px); letter-spacing: 1px; padding: 1px 12px; border-radius: 8px; background: rgba(20,10,8,.72); border: 1px solid; text-shadow: 0 2px 0 #000; }
+.vs-nuke-timer { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); z-index: 30; font-family: var(--pixel-font); font-weight: 900; font-size: clamp(13px, 2.8vw, 19px); letter-spacing: 1px; padding: 1px 12px; border-radius: 8px; background: rgba(20,10,8,.72); border: 1px solid; text-shadow: 0 2px 0 #000; }
 .vs-nuke-timer.mine { color: #7dff8a; border-color: #3a8a3a; }
 .vs-nuke-timer.foe { color: #ff7a5a; border-color: #a3352a; }
 .vs-nuke-timer.urgent { animation: vtpulse .5s ease-in-out infinite; border-color: #ffd24a; }
