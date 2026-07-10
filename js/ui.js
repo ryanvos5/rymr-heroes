@@ -94,7 +94,7 @@ const UI = {
 
     // ---- instellingen (overlay met account / update / nieuw spel) ----
     $('btn-settings').onclick = () => document.getElementById('settings-screen').classList.remove('hidden');
-    $('btn-settings-close').onclick = () => document.getElementById('settings-screen').classList.add('hidden');
+    { const sbk = $('btn-settings-back'); if (sbk) sbk.onclick = () => document.getElementById('settings-screen').classList.add('hidden'); }
     // muziek + geluidseffecten los aan/uit
     const mb = $('btn-music'), fb = $('btn-sfx');
     this._updSoundBtn = () => {

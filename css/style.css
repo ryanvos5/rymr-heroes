@@ -1199,7 +1199,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .shop-tab.active { border-color: #d2622e; color: #ffe9c0; background: linear-gradient(180deg, #7a3418, #4a1c0c); box-shadow: 0 0 8px rgba(255,90,25,.5); }
 .shop-back { margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
 /* ===== Instellingen (2 kolommen — past ook op landscape) ===== */
-.settings-box { width: min(720px, 96%); }
+.settings-box { width: min(720px, 96%); position: relative; }
 .settings-grid { display: flex; gap: clamp(10px, 3vw, 26px); align-items: flex-start; justify-content: center; width: 100%; }
 .settings-col { display: flex; flex-direction: column; gap: 8px; flex: 1 1 0; min-width: 0; max-width: 340px; }
 .settings-label { font-family: var(--pixel-font); font-size: 12px; letter-spacing: 1px; color: #e2b48a; text-transform: uppercase; text-align: left; margin-bottom: 2px; }
