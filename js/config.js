@@ -588,11 +588,7 @@ const POWERUP_DROP_CHANCE = 0.025; // kans per kill
 const SMASH_ROUNDS = 8;
 const VERSUS_INTRO_MS = 2600;        // map-intro (zonder muziek, wat sfx) vóór het aftellen van de eerste ronde
 const AFK_KICK_MS = 15000;           // >15s geen input / uit de app -> uit de match gekickt (jij verliest, tegenstander wint)
-const MATCH_TIME_MS = 180000;        // matchmaking: 3 min tijdslimiet -> meeste rondes wint (gelijk = sudden death)
-// Anti-vluchten: staat iemand 2+ voor en doet die 10s geen schade aan de tegenstander, dan krijgt de leider zélf schade ("val aan!")
-const FLEE_PUNISH_MS = 10000;        // leider deed 10s geen schade -> hij begint zelf schade te krijgen
-const FLEE_DPS_BASE = 9;             // start-schade per seconde (iets rustiger)
-const FLEE_DPS_MAX = 26;             // maximale schade per seconde (loopt op hoe langer hij blijft vluchten)
+const MATCH_TIME_MS = 300000;        // matchmaking: 5 min tijdslimiet -> meeste rondes wint (gelijk = sudden death)
 const SMASH_DROP_EVERY = 5000;       // ms tussen drops (host bepaalt)
 const CLOUD_STAND_MS = 5000;         // Airplane: hoe lang je op een wolk-platform kunt staan
 const CLOUD_REFORM_MS = 2600;        // Airplane: hoe lang een ingezakte wolk weg blijft

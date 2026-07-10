@@ -2874,7 +2874,6 @@ const Game = {
         }
       }
     } else {
-      this.updateFleePunish(dt);                       // anti-vluchten: leider die niet aanvalt krijgt zelf schade
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       if (!this.player.dead && !this.player._trapCharges) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op (niet terwijl je nog vallen in de hand hebt)
       if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op
@@ -4825,38 +4824,6 @@ const Game = {
     this.shake = Math.max(this.shake, 7);
   },
 
-  // Anti-vluchten: staat iemand minstens 2 rondes voor én heeft die 10s geen schade aan de tegenstander gedaan, dan
-  // begint de leider zélf schade te krijgen (loopt op) + de melding "NIET VLUCHTEN — VAL AAN!". Zodra hij weer raakt,
-  // stopt het meteen. Geen ring/zones meer; alleen de vluchtende leider wordt gestraft.
-  updateFleePunish(dt) {
-    const v = this.vs;
-    if (!v || v.over || v.timeUp || v.countdown > 0 || !v.roundPlayStart) return;
-    if (this.nuke) { v.myLastHit = this.time; v.oppLastHit = this.time; v._fleeWarnAt = 0; return; }   // tijdens een nuke mag je vrij vluchten (klok pauzeert, verse 10s erna)
-    const lead = (v.myScore || 0) - (v.oppScore || 0);
-    let target = null, iAmFleer = false, since = 0;
-    if (lead >= 2) {                                    // ik sta voor -> mijn uitgaande schade telt
-      since = this.time - (v.myLastHit || v.roundPlayStart);
-      if (since > FLEE_PUNISH_MS) { target = this.player; iAmFleer = true; }
-    } else if (lead <= -2) {                            // tegenstander staat voor -> diens schade aan mij telt
-      since = this.time - (v.oppLastHit || v.roundPlayStart);
-      if (since > FLEE_PUNISH_MS) target = this.vsBot ? this.bot : null;   // online: de remote straft zichzelf op z'n eigen client
-    }
-    if (!target || target.dead || target.respawnInvuln > 0) return;
-    const over = since - FLEE_PUNISH_MS;                                    // hoe lang al aan het vluchten (na de 10s)
-    const dps = Math.min(FLEE_DPS_MAX, FLEE_DPS_BASE + over / 1000 * 4);    // schade loopt op hoe langer hij blijft rennen
-    target.hp = Math.max(0, target.hp - dps * dt / 1000);                   // KO bij hp<=0 wordt door de bestaande check afgehandeld
-    if (iAmFleer) {                                     // alleen de vluchtende leider zelf ziet de waarschuwing + voelt de flits
-      this.hurtFlash = Math.max(this.hurtFlash || 0, 60);
-      this.shake = Math.max(this.shake, 3);
-      if (Math.random() < 0.4) this.spawnBlood(this.player.x, this.player.y - 14);
-      if (!v._fleeWarnAt || this.time - v._fleeWarnAt > 2200) {
-        v._fleeWarnAt = this.time;
-        if (window.UI && UI.showBigMsg) UI.showBigMsg(tl('NIET VLUCHTEN — VAL AAN!'), 'lose', 1500);
-        if (window.Sfx) Sfx.play('hit');
-      }
-    }
-  },
-
   checkVersusHit() {
     const p = this.player, r = this.vs.remote;
     if (p.giant || p.heli) return;                    // reus/heli gebruiken geen melee-swing
@@ -5662,7 +5629,7 @@ const Game = {
       if (r.stunned) this.drawStunAura(ctx, Math.round(r.x), Math.round(r.y));
       if (r.rooted) this.drawRooted(ctx, Math.round(r.x), Math.round(r.y));
       this.drawVsMarker(ctx, Math.round(r.x), Math.round(r.y), rc.build, '#ff5a5a');
-      if (this.vs && !this.vsBot && !this.journey && typeof r.rp === 'number') this.drawRankBadge(ctx, Math.round(r.x), Math.round(r.y), rc.build, rankForRp(r.rp));   // rank-icoon tegenstander
+      if (this.vs && !this.vsBot && !this.journey && !this.vs.musicStarted && typeof r.rp === 'number') this.drawRankBadge(ctx, Math.round(r.x), Math.round(r.y), rc.build, rankForRp(r.rp));   // rank-icoon tegenstander — alleen tijdens de eerste aftelling
     }
 
     // eigen speler — GROEN pijltje erboven (knippert tijdens respawn)
@@ -5697,7 +5664,7 @@ const Game = {
         if (p._rootedUntil && this.time < p._rootedUntil) this.drawRooted(ctx, Math.round(p.x), Math.round(p.y));
       }
       this.drawVsMarker(ctx, Math.round(p.x), Math.round(p.y), p.build, '#5aff7a');
-      if (this.vs && !this.vsBot && !this.journey) this.drawRankBadge(ctx, Math.round(p.x), Math.round(p.y), p.build, Storage.rankIndex());   // rank-icoon eigen speler
+      if (this.vs && !this.vsBot && !this.journey && !this.vs.musicStarted) this.drawRankBadge(ctx, Math.round(p.x), Math.round(p.y), p.build, Storage.rankIndex());   // rank-icoon eigen speler — alleen tijdens de eerste aftelling
     }
     ctx.globalAlpha = 1;   // onzichtbaar-alpha resetten
 
