@@ -250,6 +250,10 @@ const Net = {
     const ch = this.sb.channel('smash-mm', { config: { broadcast: { self: false } } });
     const mm = { ch, myId, paired: false, seek: null };
     this._mm = mm;
+    // rank-matchmaking: eerst RANK_WINDOW ms alleen tegen ±1 rank, daarna tegen wie dan ook online
+    const myRp = (window.Storage && Storage.rp) ? Storage.rp() : 0;
+    const myRank = (typeof rankForRp === 'function') ? rankForRp(myRp) : 0;
+    const startAt = Date.now(), RANK_WINDOW = 4500;
     const pairWith = (otherId) => {
       if (mm.paired || !otherId || otherId === myId) return;
       mm.paired = true;
@@ -260,10 +264,18 @@ const Net = {
       const code = this._mmCode(myId, otherId);
       this._versusJoin(code, myId === host ? 'host' : 'guest', cbs).catch(() => {});   // fout = UI valt na 8s terug op bot
     };
-    ch.on('broadcast', { event: 'seek' }, (m) => { const o = m.payload && m.payload.id; if (o && o !== myId) { try { ch.send({ type: 'broadcast', event: 'seek', payload: { id: myId } }); } catch (e) {} pairWith(o); } });
+    ch.on('broadcast', { event: 'seek' }, (m) => {
+      const p = m.payload, o = p && p.id;
+      if (!o || o === myId) return;
+      try { ch.send({ type: 'broadcast', event: 'seek', payload: { id: myId, rp: myRp } }); } catch (e) {}
+      const oRank = (typeof rankForRp === 'function') ? rankForRp(p.rp || 0) : 0;
+      const inRange = Math.abs(oRank - myRank) <= 1;                 // zelfde rank of net erboven/onder
+      const windowOpen = (Date.now() - startAt) >= RANK_WINDOW;      // niemand met die rank gevonden -> iedereen mag
+      if (inRange || windowOpen) pairWith(o);
+    });
     ch.subscribe((status) => {
       if (status === 'SUBSCRIBED' && this._mm === mm) {
-        const seek = () => { if (!mm.paired) { try { ch.send({ type: 'broadcast', event: 'seek', payload: { id: myId } }); } catch (e) {} } };
+        const seek = () => { if (!mm.paired) { try { ch.send({ type: 'broadcast', event: 'seek', payload: { id: myId, rp: myRp } }); } catch (e) {} } };
         seek(); mm.seek = setInterval(seek, 700);
       }
     });
