@@ -2557,6 +2557,7 @@ const UI = {
   // ---------- LOADOUT-BALK (in de match) ----------
   renderLoadoutBar() {
     const bar = document.getElementById('loadout-bar'); if (!bar) return;
+    if (typeof Game === 'undefined' || Game.state !== 'versus') { bar.classList.add('hidden'); return; }   // alleen tijdens een 1v1-potje (niet in menu's/training)
     const lo = Storage.loadout();
     const slots = bar.querySelectorAll('.loadout-slot');
     slots.forEach((slot, i) => {
