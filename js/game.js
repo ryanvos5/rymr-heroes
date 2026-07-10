@@ -5716,29 +5716,7 @@ const Game = {
     this.renderLightning(ctx);
     // combo-teller
     this.drawComboHud(ctx);
-    // NUKE-afteltimer (scherm-ruimte, boven in beeld) — zichtbaar voor beide spelers
-    if (this.nuke) {
-      const secs = Math.max(0, Math.ceil((this.nuke.until - this.time) / 1000));
-      const urgent = secs <= 5;
-      const pulse = urgent ? (Math.sin(this.time / 90) * 0.5 + 0.5) : 1;
-      ctx.save();
-      const bw = 74, bh = 15, bx = Math.round(W / 2 - bw / 2), by = 15;
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = urgent ? 'rgba(200,20,20,0.9)' : 'rgba(18,18,22,0.82)';
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.globalAlpha = urgent ? (0.6 + pulse * 0.4) : 1;
-      ctx.strokeStyle = '#f2c21a'; ctx.lineWidth = 1.5; ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = urgent ? '#ffffff' : '#ffe27a';
-      ctx.font = 'bold 10px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('NUKE  ' + secs + 's', W / 2, by + bh / 2 + 1);
-      // hint: overleef (drager) of versla ze (tegenstander)
-      ctx.fillStyle = this.nuke.mine ? '#7dff8a' : '#ff6a4a';
-      ctx.font = 'bold 8px "Courier New", monospace';
-      ctx.fillText(this.nuke.mine ? tl('OVERLEEF!') : tl('VERSLA ZE!'), W / 2, by + bh + 7);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.restore();
-    }
+    // NUKE-afteltimer wordt nu in de DOM getoond (net onder de normale timer) via UI.updateVersusHUD
 
     // Power Smash: huidige item/wapen (scherm-ruimte, onderin)
     if (this.vsMode === 'smash') {

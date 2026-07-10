@@ -842,6 +842,10 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .vs-timer.sd { color: #ff5a5a; font-size: clamp(13px, 2.8vw, 20px); }
 @keyframes vtpulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.14); } }
 #vs-bigmsg { font-size: clamp(26px, 7vw, 52px); letter-spacing: 3px; z-index: 41; }
+.vs-nuke-timer { position: fixed; left: 50%; top: 44px; transform: translateX(-50%); z-index: 30; font-family: var(--pixel-font); font-weight: 900; font-size: clamp(13px, 2.8vw, 19px); letter-spacing: 1px; padding: 1px 12px; border-radius: 8px; background: rgba(20,10,8,.72); border: 1px solid; text-shadow: 0 2px 0 #000; }
+.vs-nuke-timer.mine { color: #7dff8a; border-color: #3a8a3a; }
+.vs-nuke-timer.foe { color: #ff7a5a; border-color: #a3352a; }
+.vs-nuke-timer.urgent { animation: vtpulse .5s ease-in-out infinite; border-color: #ffd24a; }
 .tps-toast { position: fixed; left: 50%; bottom: 16%; transform: translateX(-50%); z-index: 200; background: linear-gradient(180deg, rgba(42,19,13,.95), rgba(20,9,7,.96)); border: 1px solid #b0362a; color: #ffe6d0; font-family: var(--pixel-font); font-weight: bold; font-size: clamp(12px, 2.4vw, 16px); padding: 9px 18px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; text-align: center; max-width: 88%; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
 .tps-toast.show { opacity: 1; }
 .vs-map-intro { position: fixed; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; z-index: 40; font-family: var(--pixel-font); padding: 0 16px; }
@@ -895,7 +899,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 
 #versus-hud {
   position: absolute; top: env(safe-area-inset-top, 8px); left: 0; right: 0; z-index: 40;
-  display: flex; align-items: center; justify-content: center; gap: 14px;
+  display: flex; align-items: flex-start; justify-content: center; gap: clamp(132px, 22vw, 260px);
   pointer-events: none; padding-top: 6px;
 }
 .vs-side { display: flex; flex-direction: column; align-items: center; gap: 3px; }

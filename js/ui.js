@@ -1836,6 +1836,16 @@ const UI = {
         else { const s = Math.max(0, Math.ceil(v.matchTimer / 1000)); tm.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); tm.className = 'vs-timer' + (s <= 20 ? ' urgent' : ''); }
       } else tm.classList.add('hidden');
     }
+    // nuke-afteltimer (net onder de normale timer, als iemand een nuke heeft)
+    const nt = document.getElementById('vs-nuke-timer');
+    if (nt) {
+      if (Game.nuke) {
+        const secs = Math.max(0, Math.ceil((Game.nuke.until - Game.time) / 1000));
+        nt.textContent = '☢ ' + secs + 's · ' + (Game.nuke.mine ? tl('OVERLEEF!') : tl('VERSLA ZE!'));
+        nt.className = 'vs-nuke-timer ' + (Game.nuke.mine ? 'mine' : 'foe') + (secs <= 5 ? ' urgent' : '');
+        nt.style.top = (tm && !tm.classList.contains('hidden')) ? '44px' : '8px';   // onder de normale timer, of bovenaan als die er niet is
+      } else nt.classList.add('hidden');
+    }
     // HP-balken
     const hpMe = document.getElementById('vs-hp-me');
     const hpThem = document.getElementById('vs-hp-them');
@@ -2069,6 +2079,7 @@ const UI = {
     const vrb = document.getElementById('vs-round-banner'); if (vrb) vrb.classList.add('hidden');
     const vmi = document.getElementById('vs-map-intro'); if (vmi) vmi.classList.add('hidden');
     const vtm = document.getElementById('vs-timer'); if (vtm) vtm.classList.add('hidden');
+    const vnt = document.getElementById('vs-nuke-timer'); if (vnt) vnt.classList.add('hidden');
     const vbm = document.getElementById('vs-bigmsg'); if (vbm) vbm.classList.add('hidden');
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     const lb = document.getElementById('loadout-bar'); if (lb) lb.classList.add('hidden');   // loadout niet op menu's
