@@ -354,6 +354,8 @@ const CHARACTERS = {
   },
 };
 const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'skeleton', 'bonzo', 'koba', 'kong', 'guardian', 'monnik', 'ninja'];
+// Alle speelbare characters iets sneller lopen (t.o.v. hun eigen huidige snelheid; onderlinge verschillen blijven behouden).
+for (const _cid of CHARACTER_ORDER) { const _c = CHARACTERS[_cid]; if (_c && typeof _c.speedMul === 'number') _c.speedMul = +(_c.speedMul * 1.1).toFixed(3); }
 
 // ---- CHARACTER-ABILITIES (oplaadbaar in een match: vlam-knop boven de melee-knop) ----
 const ABILITIES = {
