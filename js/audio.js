@@ -128,6 +128,10 @@ const Sfx = {
       scale: [0, 2, 4, 5, 7, 9, 11, 12, 14, 16], prog: [0, 9, 5, 7],   // majeur, rustig
       riff: [0, -1, 2, -1, 4, -1, 2, -1, 5, -1, 4, -1, 2, -1, 0, -1],
       kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0] },
+    // Rustgevend (eindstandscherm): traag, warm, GEEN drums — zachte pad-bas + lang uitklinkende lead
+    calm: { root: 261.6, bpm: 66, lead: 'sine', bass: 'sine', soft: true,
+      scale: [0, 2, 4, 7, 9, 12, 14, 16, 19, 21], prog: [0, 5, 9, 4],   // majeur-pentatonisch, warm
+      riff: [0, -1, -1, -1, 4, -1, -1, -1, 2, -1, -1, -1, 5, -1, -1, -1] },
     // Jungle: driftig, tribaal, dorisch
     jungle: { root: 220.0, bpm: 134, lead: 'square', bass: 'square',
       scale: [0, 2, 3, 5, 7, 9, 10, 12, 14, 16], prog: [0, 5, 7, 3],
@@ -191,6 +195,8 @@ const Sfx = {
   _riff: [0, -1, 3, 4, -1, 3, 0, 2, 4, -1, 5, 4, 3, 2, 0, -1],   // scale-graden (-1 = rust)
 
   music(theme) {
+    clearTimeout(this._calmTimer);                          // een verse pot annuleert een lopende eindstand-fade
+    if (this.musicGain && this.ctx) { try { this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime); } catch (e) {} this.musicGain.gain.value = this.musicOn ? 0.13 : 0; }   // volume terug naar normaal
     if (!this.THEMES[theme]) theme = 'menu';
     if (this._curTheme === theme) return;
     this._curTheme = theme; this._theme = this.THEMES[theme]; this._step = 0;
@@ -206,7 +212,23 @@ const Sfx = {
     this._intensity = level;
     if (this._timer) { this._stopLoop(); this._startLoop(); }   // herstart de loop op het nieuwe tempo
   },
-  stopMusic() { this._curTheme = null; this._theme = null; this._intensity = 0; this._stopLoop(); },
+  stopMusic() { clearTimeout(this._calmTimer); this._curTheme = null; this._theme = null; this._intensity = 0; this._stopLoop(); },
+  // Eindstandscherm: laat de matchmuziek langzaam wegzakken en ga zacht over naar het rustgevende 'calm'-thema.
+  calmOutro() {
+    this._ensure();
+    if (!this.ctx || !this.musicOn) return;
+    if (this._curTheme === 'calm') return;                   // al rustig
+    clearTimeout(this._calmTimer);
+    const g = this.musicGain, t = this.ctx.currentTime;
+    try { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value || 0.13, t); g.gain.linearRampToValueAtTime(0.0001, t + 1.8); } catch (e) {}   // 1) huidige muziek langzaam uitfaden
+    this._calmTimer = setTimeout(() => {                     // 2) daarna rustgevend thema starten en zacht infaden
+      if (!this.ctx || !this.musicOn) return;
+      this._curTheme = 'calm'; this._theme = this.THEMES.calm; this._step = 0; this._intensity = 0;
+      this._stopLoop(); if (this.ctx.state === 'running') this._startLoop();
+      const t2 = this.ctx.currentTime;
+      try { g.gain.cancelScheduledValues(t2); g.gain.setValueAtTime(0.0001, t2); g.gain.linearRampToValueAtTime(0.10, t2 + 2.6); } catch (e) {}
+    }, 1850);
+  },
   _stopLoop() { if (this._timer) { clearInterval(this._timer); this._timer = null; } },
   _startLoop() {
     if (!this._theme || this._timer || !this.ctx || !this.musicOn) return;
@@ -221,6 +243,13 @@ const Sfx = {
     const prog = th.prog || this._prog, scale = th.scale || this._minor;
     const kick = th.kick || this._kickP, snare = th.snare || this._snareP, riff = th.riff || this._riff;
     const chord = prog[Math.floor(step / 4) % 4];
+    // rustgevend thema: geen drums/hats — warme pad-bas + zachte, lang uitklinkende lead
+    if (th.soft) {
+      if (step % 8 === 0) this._mnote(this._f(th.root / 2, chord), 1.6, th.bass, 0.24);   // warme pad-bas (elke 2 tellen)
+      const dg = riff[step];
+      if (dg >= 0) this._mnote(this._f(th.root, chord + scale[dg]), 1.0, th.lead, 0.20);   // zachte lead, klinkt lang uit
+      this._step = (step + 1) % 16; return;
+    }
     // drums
     const inten = this._intensity || 0;
     if (kick[step]) this._kick();

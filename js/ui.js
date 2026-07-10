@@ -1931,6 +1931,8 @@ const UI = {
 
   showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot, rankRes) {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
+    if (window.Sfx && Sfx.calmOutro) Sfx.calmOutro();   // matchmuziek langzaam uit -> rustgevend thema
+
     // knop-bindingen herstellen (Journey kan ze hebben overschreven)
     document.getElementById('btn-vs-rematch').onclick = () => this.doRematch();
     const ag = document.getElementById('btn-vs-again'); ag.innerHTML = this._ic('home') + ' LOBBY'; ag.onclick = () => { document.getElementById('versus-result').classList.add('hidden'); this.openVersusLobby(); };
