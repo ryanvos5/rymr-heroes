@@ -1300,7 +1300,7 @@ const UI = {
     document.querySelector('.vs-wait-label').classList.add('hidden');
     document.getElementById('vs-lobby-opts').classList.add('hidden');
     document.getElementById('vs-bot-diff').classList.add('hidden');
-    document.getElementById('vs-peer-status').innerHTML = this._ic('bot') + ' Geen online speler gevonden — Bot Lv ' + this._mmBotLevel;
+    document.getElementById('vs-peer-status').innerHTML = this._ic('bot') + ' ' + tl('Geen online speler gevonden — Bot Lv ') + this._mmBotLevel;
     this.show('versus');
     this._mmBotRoulette();               // map-roulette -> willekeurige map -> bot-match
   },
@@ -1450,7 +1450,7 @@ const UI = {
     if (window.Net && Net.lobby) Net.lobbyLeave();   // chat niet meer nodig tijdens het potje
     const bd = document.getElementById('vs-bot-diff'); if (bd) bd.classList.add('hidden');   // alleen bij bot
     if (this._matchType === 'mm') {                  // === RANDOM MATCHMAKING: map-roulette ===
-      document.getElementById('vs-peer-status').textContent = 'Tegenstander gevonden!';
+      document.getElementById('vs-peer-status').textContent = tl('Tegenstander gevonden!');
       document.getElementById('vs-lobby-opts').classList.add('hidden');
       this._beginMmRoulette();
       return;
