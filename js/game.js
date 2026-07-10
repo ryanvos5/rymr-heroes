@@ -2943,14 +2943,14 @@ const Game = {
     this.particles = this.particles.filter((p) => p.life > 0);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 0.04);
 
-    // mijn stand uitzenden (~20x/sec)
+    // mijn stand uitzenden (~25x/sec) — vaker = minder achterstand op de tegenstander
     v.netTimer += dt;
-    if (v.netTimer >= 50) { v.netTimer = 0; this.sendVersusState(); }
+    if (v.netTimer >= 40) { v.netTimer = 0; this.sendVersusState(); }
 
-    // tegenstander vloeiend interpoleren
+    // tegenstander vloeiend interpoleren; grote sprong (respawn/teleport) -> direct plaatsen i.p.v. langzaam glijden
     const r = v.remote;
-    r.x += (r.tx - r.x) * 0.35;
-    r.y += (r.ty - r.y) * 0.35;
+    if (Math.abs(r.tx - r.x) > 160 || Math.abs(r.ty - r.y) > 120) { r.x = r.tx; r.y = r.ty; }
+    else { const lp = Math.min(1, (dt / 16.67) * 0.42); r.x += (r.tx - r.x) * lp; r.y += (r.ty - r.y) * lp; }
 
     if (window.UI && UI.updateVersusHUD) UI.updateVersusHUD(v);
   },
@@ -3372,8 +3372,12 @@ const Game = {
   },
   onVersusBall(p) {
     if (!p) return;
-    if (!this.ball) { this.ball = { mine: false, owner: 'foe', born: this.time, grace: this.time }; if (window.Sfx) Sfx.play('boing'); }
-    this.ball.mine = false; this.ball.x = p.x; this.ball.y = p.y; this.ball.vx = p.vx; this.ball.vy = p.vy;
+    if (!this.ball) { this.ball = { mine: false, owner: 'foe', born: this.time, grace: this.time, x: p.x, y: p.y }; if (window.Sfx) Sfx.play('boing'); }
+    const b = this.ball;
+    b.mine = false;
+    b.tx = p.x; b.ty = p.y;          // autoritatief doel -> updateBall corrigeert er zacht naartoe (i.p.v. harde snap)
+    b.vx = p.vx; b.vy = p.vy;        // autoritatieve snelheid voor de lokale dead-reckoning tussen pakketjes
+    if (b.x == null) { b.x = p.x; b.y = p.y; }
   },
   explodeBall() {
     const b = this.ball; if (!b) return;
@@ -3385,9 +3389,10 @@ const Game = {
   updateBall(dt) {
     const b = this.ball; if (!b) return;
     if (this.time - b.born > BALL_LIFE) { this.explodeBall(); return; }   // 15s -> ontploft
-    const sim = b.mine || this.vsBot;                                     // online: alleen de eigenaar simuleert
-    if (!sim) return;
+    const owner = b.mine || this.vsBot;                                   // eigenaar = autoriteit (physics + treffers + netwerk)
     const sc = this.dtScale;
+    // physics ALTIJD lokaal integreren — ook de bal van de tegenstander — zodat hij vloeiend op 60fps beweegt
+    // i.p.v. te haperen op elk los netwerk-pakketje (dead reckoning met de laatst bekende snelheid)
     b.vy += 0.4 * sc; b.x += b.vx * sc; b.y += b.vy * sc;
     if (b.x < 10) { b.x = 10; b.vx = Math.abs(b.vx) * 0.92; }
     if (b.x > this.vsMapW - 10) { b.x = this.vsMapW - 10; b.vx = -Math.abs(b.vx) * 0.92; }
@@ -3398,6 +3403,11 @@ const Game = {
       }
     }
     if (b.y > CONFIG.GROUND_Y - 2 && b.vy > 0) { b.y = CONFIG.GROUND_Y - 2; b.vy = -Math.abs(b.vy) * 0.8; }
+    if (!owner) {
+      // bal van de tegenstander: zacht naar de laatst ontvangen autoritatieve positie corrigeren (geen harde snap = geen hapering)
+      if (b.tx != null) { b.x += (b.tx - b.x) * 0.16; b.y += (b.ty - b.y) * 0.16; }
+      return;                                                            // niet-eigenaar doet geen treffers/netwerk
+    }
     // treffers (na grace): beide spelers kunnen geraakt worden -> harde knockback
     if (this.time >= b.grace && this.time >= (b._cd || 0)) {
       const tryHit = (e, isMe) => {
@@ -3416,7 +3426,7 @@ const Game = {
       tryHit(this.player, true);
       tryHit(this.vsBot ? this.bot : this.vs.remote, false);
     }
-    if (b.mine && !this.vsBot && window.Net) { b._net = (b._net || 0) + dt; if (b._net >= 70) { b._net = 0; Net.versusSend('ball', { x: Math.round(b.x), y: Math.round(b.y), vx: +b.vx.toFixed(2), vy: +b.vy.toFixed(2) }); } }
+    if (b.mine && !this.vsBot && window.Net) { b._net = (b._net || 0) + dt; if (b._net >= 50) { b._net = 0; Net.versusSend('ball', { x: Math.round(b.x), y: Math.round(b.y), vx: +b.vx.toFixed(2), vy: +b.vy.toFixed(2) }); } }
   },
   drawBall(ctx) {
     const b = this.ball; if (!b) return;
