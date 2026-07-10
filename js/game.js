@@ -2864,11 +2864,15 @@ const Game = {
 
     if (v.countdown > 0) {                             // korte aftelling vóór de start
       const before = v.countdown; v.countdown -= dt;
-      if (before > 0 && v.countdown <= 0 && !v.musicStarted) {   // aftellen klaar -> muziek start (eerste ronde)
-        v.musicStarted = true;
-        if (window.Sfx) { Sfx.music(this._pendingMusicTheme || 'menu'); if (this._vsChallengeMusic) Sfx.setMusicIntensity(1); }
+      if (before > 0 && v.countdown <= 0) {                       // aftellen klaar -> ronde begint: "ring sluit"-klok resetten
+        v.roundPlayStart = this.time; v.stormWarned = false; this.storm = null;
+        if (!v.musicStarted) {                                    // eerste ronde -> muziek start
+          v.musicStarted = true;
+          if (window.Sfx) { Sfx.music(this._pendingMusicTheme || 'menu'); if (this._vsChallengeMusic) Sfx.setMusicIntensity(1); }
+        }
       }
     } else {
+      this.updateStorm(dt);                            // ring-sluit: gevarenzone dwingt spelers naar het midden (tegen wegrennen)
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       if (!this.player.dead && !this.player._trapCharges) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op (niet terwijl je nog vallen in de hand hebt)
       if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op
@@ -4782,7 +4786,51 @@ const Game = {
     if (this.tentacle) { this.tentacle.state = 'idle'; this.tentacle.nextAt = this.time + PIRATE_TENT_EVERY; }
     if (this.tide) { this.tide.state = 'idle'; this.tide.level = 0; this.tide.nextAt = this.time + BEACH_TIDE_EVERY; }
     this.ball = null;
+    this.storm = null;                                  // ring-sluit stopt bij rondewissel
     this.shake = Math.max(this.shake, 7);
+  },
+
+  // "Ring sluit": sleept een ronde te lang zonder KO, dan komen er rode gevarenzones vanaf de zijkanten die naar het midden
+  // schuiven. Wie in de rode zone staat neemt oplopende schade + een duwtje naar binnen -> beide spelers móéten vechten.
+  updateStorm(dt) {
+    const v = this.vs;
+    if (!v || v.over || v.timeUp || v.countdown > 0 || !v.roundPlayStart) { this.storm = null; return; }
+    const elapsed = this.time - v.roundPlayStart;
+    if (elapsed <= STORM_START_MS) { this.storm = null; return; }
+    const closeT = Math.min(1, (elapsed - STORM_START_MS) / STORM_CLOSE_MS);   // 0 -> 1 terwijl hij dichttrekt
+    const center = this.vsMapW / 2;
+    const halfSafe = center - (center - STORM_SAFE_HALF) * closeT;             // veilige halve breedte krimpt tot STORM_SAFE_HALF
+    const dl = center - halfSafe, dr = center + halfSafe;                      // linker/rechter rand van de veilige zone
+    this.storm = { dl, dr, closeT };
+    if (!v.stormWarned) { v.stormWarned = true; if (window.UI && UI.showBigMsg) UI.showBigMsg(tl('RING SLUIT!'), 'lose', 2000); if (window.Sfx) Sfx.play('drumroll'); this.shake = Math.max(this.shake, 6); }
+    const dps = STORM_DPS * (1 + closeT * 1.5);                                // 20 -> 50 dps naarmate hij sluit
+    const bite = (e, isMe) => {
+      if (!e || e.dead) return;
+      let dir = 0;
+      if (e.x < dl) dir = 1; else if (e.x > dr) dir = -1;
+      if (!dir) return;
+      e.hp = Math.max(0, e.hp - dps * dt / 1000);       // schade in de rode zone (KO wordt door de bestaande hp<=0-check afgehandeld)
+      e.knockVx = (e.knockVx || 0) + dir * 0.7 * (this.dtScale || 1);          // zacht naar het midden duwen
+      if (isMe) { this.hurtFlash = Math.max(this.hurtFlash || 0, 40); this.shake = Math.max(this.shake, 3); }
+    };
+    bite(this.player, true);                            // eigen speler wordt lokaal gebeten
+    if (this.vsBot) bite(this.bot, false);              // botmatch: bot ook (online doet de tegenstander dit op z'n eigen client)
+  },
+
+  drawStorm(ctx, camX, visW) {
+    const s = this.storm; if (!s) return;
+    const top = this.vsCamY - 260, botH = CONFIG.GROUND_Y - top + Math.abs(this.vsCamY) + 340;
+    const pulse = 0.26 + 0.16 * Math.abs(Math.sin(this.time / 170));
+    ctx.save();
+    ctx.fillStyle = 'rgba(210,40,36,' + pulse.toFixed(3) + ')';
+    ctx.fillRect(camX - 40, top, (s.dl - (camX - 40)), botH);                  // linker gevarenzone (van links tot de veilige rand)
+    ctx.fillRect(s.dr, top, (camX + visW + 40) - s.dr, botH);                  // rechter gevarenzone (van veilige rand tot rechts)
+    // felle, kloppende rand op de sluitlijnen
+    const edge = 0.55 + 0.35 * Math.abs(Math.sin(this.time / 120));
+    ctx.fillStyle = 'rgba(255,110,70,' + edge.toFixed(3) + ')';
+    ctx.fillRect(s.dl - 3, top, 4, botH);
+    ctx.fillRect(s.dr - 1, top, 4, botH);
+    ctx.restore();
   },
 
   checkVersusHit() {
@@ -5561,6 +5609,9 @@ const Game = {
       Sprites.px(ctx, p.color, p.x, p.y, p.size, p.size);
     }
     ctx.globalAlpha = 1;
+
+    // ring-sluit gevarenzones (rode wanden vanaf de zijkanten) — achter de spelers, over de wereld
+    if (this.storm) this.drawStorm(ctx, camX, visW);
 
     // tegenstander (ghost) — ROOD pijltje erboven; onzichtbare ninja tekenen we niet (jij ziet 'm niet)
     const r = this.vs.remote;
@@ -6483,7 +6534,7 @@ const Game = {
     this.abilityFx = []; this.impacts = []; this.floatTexts = []; this.ambient = []; this.zapFx = null; this.ko = null;
     this.hitStop = 0; this.hurtFlash = 0; this.smashFlash = 0; this._ambClock = 0;
     this.caveWall = null; this.rocks = []; this.ball = null; this.gorilla = null; this.jungleApe = null; this.birds = []; this._birdAt = 0; this.darts = []; this._dartAt = 0; this.castleDragons = []; this._cDragonAt = 0;
-    this.tentacle = null; this.vulcan = null; this.tide = null; this.nuke = null;
+    this.tentacle = null; this.vulcan = null; this.tide = null; this.nuke = null; this.storm = null;
     this.buildVersusPlatforms(map);
     // veilige stub zodat gedeelde helpers (applyDrop/smashFire) geen null-this.vs raken
     this.vs = { remote: { alive: false, x: -99999, y: 0, hp: 100, maxHp: 100 }, countdown: 0, roundFreezeUntil: 0, lastSwing: 0 };
