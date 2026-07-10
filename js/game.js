@@ -2619,6 +2619,7 @@ const Game = {
     // muziek NIET meteen starten: eerst een map-intro (geen muziek, wat sfx), muziek start na het aftellen
     this._pendingMusicTheme = (opts.bossFight || opts.boss) ? 'boss' : map.id;
     if (window.Sfx) { Sfx.stopMusic(); Sfx.play('mapintro'); }
+    this._lastInputTime = Date.now(); this._afkKicked = false;   // AFK-timer resetten bij matchstart
     this.vsFallY = map.fallY || FALL_DEATH_Y;
     this.vsCamX = 0; this.vsCamY = 0; this.vsCamZoom = 1;
     this.worldId = -1;
@@ -2838,6 +2839,12 @@ const Game = {
     }
 
     this.updateVersusPlatforms();
+
+    // AFK / uit-de-app-detectie (alleen echte online potjes)
+    if (!this.vsBot && !v.over) {
+      if (v.countdown > 0 || this.vsPaused) this._lastInputTime = Date.now();   // tijdens aftellen/pauze telt AFK niet
+      else { this._checkVersusAfk(v); if (v.over) return; }
+    }
 
     if (v.countdown > 0) {                             // korte aftelling vóór de start
       const before = v.countdown; v.countdown -= dt;
@@ -5237,7 +5244,7 @@ const Game = {
     if (typeof s.mh === 'number') r.maxHp = s.mh;
     if (typeof s.rp === 'number') { r.rp = s.rp; if (this.vs) this.vs.oppRp = s.rp; }   // tegenstander-RP (rank-badge + hogere-rank-bonus)
     if (s.nk && this.vs) this.vs.oppName = s.nk;   // tegenstander-nickname (voor de ronde-winnaar-banner)
-    r.lastSeen = this.time;
+    r.lastSeen = Date.now();   // echte tijd -> werkt ook als de tegenstander z'n app op de achtergrond zet
   },
 
   sendVersusState() {
@@ -5346,14 +5353,28 @@ const Game = {
     }, 2600);
   },
 
+  // AFK / uit-de-app: >15s geen input of geen updates van de tegenstander
+  _checkVersusAfk(v) {
+    const now = Date.now();
+    if (!this._lastInputTime) this._lastInputTime = now;
+    const anyInput = (typeof Input !== 'undefined') && Input.state && (Input.state.left || Input.state.right || Input.state.jump || Input.state.duck || Input.state.attack || Input.state.melee);
+    if (anyInput) this._lastInputTime = now;
+    const r = v.remote;
+    // 1) tegenstander stuurt niks meer (weg / uit de app / afk op de achtergrond) -> JIJ wint
+    if (r && r.lastSeen > 0 && now - r.lastSeen > AFK_KICK_MS) { this.endVersus(true, true); return; }   // peerLeft -> "tegenstander weg, jij wint"
+    // 2) jij bent zelf >15s AFK (of net terug na lang weg) -> JIJ verliest; tegenstander wint (via 'bye')
+    if (now - this._lastInputTime > AFK_KICK_MS) { this._afkKicked = true; this.forfeitVersus(); return; }
+  },
   // online match zelf verlaten: jij krijgt een loss (geen XP/munten), tegenstander wint (via 'bye')
   forfeitVersus() {
+    const afk = this._afkKicked; this._afkKicked = false;
     if (this.vs && !this.vsBot) {
       Storage.data.mpLosses = (Storage.data.mpLosses || 0) + 1;
       Storage.applyRankedResult({ quit: true });   // leaven = -30 RP (streak reset)
       Storage.save();
     }
     this.quitVersus();   // Net.leaveVersus() stuurt 'bye' -> tegenstander wint
+    if (afk && window.UI && UI.toast) UI.toast(tl('Uit de match gezet — te lang weg (AFK). Je verliest.'));
   },
 
   quitVersus() {

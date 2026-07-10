@@ -837,6 +837,8 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .vs-round-banner .rb-name { display: block; margin-top: 4px; color: #fff; font-size: clamp(15px, 4vw, 26px); text-shadow: 0 3px 0 #000; }
 
 /* map-intro (vóór het aftellen) */
+.tps-toast { position: fixed; left: 50%; bottom: 16%; transform: translateX(-50%); z-index: 200; background: linear-gradient(180deg, rgba(42,19,13,.95), rgba(20,9,7,.96)); border: 1px solid #b0362a; color: #ffe6d0; font-family: var(--pixel-font); font-weight: bold; font-size: clamp(12px, 2.4vw, 16px); padding: 9px 18px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; text-align: center; max-width: 88%; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+.tps-toast.show { opacity: 1; }
 .vs-map-intro { position: fixed; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; z-index: 40; font-family: var(--pixel-font); padding: 0 16px; }
 .vs-map-intro .vmi-label { font-size: clamp(11px, 2.2vw, 16px); font-weight: bold; letter-spacing: 6px; color: #ffd24a; text-shadow: 0 2px 0 #000; opacity: .9; }
 .vs-map-intro .vmi-name { font-size: clamp(30px, 8.5vw, 70px); font-weight: 900; letter-spacing: 2px; color: #fff; line-height: 1.05;

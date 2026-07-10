@@ -115,7 +115,25 @@ const UI = {
     { const db = $('btn-delete-account'); if (db) db.onclick = () => this.deleteAccount(); }
     // klikgeluid op menu-knoppen
     document.addEventListener('pointerdown', (e) => {
+      if (typeof Game !== 'undefined') Game._lastInputTime = Date.now();   // elke aanraking telt als 'niet AFK'
       if (window.Sfx && e.target && e.target.closest && e.target.closest('.stone-btn,.stone-tile,.stone-icon,.big-btn,.shop-tab,.world-tab,.back-btn,.corner-back')) Sfx.play('click');
+    });
+    document.addEventListener('keydown', () => { if (typeof Game !== 'undefined') Game._lastInputTime = Date.now(); });
+    // uit de app / tabblad weg: na >15s op de achtergrond word je uit een online match gezet (jij verliest)
+    const inLiveVersus = () => typeof Game !== 'undefined' && Game.vs && !Game.vsBot && !Game.vs.over && Game.state === 'versus';
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (!inLiveVersus()) return;
+        this._hiddenAt = Date.now();
+        this._afkBgTimer = setTimeout(() => { if (document.hidden && inLiveVersus()) { Game._afkKicked = true; Game.forfeitVersus(); } }, AFK_KICK_MS + 200);
+      } else {
+        if (this._afkBgTimer) { clearTimeout(this._afkBgTimer); this._afkBgTimer = null; }
+        const away = this._hiddenAt ? (Date.now() - this._hiddenAt) : 0; this._hiddenAt = 0;
+        if (inLiveVersus()) {
+          if (away > AFK_KICK_MS) { Game._afkKicked = true; Game.forfeitVersus(); }   // te lang weg -> jij verliest
+          else Game._lastInputTime = Date.now();                                      // korte afwezigheid -> geen straf
+        }
+      }
     });
 
     // ---- account (inloggen / registreren) ----
@@ -1859,6 +1877,13 @@ const UI = {
     el.classList.remove('vmi-in'); void el.offsetWidth; el.classList.add('vmi-in');   // animatie herstarten
   },
   hideMapIntro() { const el = document.getElementById('vs-map-intro'); if (el) el.classList.add('hidden'); },
+  // korte melding onderin (bv. AFK-kick)
+  toast(text) {
+    let el = document.getElementById('tps-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'tps-toast'; el.className = 'tps-toast'; document.body.appendChild(el); }
+    el.textContent = text; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(this._toastT); this._toastT = setTimeout(() => el.classList.remove('show'), 3000);
+  },
 
   showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot, rankRes) {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
