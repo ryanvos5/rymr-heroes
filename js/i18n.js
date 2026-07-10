@@ -416,6 +416,11 @@ I18N.cut = function (s) { return this.lang === 'en' ? (this.CUT_EN[s] || s) : s;
 I18N.UI_EN = {
   'Uit de match gezet — te lang weg (AFK). Je verliest.': 'Removed from the match — away too long (AFK). You lose.',
   'TIJD!': 'TIME!', 'Jij': 'You', 'Tegenstander': 'Opponent', 'RING SLUIT!': 'RING CLOSING IN!',
+  // 1v1 uitslag-scherm (onder de Final score)
+  'munten': 'coins', 'Winreeks': 'Win streak', 'Hogere rank verslagen': 'Beat a higher rank', 'NIEUWE RANK': 'NEW RANK',
+  '(log in om je rank & munten mee te tellen)': '(log in to count your rank & coins)',
+  'Tegen de bot — telt niet mee voor rank of XP': "Against the bot — doesn't count for rank or XP",
+  'Tegenstander heeft de match verlaten.': 'Opponent left the match.',
   // map-intro-hints
   'Stun-darts schieten door de arena': 'Stun darts fly across the arena',
   'Pas op voor de zeemonster-tentakel': 'Watch out for the sea-monster tentacle',

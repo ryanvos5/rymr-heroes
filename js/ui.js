@@ -1843,7 +1843,7 @@ const UI = {
         const secs = Math.max(0, Math.ceil((Game.nuke.until - Game.time) / 1000));
         nt.textContent = '☢ ' + secs + 's · ' + (Game.nuke.mine ? tl('OVERLEEF!') : tl('VERSLA ZE!'));
         nt.className = 'vs-nuke-timer ' + (Game.nuke.mine ? 'mine' : 'foe') + (secs <= 5 ? ' urgent' : '');
-        nt.style.top = (tm && !tm.classList.contains('hidden')) ? '44px' : '8px';   // onder de normale timer, of bovenaan als die er niet is
+        nt.style.top = (tm && !tm.classList.contains('hidden')) ? '76px' : '8px';   // ruim onder de normale timer, of bovenaan als die er niet is
       } else nt.classList.add('hidden');
     }
     // HP-balken
@@ -1948,19 +1948,19 @@ const UI = {
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
     if (!isBot) {                                // echte online tegenstander -> XP + RP + rank
-      let html = '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● munten';
+      let html = '+' + (xpGained || 0) + ' XP  ·  +' + (coinsEarned || 0) + ' ● ' + tl('munten');
       if (rankRes) {
         const d = rankRes.delta, rk = RANKS[rankRes.newIdx];
         html += '<br><span style="color:' + (d >= 0 ? '#7be07a' : '#ff7a6a') + ';font-weight:bold">' + (d >= 0 ? '+' : '') + d + ' RP</span>' +
           '  ·  <span style="color:' + rk.col + '">' + rk.name + '</span> (' + rankRes.newRp + ' RP)';
-        if (rankRes.streakBonus) html += '<br><span style="color:#ffd24a">🔥 Win streak! +' + rankRes.streakBonus + ' RP</span>';
-        if (rankRes.higherBonus) html += (rankRes.streakBonus ? ' · ' : '<br>') + '<span style="color:#ffd24a">Hogere rank verslagen +' + rankRes.higherBonus + ' RP</span>';
-        if (rankRes.rankedUp) html += '<br><span style="color:' + rk.col + ';font-weight:bold">⬆ NIEUWE RANK: ' + rk.name + (rk.title ? ' — ' + rk.title : '') + '!</span>';
+        if (rankRes.streakBonus) html += '<br><span style="color:#ffd24a">🔥 ' + tl('Winreeks') + '! +' + rankRes.streakBonus + ' RP</span>';
+        if (rankRes.higherBonus) html += (rankRes.streakBonus ? ' · ' : '<br>') + '<span style="color:#ffd24a">' + tl('Hogere rank verslagen') + ' +' + rankRes.higherBonus + ' RP</span>';
+        if (rankRes.rankedUp) html += '<br><span style="color:' + rk.col + ';font-weight:bold">⬆ ' + tl('NIEUWE RANK') + ': ' + rk.name + (rk.title ? ' — ' + rk.title : '') + '!</span>';
       }
-      html += (window.Net && Net.isLoggedIn() ? '' : '<br>(log in om je rank & munten mee te tellen)');
+      html += (window.Net && Net.isLoggedIn() ? '' : '<br>' + tl('(log in om je rank & munten mee te tellen)'));
       xpEl.innerHTML = html;
     } else {
-      xpEl.innerHTML = this._ic('bot') + ' Tegen de bot — telt niet mee voor rank of XP' + (coinsEarned > 0 ? '<br>+' + coinsEarned + ' ● munten' : '');
+      xpEl.innerHTML = this._ic('bot') + ' ' + tl('Tegen de bot — telt niet mee voor rank of XP') + (coinsEarned > 0 ? '<br>+' + coinsEarned + ' ● ' + tl('munten') : '');
     }
     // rematch-knop voorbereiden
     this._rematchMine = false; this._rematchPeer = false; this._vsStarted = false; this._isBotResult = !!isBot;
@@ -1970,7 +1970,7 @@ const UI = {
     if (peerLeft) {
       // tegenstander heeft de match verlaten -> geen rematch mogelijk
       rbtn.disabled = true; rbtn.classList.add('hidden');
-      rs.textContent = 'Tegenstander heeft de match verlaten.';
+      rs.textContent = tl('Tegenstander heeft de match verlaten.');
       if (voteBox) voteBox.classList.add('hidden');
     } else {
       rbtn.disabled = false; rbtn.innerHTML = this._ic('refresh') + ' REMATCH'; rbtn.classList.remove('hidden');
