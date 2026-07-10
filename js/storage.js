@@ -443,7 +443,9 @@ const Storage = {
       if (d.winStreak >= 3 && d.winStreak % 3 === 0) { streakBonus = RANK_RP.streakBonus; delta += streakBonus; }
       if (typeof opts.oppRp === 'number' && rankForRp(opts.oppRp) > oldIdx) { higherBonus = RANK_RP.higherRankBonus; delta += higherBonus; }
     } else { delta = RANK_RP.loss; d.winStreak = 0; }
-    const newRp = Math.max(0, oldRp + delta);
+    let newRp = Math.max(0, oldRp + delta);
+    const floorRp = rankFloorRp(Math.max(d.rankRewarded || 0, oldIdx));   // checkpoint-vloer: onder Brons/Zilver/Goud III of Champion zak je niet meer terug
+    if (newRp < floorRp) newRp = floorRp;
     d.rp = newRp;
     const newIdx = rankForRp(newRp);
     // beloningen: eenmalig per bereikte rank (rankRewarded = hoogste ooit uitgekeerd)

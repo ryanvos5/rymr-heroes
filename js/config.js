@@ -853,6 +853,9 @@ const RANKS = [
 ];
 const RANK_RP = { win: 30, loss: -15, streakBonus: 10, higherRankBonus: 5, quit: -30 };
 function rankForRp(rp) { rp = rp || 0; let idx = 0; for (let i = 0; i < RANKS.length; i++) if (rp >= RANKS[i].rp) idx = i; return idx; }
+// Checkpoint-ranks: eenmaal bereikt zak je nooit meer onder deze rank (RP-vloer). Brons III, Zilver III, Goud III, Champion.
+const RANK_CHECKPOINTS = [2, 5, 8, 11];
+function rankFloorRp(highestIdx) { let f = 0; for (const cp of RANK_CHECKPOINTS) if ((highestIdx || 0) >= cp) f = RANKS[cp].rp; return f; }
 // bijpassende edelsteen-kleur per tier
 const RANK_GEM = { bronze: '#ff9a3c', silver: '#d3ecff', gold: '#ffe14a', platinum: '#4ff0d6', diamond: '#8fd6ff', champion: '#c88bff', elite: '#ff5a6a' };
 function rankShade(hex, amt) {
