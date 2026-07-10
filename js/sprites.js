@@ -825,6 +825,20 @@ const Sprites = {
         P(steel, ln - 8, -6, 6, 6); P(steelDk, ln - 8, -6, 6, 2);         // bijlblad
         P(steelLt, ln - 3, -7, 2, 7);                             // punt bovenop
         P(steel, ln - 5, 2, 2, 2);                                // haak onder
+      } else if (id === 'zapblade') {
+        // Zap-mes (Yarno's ability): donker handvat, blauw dwarsstuk, gloeiend elektrisch lemmet + vonken
+        const grip = '#191d24', guard = '#2f6fd0', halo = '#2f6fd0', coreC = '#8fd0ff', hot = '#eaffff';
+        P(grip, -1, 0, 2, 5);                                     // handvat in de vuist
+        P('#0d0f13', -1, 3, 2, 1);                                // pommel-schaduw
+        P(guard, -2, -1, 4, 1); P('#bfe0ff', -2, -1, 1, 1);       // blauw dwarsstuk + glinster
+        const bl = atk ? 13 : 10;                                 // iets langer dan een dagger
+        P(halo, -2, -1 - bl, 4, bl + 1);                          // blauwe gloed-halo (breed, achter)
+        P(coreC, -1, -1 - bl, 2, bl);                             // lichtblauwe kern
+        P(hot, 0, -1 - bl, 1, bl);                                // wit-hete snijkant
+        P(coreC, -1, -2 - bl, 2, 1); P(hot, 0, -3 - bl, 1, 1);    // punt
+        // elektrische vonkjes rond het lemmet
+        P(hot, 2, -4 - (bl >> 1), 1, 1); P('#bfe0ff', 3, -5 - (bl >> 1), 1, 1);
+        P(hot, -3, -6 - (bl >> 1), 1, 1); P('#bfe0ff', -4, -7 - (bl >> 1), 1, 1);
       } else { // bat
         P(woodDk, -1, 0, 2, 4);                                   // greep
         const bl = atk ? 10 : 8;
@@ -1681,6 +1695,11 @@ const Sprites = {
         this.px(ctx, '#2a2a2e', cx - 8, y + 3, 5, 6);                                                    // greep
         this.px(ctx, '#9aa3ad', cx - 5, y - 4, 22, 5); this.px(ctx, '#cfd6df', cx - 5, y - 4, 22, 2);    // zaagbalk
         for (let i = 0; i < 22; i += 3) this.px(ctx, '#eef3f7', cx - 4 + i, y + 1, 2, 1);                 // tanden
+      } else if (weaponId === 'zapblade') {
+        this.px(ctx, '#191d24', cx - 12, y - 2, 5, 4);                                                     // handvat
+        this.px(ctx, '#2f6fd0', cx - 8, y - 4, 2, 8);                                                      // blauw dwarsstuk
+        this.px(ctx, '#2f6fd0', cx - 6, y - 3, 20, 5); this.px(ctx, '#8fd0ff', cx - 6, y - 3, 20, 3); this.px(ctx, '#eaffff', cx - 6, y - 2, 20, 1);   // gloeiend lemmet + hete snijkant
+        this.px(ctx, '#eaffff', cx + 6, y - 6, 1, 1); this.px(ctx, '#bfe0ff', cx + 2, y + 3, 1, 1);        // vonkjes
       } else { // bat
         this.px(ctx, wood, cx - 12, y - 7, 16, 5); this.px(ctx, '#9a6a3a', cx - 12, y - 7, 16, 2); this.px(ctx, woodDk, cx + 2, y - 6, 6, 4);
       }
