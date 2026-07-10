@@ -412,6 +412,17 @@ I18N.cut = function (s) { return this.lang === 'en' ? (this.CUT_EN[s] || s) : s;
 
 // ---- losse dynamische UI-teksten: NL blijft bron, Engelse overlay hieronder (tl('...')) ----
 I18N.UI_EN = {
+  // map-intro-hints
+  'Stun-darts schieten door de arena': 'Stun darts fly across the arena',
+  'Pas op voor de zeemonster-tentakel': 'Watch out for the sea-monster tentacle',
+  'Lavastraal barst uit het midden': 'A lava jet erupts from the center',
+  'Deuren teleporteren je naar de overkant': 'Doors teleport you across',
+  'Vogels + inzakkende wolk-platforms': 'Birds + collapsing cloud platforms',
+  'Een duikende draak knalt je van de map': 'A diving dragon blasts you off the map',
+  'Kleine ring — sla ze er snel af': 'Tiny ring — knock them off fast',
+  'Bliksem + vallende rotsblokken': 'Lightning + falling boulders',
+  'Getij + kaatsende strandbal': 'Tides + a bouncing beach ball',
+  'Sla je tegenstander van de map!': 'Knock your opponent off the map!',
   // co-op / friends / lobby
   '✓ Verbonden! Kies een level om samen te spelen.': '✓ Connected! Pick a level to play together.',
   '✓ Verbonden! Je maat kiest een level…': '✓ Connected! Your buddy is picking a level…',

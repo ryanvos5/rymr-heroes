@@ -573,6 +573,7 @@ const POWERUP_DROP_CHANCE = 0.025; // kans per kill
 /* ---------- POWER SMASH (multiplayer-gamemode) ----------
    8 rondes, melee-only start met de knuppel; er vallen wapens/power-ups/health in de arena. */
 const SMASH_ROUNDS = 8;
+const VERSUS_INTRO_MS = 2600;        // map-intro (zonder muziek, wat sfx) vóór het aftellen van de eerste ronde
 const SMASH_DROP_EVERY = 5000;       // ms tussen drops (host bepaalt)
 const CLOUD_STAND_MS = 5000;         // Airplane: hoe lang je op een wolk-platform kunt staan
 const CLOUD_REFORM_MS = 2600;        // Airplane: hoe lang een ingezakte wolk weg blijft

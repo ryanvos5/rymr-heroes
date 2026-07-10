@@ -2616,7 +2616,9 @@ const Game = {
     this.vsMap = map; this.vsMode = mode;
     this.vsMapW = map.w || CONFIG.VIEW_W;
     this._vsChallengeMusic = !opts.journey && !opts.bossFight && !opts.boss && mode === 'smash';   // online Power Smash-potje
-    if (window.Sfx) { Sfx.music((opts.bossFight || opts.boss) ? 'boss' : map.id); if (this._vsChallengeMusic) Sfx.setMusicIntensity(1); }   // boss = snel; online = snellere/uitdagendere muziek
+    // muziek NIET meteen starten: eerst een map-intro (geen muziek, wat sfx), muziek start na het aftellen
+    this._pendingMusicTheme = (opts.bossFight || opts.boss) ? 'boss' : map.id;
+    if (window.Sfx) { Sfx.stopMusic(); Sfx.play('mapintro'); }
     this.vsFallY = map.fallY || FALL_DEATH_Y;
     this.vsCamX = 0; this.vsCamY = 0; this.vsCamZoom = 1;
     this.worldId = -1;
@@ -2684,6 +2686,7 @@ const Game = {
       role, spawn: sp, botSpawn: { x: rb.x, y: rb.y, dir: meLeft ? -1 : 1 },
       myScore: 0, oppScore: 0, target: (mode === 'smash' && opts.rounds) ? Math.max(3, Math.min(10, opts.rounds | 0)) : (mode === 'smash' ? SMASH_ROUNDS : 5),
       countdown: 3000, lastSwing: 0, botLastSwing: 0, netTimer: 0, over: false,
+      introUntil: this.time + VERSUS_INTRO_MS, introShown: false, musicStarted: false,   // map-intro vóór het aftellen
       roundFreezeUntil: 0, roundMsg: '',
       remote: {
         x: rb.x, y: rb.y, tx: rb.x, ty: rb.y,
@@ -2808,6 +2811,17 @@ const Game = {
     this._updateAmbient(dt);
     const v = this.vs;
 
+    // map-intro bij de start van de match: toon de map (geen muziek, wat sfx), dán pas aftellen
+    if (v.introUntil && this.time < v.introUntil) {
+      if (!v.introShown) { v.introShown = true; if (window.UI && UI.showMapIntro) UI.showMapIntro(this.vsMap); if (window.Sfx) setTimeout(() => { try { Sfx.play('stomp'); } catch (e) {} }, 1100); }
+      for (const p of this.particles) p.update(dt, this);
+      this.particles = this.particles.filter((p) => p.life > 0);
+      this.updateVersusCamera();
+      if (window.UI && UI.updateVersusHUD) UI.updateVersusHUD(v);
+      return;
+    }
+    if (v.introUntil) { v.introUntil = 0; if (window.UI && UI.hideMapIntro) UI.hideMapIntro(); }   // intro klaar -> nu het aftellen
+
     // ronde-freeze: even stilstaan met grote "wint de ronde"-tekst
     if (v.roundFreezeUntil > this.time) {
       for (const p of this.particles) p.update(dt, this);
@@ -2825,8 +2839,13 @@ const Game = {
 
     this.updateVersusPlatforms();
 
-    if (v.countdown > 0) { v.countdown -= dt; }       // korte aftelling vóór de start
-    else {
+    if (v.countdown > 0) {                             // korte aftelling vóór de start
+      const before = v.countdown; v.countdown -= dt;
+      if (before > 0 && v.countdown <= 0 && !v.musicStarted) {   // aftellen klaar -> muziek start (eerste ronde)
+        v.musicStarted = true;
+        if (window.Sfx) { Sfx.music(this._pendingMusicTheme || 'menu'); if (this._vsChallengeMusic) Sfx.setMusicIntensity(1); }
+      }
+    } else {
       if (this.player.respawnInvuln > 0) this.player.respawnInvuln -= dt;
       if (!this.player.dead && !this.player._trapCharges) this.player.abCharge = Math.min(1, this.player.abCharge + dt / (ABILITY_CHARGE_MS * (this.player.abChargeMul || 1)));   // ability laadt langzaam op (niet terwijl je nog vallen in de hand hebt)
       if (this.vsBot && this.bot && !this.bot.dead && this.bot.ability) this.bot.abCharge = Math.min(1, this.bot.abCharge + dt / (ABILITY_CHARGE_MS * (this.bot.abChargeMul || 1)));  // bot laadt óók op

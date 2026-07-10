@@ -1826,7 +1826,8 @@ const UI = {
     }
     const cd = document.getElementById('vs-countdown');
     if (cd) {
-      if (v.countdown > 0) { cd.classList.remove('hidden'); cd.textContent = Math.ceil(v.countdown / 1000); }
+      const inIntro = v.introUntil && Game.time < v.introUntil;
+      if (v.countdown > 0 && !inIntro) { cd.classList.remove('hidden'); cd.textContent = Math.ceil(v.countdown / 1000); }
       else cd.classList.add('hidden');
     }
     // grote "wint de ronde"-banner tijdens de freeze
@@ -1845,6 +1846,17 @@ const UI = {
     const nm = document.getElementById('vs-win-name'); if (nm) nm.textContent = name ? tl(name) : tl('Winnaar');
     el.classList.remove('hidden');
   },
+
+  // map-intro bij de start van een potje (naam + korte hint), vóór het aftellen
+  showMapIntro(map) {
+    const el = document.getElementById('vs-map-intro'); if (!el || !map) return;
+    const hints = { jungle: 'Stun-darts schieten door de arena', pirate: 'Pas op voor de zeemonster-tentakel', lava: 'Lavastraal barst uit het midden', temple: 'Deuren teleporteren je naar de overkant', airplane: 'Vogels + inzakkende wolk-platforms', castle: 'Een duikende draak knalt je van de map', dohyo: 'Kleine ring — sla ze er snel af', cave: 'Bliksem + vallende rotsblokken', beach: 'Getij + kaatsende strandbal' };
+    const nm = document.getElementById('vmi-name'); if (nm) nm.textContent = map.name || 'Arena';
+    const sub = document.getElementById('vmi-sub'); if (sub) sub.textContent = tl(hints[map.id] || 'Sla je tegenstander van de map!');
+    el.classList.remove('hidden');
+    el.classList.remove('vmi-in'); void el.offsetWidth; el.classList.add('vmi-in');   // animatie herstarten
+  },
+  hideMapIntro() { const el = document.getElementById('vs-map-intro'); if (el) el.classList.add('hidden'); },
 
   showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot, rankRes) {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
@@ -1994,6 +2006,7 @@ const UI = {
     // versus-HUD nooit laten hangen op een gewoon scherm (score/HP-balken/✕)
     const vh = document.getElementById('versus-hud'); if (vh) vh.classList.add('hidden');
     const vrb = document.getElementById('vs-round-banner'); if (vrb) vrb.classList.add('hidden');
+    const vmi = document.getElementById('vs-map-intro'); if (vmi) vmi.classList.add('hidden');
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
     const lb = document.getElementById('loadout-bar'); if (lb) lb.classList.add('hidden');   // loadout niet op menu's
     // vulkaan-achtergrond alleen laten draaien op de menuschermen (niet in het spel)

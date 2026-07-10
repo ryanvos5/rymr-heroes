@@ -835,6 +835,19 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .vs-round-banner.lose { color: #ff6a6a; }
 .vs-round-banner .rb-title { display: block; font-size: clamp(20px, 5.6vw, 40px); letter-spacing: 2px; }
 .vs-round-banner .rb-name { display: block; margin-top: 4px; color: #fff; font-size: clamp(15px, 4vw, 26px); text-shadow: 0 3px 0 #000; }
+
+/* map-intro (vóór het aftellen) */
+.vs-map-intro { position: fixed; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; z-index: 40; font-family: var(--pixel-font); padding: 0 16px; }
+.vs-map-intro .vmi-label { font-size: clamp(11px, 2.2vw, 16px); font-weight: bold; letter-spacing: 6px; color: #ffd24a; text-shadow: 0 2px 0 #000; opacity: .9; }
+.vs-map-intro .vmi-name { font-size: clamp(30px, 8.5vw, 70px); font-weight: 900; letter-spacing: 2px; color: #fff; line-height: 1.05;
+  text-shadow: 0 4px 0 #000, 0 0 20px rgba(255,210,74,.55); margin-top: 2px; }
+.vs-map-intro .vmi-sub { font-size: clamp(12px, 2.6vw, 20px); color: #ffe6a0; text-shadow: 0 2px 0 #000; margin-top: 8px; }
+.vs-map-intro.vmi-in .vmi-label { animation: vmiUp .5s ease-out both; }
+.vs-map-intro.vmi-in .vmi-name { animation: vmiPop .6s cubic-bezier(.2,1.5,.4,1) both; }
+.vs-map-intro.vmi-in .vmi-sub { animation: vmiUp .5s ease-out .22s both; }
+@keyframes vmiPop { 0% { transform: scale(.4); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes vmiUp { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .vs-map-intro.vmi-in .vmi-label, .vs-map-intro.vmi-in .vmi-name, .vs-map-intro.vmi-in .vmi-sub { animation: none; } }
 .auth-box { width: min(340px, 92%); }
 .auth-sub { color: var(--text-dim); font-size: 12px; margin: 6px 0 14px; line-height: 1.4; }
 #auth-fields { display: flex; flex-direction: column; gap: 10px; }
