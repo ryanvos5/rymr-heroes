@@ -449,6 +449,35 @@ const Sprites = {
       this.px(ctx, robeLt, cx - bh, torsoTop + torsoH - 3, bh * 2, 1);
       // gebedskralen om de nek
       for (let i = -2; i <= 2; i++) this.px(ctx, i % 2 ? '#3a2614' : '#7a5024', cx + i * 2, torsoTop, 1, 1);
+    } else if (pose.outfit === 'skeleton') {
+      // --- SKELETRIDDER: botwit ribbenkast + full-face ridderhelm met blauwe ogen ---
+      const bone = '#e9ede5', boneDk = '#b0b6ab', boneSh = '#8f958b';
+      // ribbenkast over de romp (botstreepjes met een verticaal borstbeen)
+      this.px(ctx, boneSh, cx - bh, torsoTop, bh * 2, torsoH);                       // donkere borstholte-basis
+      for (let i = 1; i <= torsoH - 3; i += 2) {                                     // horizontale ribben
+        this.px(ctx, bone, cx - bh + 1, torsoTop + i, bh * 2 - 2, 1);
+        this.px(ctx, boneDk, cx + bh - 2, torsoTop + i, 1, 1);                       // schaduwkant van elke rib
+      }
+      this.px(ctx, bone, cx - 1, torsoTop + 1, 2, torsoH - 3);                       // borstbeen (verticaal)
+      this.px(ctx, boneSh, cx - 1, torsoTop + torsoH - 3, 2, 2);                     // heupbot onderaan
+      // --- full-face ridderhelm over het hele hoofd ---
+      const steel = '#525b68', steelLt = '#7a8494', steelDk = '#2c323b';
+      this.px(ctx, steel, cx - hh - 1, headTop - 2, hh * 2 + 2, headH + 2);          // helm-schild over het hoofd
+      this.px(ctx, steelLt, cx - hh, headTop - 2, hh * 2, 1);                        // highlight-rand bovenop
+      this.px(ctx, this._shade(steel, 0.18), cx + (dir > 0 ? hh - 2 : -hh + 1), headTop - 1, 1, headH); // lichtkant
+      this.px(ctx, steelDk, cx - hh - 1, headTop - 2, 2, headH + 2);                 // schaduwkant
+      this.px(ctx, steelDk, cx - hh - 1, headTop + headH - 1, hh * 2 + 2, 1);        // kin-/onderrand
+      // blauwe helmkam (plume) bovenop
+      this.px(ctx, '#2f6fd0', cx - 1, headTop - 5, 2, 3);
+      this.px(ctx, '#5aa0ff', cx - 1, headTop - 5, 1, 3);
+      // verticale adem-/versterkingsribbel in het midden van het vizier
+      this.px(ctx, steelDk, cx - 1, headTop + 2, 1, headH - 3);
+      // oogspleet (occularium) met fel-blauwe gloeiende ogen
+      const slitY = headTop + 3;
+      this.px(ctx, '#0d1218', cx - hh + 1, slitY, hh * 2 - 2, 2);                    // donkere kijkspleet
+      this.px(ctx, '#8fd0ff', cx + (dir > 0 ? 1 : -2), slitY - 1, 2, 1);             // gloed boven het vooroog
+      this.px(ctx, '#3aa0ff', cx + (dir > 0 ? 1 : -2), slitY, 2, 2);                 // vooroog: fel blauw
+      this.px(ctx, '#2f6fd0', cx + (dir > 0 ? -3 : 2), slitY, 1, 2);                 // achteroog: dof blauw
     }
 
     // --- harnas (blacksmith): ridder-plaatwerk — over lijf/hoofd, ONDER de cosmetische hoed ---

@@ -255,13 +255,13 @@ const CHARACTERS = {
   },
   skeleton: {
     id: 'skeleton', name: 'Skeleton Knight', costRubies: 250,
-    maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain',
+    maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain', outfit: 'skeleton',
     palette: {
       hair: '#dfe3dc', hairDark: '#aeb2ab',
-      skin: '#e8ece4', skinDark: '#b0b6ac',      // botwit
-      eye: '#9a3aff',                             // gloeiend paarse ziel-ogen
-      shirt: '#39414c', shirtDark: '#222831',     // donker staal-harnas
-      pants: '#232830', shoe: '#12141a',
+      skin: '#e8ece4', skinDark: '#b0b6ac',      // botwit (handen/botten)
+      eye: '#3aa0ff',                             // blauwe ogen achter het vizier
+      shirt: '#39414c', shirtDark: '#222831',     // donker staal-harnas / ribbenkast-basis
+      pants: '#dfe3d8', shoe: '#a6aca0',           // botwitte beenderen + bot-grijze voeten
     },
     desc: 'Skeletridder (250 robijnen). Soul Drain: steelt 20 HP van de tegenstander — 20 schade én jij +20 HP.'
   },
