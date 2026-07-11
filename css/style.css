@@ -644,7 +644,7 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   font-weight: 900; line-height: 1.05; text-align: center; color: #fff;
   background-image:
     linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.95) 50%, rgba(255,255,255,0) 60%),
-    linear-gradient(180deg, #ffffff 0%, #eef4ff 46%, #b7c4d8 100%);
+    linear-gradient(180deg, #ffffff 0%, #ffffff 58%, #e3eaf4 100%);   /* voller wit met alleen onderaan een subtiele glans */
   background-size: 250% 100%, 100% 100%; background-position: 140% 0, 0 0; background-repeat: no-repeat;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -657,7 +657,7 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   60%, 100% { background-position: -40% 0, 0 0; }
 }
 .tile-play { font-size: clamp(20px, 4.8vw, 38px); letter-spacing: 1px; }
-.tile-sub  { font-size: clamp(11px, 2.2vw, 17px); letter-spacing: .5px; margin-top: 1px; }
+.tile-sub  { font-size: clamp(9px, 1.7vw, 13px); letter-spacing: .3px; margin-top: 1px; max-width: 92%; }
 .soon-name { font-size: clamp(15px, 2.8vw, 24px); letter-spacing: .5px; }
 .tile-name { font-size: clamp(10px, 1.7vw, 15px); }
 .stone-tile.soon { opacity: .85; cursor: default; }
