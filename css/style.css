@@ -452,7 +452,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
     max(clamp(14px, 3.5vw, 34px), env(safe-area-inset-left));
 }
 .menu-top { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: clamp(60px, 17vh, 128px); }
-.menu-logo-img { height: clamp(60px, 17vh, 128px); width: auto; max-width: 82%; image-rendering: pixelated; }
+.menu-logo-img { height: clamp(80px, 24vh, 180px); width: auto; max-width: 94%; image-rendering: pixelated; }
 .menu-logo {
   font-family: var(--pixel-font); font-weight: 900; letter-spacing: 1px;
   font-size: clamp(15px, 3vw, 28px); color: #fff; text-shadow: 2px 2px 0 #000, 0 2px 6px rgba(0,0,0,.4);
@@ -592,13 +592,28 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   transform: translateY(3px); border-bottom-width: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing { animation: none !important; }
+  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play { animation: none !important; }
 }
 .stone-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  padding: 6px; height: clamp(78px, 22vh, 128px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 5px; height: clamp(58px, 15vh, 96px);
 }
-.tile-play { font-size: clamp(22px, 4.8vw, 42px); font-weight: 900; letter-spacing: 1px; line-height: 1; }
+/* spectaculaire goud-tekst in de gamemode-knoppen (Fight / Journey) */
+.tile-play {
+  font-size: clamp(21px, 5vw, 40px); font-weight: 900; letter-spacing: 2px; line-height: 1;
+  text-transform: uppercase;
+  color: #ffd24a;                                    /* fallback */
+  background: linear-gradient(180deg, #fff6d0 0%, #ffdc5a 38%, #f6a01e 70%, #c85a10 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.2px #2a1206;                /* donkere pixel-outline */
+  filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 6px rgba(255,150,40,.55));
+  animation: tilePlayGlow 2.2s ease-in-out infinite;
+}
+@keyframes tilePlayGlow {
+  0%, 100% { filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 5px rgba(255,150,40,.45)); }
+  50%      { filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 11px rgba(255,195,80,.8)); }
+}
 .tile-name { font-size: clamp(10px, 1.7vw, 15px); }
 .tile-sub { font-size: clamp(11px, 1.8vw, 16px); color: var(--gold); font-weight: bold; }
 .stone-tile.soon { opacity: .72; cursor: default; filter: grayscale(.35) brightness(.85); }
@@ -1261,7 +1276,7 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   background: radial-gradient(ellipse at 50% 45%, #5a1e0a, #160806 80%);
   opacity: 1; transition: opacity 0.5s ease;
 }
-#splash img { width: min(80%, 560px); height: auto; image-rendering: pixelated; animation: splashPop 0.6s cubic-bezier(.2,1.4,.4,1) both; }
+#splash img { width: min(58%, 400px); height: auto; image-rendering: pixelated; animation: splashPop 0.6s cubic-bezier(.2,1.4,.4,1) both; }
 #splash.fading { opacity: 0; pointer-events: none; }
 #splash.gone { display: none; }
 @keyframes splashPop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
