@@ -20,7 +20,7 @@
   <!-- gloed achter het logo -->
   <ellipse cx="280" cy="170" rx="270" ry="120" fill="url(#glow)"/>
 
-  <!-- impact-ster (pixel-driehoeken) achter SMASHERS -->
+  <!-- impact-ster (pixel-driehoeken) achter HEROES -->
   <g fill="#ffb24a" opacity="0.85" shape-rendering="crispEdges">
     <polygon points="280,150 296,196 264,196"/>
     <polygon points="280,250 296,204 264,204"/>
@@ -46,18 +46,18 @@
     </g>
   </g>
 
-  <!-- TINY POWER (klein, boven) -->
-  <g text-anchor="middle" font-size="46" letter-spacing="4">
-    <text x="283" y="79" fill="#1a0805">TINY POWER</text>
-    <text x="280" y="76" fill="url(#lavaSmall)" stroke="#1a0805" stroke-width="5" paint-order="stroke" stroke-linejoin="round">TINY POWER</text>
+  <!-- RYMR (klein, boven) -->
+  <g text-anchor="middle" font-size="62" letter-spacing="12">
+    <text x="284" y="82" fill="#1a0805">RYMR</text>
+    <text x="280" y="78" fill="url(#lavaSmall)" stroke="#1a0805" stroke-width="5" paint-order="stroke" stroke-linejoin="round">RYMR</text>
   </g>
 
-  <!-- SMASHERS (groot) -->
-  <g text-anchor="middle" font-size="104" letter-spacing="2">
-    <text x="285" y="226" fill="#4a1204">SMASHERS</text>
-    <text x="284" y="224" fill="#6e1e08">SMASHERS</text>
-    <text x="280" y="220" fill="url(#lava)" stroke="#1a0805" stroke-width="9" paint-order="stroke" stroke-linejoin="round">SMASHERS</text>
+  <!-- HEROES (groot) -->
+  <g text-anchor="middle" font-size="104" letter-spacing="4">
+    <text x="285" y="226" fill="#4a1204">HEROES</text>
+    <text x="284" y="224" fill="#6e1e08">HEROES</text>
+    <text x="280" y="220" fill="url(#lava)" stroke="#1a0805" stroke-width="9" paint-order="stroke" stroke-linejoin="round">HEROES</text>
     <!-- glans bovenlangs -->
-    <text x="280" y="220" fill="#fff6d8" opacity="0.25">SMASHERS</text>
+    <text x="280" y="220" fill="#fff6d8" opacity="0.25">HEROES</text>
   </g>
 </svg>

@@ -2,7 +2,7 @@
   "name": "tiny-power-smashers",
   "version": "1.0.0",
   "private": true,
-  "description": "Tiny Power Smashers — pixel multiplayer smash game (iOS via Capacitor)",
+  "description": "Rymr Heroes — pixel multiplayer smash game (iOS via Capacitor)",
   "scripts": {
     "build": "node scripts/build-www.mjs",
     "sync": "npm run build && npx cap sync ios",

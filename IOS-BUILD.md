@@ -1,4 +1,4 @@
-# iOS-app bouwen (Tiny Power Smashers)
+# iOS-app bouwen (Rymr Heroes)
 
 De web-game is met **Capacitor** klaargemaakt om als iOS-app te draaien. Stap 1
 (Capacitor) en stap 2 (native-klaar maken) zijn gedaan op Windows. De rest

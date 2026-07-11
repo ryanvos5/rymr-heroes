@@ -11,7 +11,7 @@ const I18N = {
       back: 'Back', close: 'Close', cancel: 'Cancel', save: 'Save', ok: 'OK', play: 'Play',
       // ---- hoofdmenu ----
       tile_journey: 'Journey', tile_journey_sub_w1: 'World 1', badge_solo: 'Singleplayer',
-      tile_smash: 'Power Smash', badge_online: 'Online', coming_soon: 'Coming Soon!',
+      tile_smash: 'Fight', badge_online: 'Online', coming_soon: 'Coming Soon!',
       training_lobby: 'Training Lobby', blacksmith: 'Blacksmith',
       shop: 'Shop', inventory: 'Inventory', friends: 'Friends', leaderboard: 'Leaderboard',
       guest: 'Guest', lvl: 'Lvl',
@@ -76,7 +76,7 @@ const I18N = {
     nl: {
       back: 'Terug', close: 'Sluiten', cancel: 'Annuleren', save: 'Opslaan', ok: 'OK', play: 'Play',
       tile_journey: 'Journey', tile_journey_sub_w1: 'Wereld 1', badge_solo: 'Singleplayer',
-      tile_smash: 'Power Smash', badge_online: 'Online', coming_soon: 'Coming Soon!',
+      tile_smash: 'Fight', badge_online: 'Online', coming_soon: 'Coming Soon!',
       training_lobby: 'Training Lobby', blacksmith: 'Blacksmith',
       shop: 'Shop', inventory: 'Inventaris', friends: 'Friends', leaderboard: 'Leaderboard',
       guest: 'Gast', lvl: 'Lvl',
