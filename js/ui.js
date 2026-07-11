@@ -1238,6 +1238,10 @@ const UI = {
     const sc = document.getElementById('rank-screen'); if (!sc) return;
     sc.classList.remove('hidden');
     this.renderRankScreen();
+    // terug-knop + klik-buiten (elke keer opnieuw binden zodat het zeker werkt)
+    const back = document.getElementById('btn-rank-back');
+    if (back) back.onclick = () => sc.classList.add('hidden');
+    sc.onclick = (e) => { if (e.target === sc) sc.classList.add('hidden'); };
   },
   renderRankScreen() {
     const pr = Storage.rankProgress(), myIdx = pr.idx;

@@ -481,17 +481,19 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .tile-wrap { position: relative; display: flex; align-items: stretch; }
 .tile-wrap > .stone-tile { width: 100%; }
 .rank-banner {
-  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 66%);
-  z-index: 6; width: min(90%, 240px); padding: 5px 20px 8px;
+  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 40%);   /* compacter + hoger: overlapt de tegel, niet de chest-slots */
+  z-index: 6; width: min(72%, 184px); padding: 2px 12px 4px;
   display: flex; flex-direction: column; align-items: center;
   background: linear-gradient(180deg, #e0902f 0%, #b86a22 55%, #8a4d18 100%);
   border: 2px solid #613710; border-top: 2px solid #f0b24a;
-  border-radius: 0 0 9px 9px; clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
-  box-shadow: 0 5px 12px rgba(0,0,0,.5); cursor: pointer; pointer-events: auto;
+  border-radius: 0 0 8px 8px; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+  box-shadow: 0 4px 9px rgba(0,0,0,.5); cursor: pointer; pointer-events: auto;
 }
-.rank-banner:active { transform: translate(-50%, 66%) scale(.94); }
-.rank-banner .tile-rank { margin-top: 0; pointer-events: none; gap: 3px; }
-.rank-banner .tile-rank .tr-badge { font-size: clamp(11px, 1.7vw, 14px); color: #fff !important; }
+.rank-banner:active { transform: translate(-50%, 40%) scale(.94); }
+.rank-banner .tile-rank { margin-top: 0; pointer-events: none; gap: 2px; }
+.rank-banner .tile-rank .tr-badge { font-size: clamp(10px, 1.6vw, 13px); gap: 2px; }
+.rank-banner .tile-rank .tr-shield { width: 13px; height: 16px; }
+.rank-banner .tile-rank .tr-bar { width: min(72%, 96px); height: 4px; }
 .rank-banner .tile-rank .tr-rp { display: none; }   /* volledige RP-info staat in het rank-scherm */
 
 /* ---- rank-scherm ---- */
@@ -631,32 +633,34 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   transform: translateY(3px); border-bottom-width: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play { animation: none !important; }
+  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play, .tile-sub, .soon-name, .rank-banner .tr-badge { animation: none !important; }
 }
 .stone-tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   padding: 5px; height: clamp(58px, 15vh, 96px);
 }
-/* spectaculaire goud-tekst in de gamemode-knoppen (Fight / Journey) */
-.tile-play {
-  font-size: clamp(21px, 5vw, 40px); font-weight: 900; letter-spacing: 2px; line-height: 1;
-  text-transform: uppercase;
-  color: #ffd24a;                                    /* fallback */
-  background: linear-gradient(180deg, #fff6d0 0%, #ffdc5a 38%, #f6a01e 70%, #c85a10 100%);
+/* shiny witte tekst in de gamemode-knoppen (Heroes / Journey / Coming Soon) + rank-banner — glans-sweep zoals het voorbeeld */
+.tile-play, .tile-sub, .soon-name, .rank-banner .tr-badge {
+  font-weight: 900; line-height: 1.05; text-align: center; color: #fff;
+  background-image:
+    linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.95) 50%, rgba(255,255,255,0) 60%),
+    linear-gradient(180deg, #ffffff 0%, #eef4ff 46%, #b7c4d8 100%);
+  background-size: 250% 100%, 100% 100%; background-position: 140% 0, 0 0; background-repeat: no-repeat;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 1.2px #2a1206;                /* donkere pixel-outline */
-  filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 6px rgba(255,150,40,.55));
-  animation: tilePlayGlow 2.2s ease-in-out infinite;
+  -webkit-text-stroke: 1px rgba(16,24,38,.5);
+  filter: drop-shadow(0 2px 1px rgba(0,0,0,.55)) drop-shadow(0 0 5px rgba(150,195,255,.4));
+  animation: tileShine 3.6s ease-in-out infinite;
 }
-@keyframes tilePlayGlow {
-  0%, 100% { filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 5px rgba(255,150,40,.45)); }
-  50%      { filter: drop-shadow(0 2px 0 #1a0d04) drop-shadow(0 0 11px rgba(255,195,80,.8)); }
+@keyframes tileShine {
+  0%        { background-position: 140% 0, 0 0; }
+  60%, 100% { background-position: -40% 0, 0 0; }
 }
+.tile-play { font-size: clamp(20px, 4.8vw, 38px); letter-spacing: 1px; }
+.tile-sub  { font-size: clamp(11px, 2.2vw, 17px); letter-spacing: .5px; margin-top: 1px; }
+.soon-name { font-size: clamp(15px, 2.8vw, 24px); letter-spacing: .5px; }
 .tile-name { font-size: clamp(10px, 1.7vw, 15px); }
-.tile-sub { font-size: clamp(11px, 1.8vw, 16px); color: var(--gold); font-weight: bold; }
-.stone-tile.soon { opacity: .72; cursor: default; filter: grayscale(.35) brightness(.85); }
-.soon-name { font-size: clamp(14px, 2.6vw, 22px); font-weight: bold; }
+.stone-tile.soon { opacity: .85; cursor: default; }
 .stone-tile.locked { filter: grayscale(.3) brightness(.9); }
 
 .stone-btn { padding: clamp(8px,1.4vh,12px) clamp(16px, 3.4vw, 34px); font-size: clamp(13px, 2vw, 18px); }
@@ -705,7 +709,6 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   border-top-color: #6a96ea; border-left-color: #32519f; border-right-color: #16265e; border-bottom-color: #0a1330;
   animation: lavaFlow 4s linear infinite, lapisGlow 2.4s ease-in-out infinite;
 }
-#btn-journey .tile-sub { color: #ffe27a; }
 @keyframes lapisGlow {
   0%,100% { box-shadow: inset 0 0 12px rgba(70,130,240,.35), 0 0 8px rgba(60,120,240,.4), 0 4px 0 #0a1330, 0 6px 12px rgba(0,0,0,.4); }
   50%     { box-shadow: inset 0 0 20px rgba(120,175,255,.6), 0 0 20px rgba(80,150,255,.65), 0 4px 0 #0a1330, 0 6px 12px rgba(0,0,0,.4); }
