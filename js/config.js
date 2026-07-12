@@ -6,6 +6,9 @@
    - nieuw character? voeg toe aan CHARACTERS
    ============================================================ */
 
+// Zichtbare spelversie (onderin het menu). Ophogen bij updates: 1.0 -> 1.1 -> 1.2 ...
+const APP_VERSION = '1.0';
+
 const CONFIG = {
   // logische (interne) resolutie van de spelwereld; wordt opgeschaald -> pixel look
   // kleiner = meer ingezoomd (zombies komen sneller in beeld). 16:9.

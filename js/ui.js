@@ -169,7 +169,7 @@ const UI = {
     });
 
     // versie-tag op het menu (om te zien welke build echt geladen is — helpt tegen cache-verwarring)
-    { const bt = document.getElementById('build-tag'); if (bt) { const href = (document.querySelector('link[href*="style.css"]') || {}).href || ''; const m = href.match(/v=(menu\d+)/); bt.textContent = m ? m[1] : 'dev'; } }
+    { const bt = document.getElementById('build-tag'); if (bt) bt.textContent = 'version: ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '1.0'); }
     // ---- 1 vs 1 online ----
     $('btn-versus').onclick = () => this.startMatchmaking();
     $('btn-rank').onclick = () => this.openRankScreen();
