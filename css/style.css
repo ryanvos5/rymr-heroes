@@ -481,7 +481,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .tile-wrap { position: relative; display: flex; align-items: stretch; }
 .tile-wrap > .stone-tile { width: 100%; }
 .rank-banner {
-  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 86%);   /* hangt als tab onder de tegel (1vs1 blijft zichtbaar), overlapt alleen de onderrand */
+  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 42%);   /* overlapt de onderkant van de Heroes-tegel (meer overlap) en hangt maar iets naar beneden -> raakt de chest-slots niet */
   z-index: 6; width: min(74%, 190px); padding: 3px 12px 5px;
   display: flex; flex-direction: column; align-items: center;
   background: linear-gradient(180deg, #ffdc7a 0%, #f0a838 40%, #c87418 78%, #9a5510 100%);   /* helderder, glanzender goud */
@@ -491,7 +491,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.5));
   animation: rankGlow 2.4s ease-in-out infinite;
 }
-.rank-banner:active { transform: translate(-50%, 86%) scale(.94); }
+.rank-banner:active { transform: translate(-50%, 42%) scale(.94); }
 @keyframes rankGlow {
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 3px rgba(255,190,90,.45)); }
   50%      { filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,215,120,.85)); }
@@ -642,10 +642,10 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play, .tile-sub, .soon-name, .rank-banner, .rank-banner .tr-badge { animation: none !important; }
 }
 .stone-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  padding: 3px 6px clamp(10px, 2.6vh, 16px); height: clamp(60px, 15.5vh, 100px);   /* extra bodem-padding tilt de subtitel omhoog */
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
+  padding: clamp(4px, 1.6vh, 11px) 6px 4px; height: clamp(60px, 15.5vh, 100px);   /* inhoud bovenaan: subtitel hoger + ruimte onderin voor de rank-banner */
 }
-.stone-tile.soon { justify-content: center; }
+.stone-tile.soon { justify-content: center; padding: 4px 6px; }
 /* echt WITTE shiny tekst in de gamemode-knoppen (Heroes / Journey / Coming Soon) + rank-banner */
 .tile-play, .tile-sub, .soon-name, .rank-banner .tr-badge {
   font-weight: 900; line-height: 1.05; text-align: center;
