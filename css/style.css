@@ -661,6 +661,7 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
 .soon-name { font-size: clamp(15px, 2.8vw, 24px); letter-spacing: .5px; }
 .tile-name { font-size: clamp(10px, 1.7vw, 15px); }
 .stone-tile.soon { opacity: .85; cursor: default; }
+.build-tag { position: fixed; right: 6px; bottom: 4px; z-index: 3; font-family: var(--pixel-font); font-size: 9px; letter-spacing: .5px; color: rgba(255,255,255,.42); pointer-events: none; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
 .stone-tile.locked { filter: grayscale(.3) brightness(.9); }
 
 .stone-btn { padding: clamp(8px,1.4vh,12px) clamp(16px, 3.4vw, 34px); font-size: clamp(13px, 2vw, 18px); }
