@@ -678,7 +678,8 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
 .soon-name { font-size: clamp(14px, 3.3vw, 26px); letter-spacing: .5px; opacity: .55; }   /* zelfde grootte/stijl als Heroes, maar wat doorzichtig */
 .tile-name { font-size: clamp(10px, 1.7vw, 15px); }
 .stone-tile.soon { opacity: .85; cursor: default; }
-.build-tag { position: fixed; right: 6px; bottom: 4px; z-index: 3; font-family: var(--pixel-font); font-size: 9px; letter-spacing: .5px; color: rgba(255,255,255,.42); pointer-events: none; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+/* versie-tag: rechts uitgelijnd met de content (zelfde rechterrand als de Leaderboard-knop) */
+.build-tag { position: absolute; right: max(clamp(14px, 3.5vw, 34px), env(safe-area-inset-right)); bottom: max(3px, env(safe-area-inset-bottom)); z-index: 3; font-family: var(--pixel-font); font-size: 9px; letter-spacing: .5px; color: rgba(255,255,255,.42); pointer-events: none; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
 .stone-tile.locked { filter: grayscale(.3) brightness(.9); }
 
 .stone-btn { padding: clamp(8px,1.4vh,12px) clamp(16px, 3.4vw, 34px); font-size: clamp(13px, 2vw, 18px); }
