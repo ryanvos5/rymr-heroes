@@ -481,15 +481,21 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .tile-wrap { position: relative; display: flex; align-items: stretch; }
 .tile-wrap > .stone-tile { width: 100%; }
 .rank-banner {
-  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 40%);   /* compacter + hoger: overlapt de tegel, niet de chest-slots */
-  z-index: 6; width: min(72%, 184px); padding: 2px 12px 4px;
+  position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 86%);   /* hangt als tab onder de tegel (1vs1 blijft zichtbaar), overlapt alleen de onderrand */
+  z-index: 6; width: min(74%, 190px); padding: 3px 12px 5px;
   display: flex; flex-direction: column; align-items: center;
-  background: linear-gradient(180deg, #e0902f 0%, #b86a22 55%, #8a4d18 100%);
-  border: 2px solid #613710; border-top: 2px solid #f0b24a;
-  border-radius: 0 0 8px 8px; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
-  box-shadow: 0 4px 9px rgba(0,0,0,.5); cursor: pointer; pointer-events: auto;
+  background: linear-gradient(180deg, #ffdc7a 0%, #f0a838 40%, #c87418 78%, #9a5510 100%);   /* helderder, glanzender goud */
+  border: 2px solid #6e3d12; border-top: 2px solid #ffe9ad;
+  border-radius: 0 0 9px 9px; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+  cursor: pointer; pointer-events: auto;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.5));
+  animation: rankGlow 2.4s ease-in-out infinite;
 }
-.rank-banner:active { transform: translate(-50%, 40%) scale(.94); }
+.rank-banner:active { transform: translate(-50%, 86%) scale(.94); }
+@keyframes rankGlow {
+  0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 3px rgba(255,190,90,.45)); }
+  50%      { filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,215,120,.85)); }
+}
 .rank-banner .tile-rank { margin-top: 0; pointer-events: none; gap: 2px; }
 .rank-banner .tile-rank .tr-badge { font-size: clamp(10px, 1.6vw, 13px); gap: 2px; }
 .rank-banner .tile-rank .tr-shield { width: 13px; height: 16px; }
@@ -633,12 +639,13 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   transform: translateY(3px); border-bottom-width: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play, .tile-sub, .soon-name, .rank-banner .tr-badge { animation: none !important; }
+  .scene-scroll, .stone-btn, .stone-tile, .stone-icon, .bird, .bird .wing, .tile-play, .tile-sub, .soon-name, .rank-banner, .rank-banner .tr-badge { animation: none !important; }
 }
 .stone-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  padding: 5px; height: clamp(58px, 15vh, 96px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 3px 6px clamp(10px, 2.6vh, 16px); height: clamp(60px, 15.5vh, 100px);   /* extra bodem-padding tilt de subtitel omhoog */
 }
+.stone-tile.soon { justify-content: center; }
 /* echt WITTE shiny tekst in de gamemode-knoppen (Heroes / Journey / Coming Soon) + rank-banner */
 .tile-play, .tile-sub, .soon-name, .rank-banner .tr-badge {
   font-weight: 900; line-height: 1.05; text-align: center;
