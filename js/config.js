@@ -293,7 +293,7 @@ const CHARACTERS = {
   },
   kong: {
     id: 'kong', name: 'Gorilla King', cost: 6000,
-    maxHp: 130, speedMul: 0.95, meleeMul: 1.0, build: 'bulky', hair: 'bald', ability: 'rage3', abChargeMul: 4,
+    maxHp: 130, speedMul: 0.809, meleeMul: 1.0, build: 'bulky', hair: 'bald', ability: 'rage3', abChargeMul: 4,   // speedMul x1.1-bump -> ~0.89 -> Speed 89 in de stats
     palette: {
       hair: '#2a2622', hairDark: '#15120f',
       skin: '#3a342f', skinDark: '#262220',     // gorilla-zwart
