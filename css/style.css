@@ -524,6 +524,21 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .rk-row .rk-you { font-size: 9px; font-weight: 900; color: #0d0f13; background: #ffd24a; border-radius: 5px; padding: 2px 5px; }
 .rank-foot { margin-top: 10px; font-size: clamp(10px,1.6vw,12px); color: #cdb68e; line-height: 1.5; text-align: center; }
 
+/* ---- hero-stats venster (klik op het plaatje in de inventory) ---- */
+.hero-stats-box { max-width: 380px; width: 90%; }
+.hs-sprite { display: flex; justify-content: center; margin: 4px 0 10px; }
+.hs-sprite canvas { width: 150px; height: 115px; image-rendering: pixelated; }
+.hs-stats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.hs-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px; border-radius: 9px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); font-family: var(--pixel-font); font-weight: bold; }
+.hs-row > span { display: inline-flex; align-items: center; gap: 6px; color: #e8dcc4; font-size: clamp(12px,2vw,15px); }
+.hs-row .ic { width: 16px; height: 16px; }
+.hs-row b { color: #ffe27a; font-size: clamp(15px,2.6vw,20px); }
+.hs-ability { text-align: left; border-top: 1px solid rgba(255,255,255,.12); padding-top: 10px; }
+.hs-ab-title { font-family: var(--pixel-font); font-weight: bold; font-size: clamp(12px,2vw,15px); color: #ffcaa0; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+.hs-ab-title .ic { width: 16px; height: 16px; flex: 0 0 auto; }
+.hs-ab-title b { color: #fff; }
+.hs-ab-desc { font-size: clamp(11px,1.8vw,13px); color: #cdd6e2; line-height: 1.5; }
+
 /* drie tegels in het midden — gecentreerd, niet beeldvullend (zoals de mockup) */
 .menu-tiles {
   flex: 1 1 auto; display: grid; grid-template-columns: 1fr 1fr 1fr;

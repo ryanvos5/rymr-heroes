@@ -2549,12 +2549,52 @@ const UI = {
       if (!Storage.ownsCharacter(cid)) return;
       const c = CHARACTERS[cid]; const equipped = Storage.data.equippedCharacter === cid;
       const card = this._spriteCard(c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }, '<div class="w-name">' + c.name + '</div>', true);
+      const spr = card.querySelector('canvas');          // op het plaatje tikken -> stats-venster van de hero
+      if (spr) { spr.style.cursor = 'pointer'; this._tap(spr, () => this.openHeroStats(cid), { immediate: true }); }
       card.appendChild(this._charLevelBlock(cid));      // level + XP-balk + upgrade + stats
       const btn = document.createElement('button'); btn.className = 'shop-buy';
       if (equipped) { btn.classList.add('equipped'); btn.textContent = t('equipped'); }
       else { btn.classList.add('equip'); btn.textContent = t('equip'); this._tap(btn, () => { Storage.equipCharacter(cid); this.renderInventory(); }); }
       card.appendChild(btn); grid.appendChild(card);
     });
+  },
+  // stats-venster van een hero (klik op het plaatje in de inventory)
+  openHeroStats(cid) {
+    const c = CHARACTERS[cid]; if (!c) return;
+    let sc = document.getElementById('hero-stats');
+    if (!sc) {
+      sc = document.createElement('div'); sc.id = 'hero-stats'; sc.className = 'overlay hidden';
+      sc.innerHTML =
+        '<div class="overlay-box hero-stats-box">' +
+          '<button class="corner-back" id="btn-hero-stats-back" aria-label="Back"><svg class="ic"><use href="#ic-undo"/></svg></button>' +
+          '<h2 class="screen-title" id="hs-name"></h2>' +
+          '<div id="hs-sprite" class="hs-sprite"></div>' +
+          '<div id="hs-stats" class="hs-stats"></div>' +
+          '<div id="hs-ability" class="hs-ability"></div>' +
+        '</div>';
+      document.body.appendChild(sc);
+    }
+    const st = (Storage.charStats ? Storage.charStats(cid) : { hpBonus: 0, speedMul: 1 });
+    const weapon = c.forcedMelee || c.startMelee || 'bat';
+    const baseDmg = (typeof WEAPONS !== 'undefined' && WEAPONS[weapon] && WEAPONS[weapon].damage) || 20;
+    const hp = c.maxHp + (st.hpBonus || 0);
+    const dmg = Math.round(baseDmg * (c.meleeMul || 1));
+    const speed = Math.round((c.speedMul || 1) * (st.speedMul || 1) * 100);
+    const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
+    document.getElementById('hs-name').textContent = c.name;
+    const spr = document.getElementById('hs-sprite'); spr.innerHTML = '';
+    spr.appendChild(this._charCanvas(c.palette, { weapon, build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }));
+    document.getElementById('hs-stats').innerHTML =
+      '<div class="hs-row"><span>' + this._ic('heart') + ' HP</span><b>' + hp + '</b></div>' +
+      '<div class="hs-row"><span>' + this._ic('swords') + ' Damage</span><b>' + dmg + '</b></div>' +
+      '<div class="hs-row"><span>' + this._ic('run') + ' Speed</span><b>' + speed + '</b></div>';
+    document.getElementById('hs-ability').innerHTML = ab
+      ? '<div class="hs-ab-title">' + this._ic('fire') + ' ' + tl('Speciale ability') + ': <b>' + this._esc(ab.name) + '</b></div>' +
+        '<div class="hs-ab-desc">' + this._esc(ab.desc) + '</div>'
+      : '';
+    document.getElementById('btn-hero-stats-back').onclick = () => sc.classList.add('hidden');
+    sc.onclick = (e) => { if (e.target === sc) sc.classList.add('hidden'); };
+    sc.classList.remove('hidden');
   },
   // level-blok voor een character-kaart: Lv x/20, XP-balk, upgrade-knop + stat-bonussen
   _charLevelBlock(cid) {
