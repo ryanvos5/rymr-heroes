@@ -190,7 +190,7 @@ I18N.CONTENT = {
     chars: {
       ryan: { desc: 'Balanced. Fastest runner.' },
       tygo: { desc: 'Tall & tough (+10 HP). Higher double jump. Uses any melee weapon.' },
-      just: { desc: 'Stocky, slow but strong (+30 HP, +20% melee). Ground-pound deals area damage on landing.' },
+      just: { desc: 'Stocky, slow but strong (+20 HP, +20% melee). Ground-pound deals area damage on landing.' },
       timo: { desc: 'Small & agile (small hitbox). Has an extra (smaller) double jump.' },
       vince: { desc: 'Balanced. Every 30s a fire aura (5s): whoever you touch burns for 3s.' },
       jenze: { desc: 'Big & tough: +40 HP, +30% melee, a bit slower.' },

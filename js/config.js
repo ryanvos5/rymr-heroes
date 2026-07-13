@@ -186,7 +186,7 @@ const CHARACTERS = {
   },
   just: {
     id: 'just', name: 'Just', cost: 7200, lvl: 22,
-    maxHp: 140, speedMul: 0.8, meleeMul: 1.1, build: 'stocky', hair: 'bald', ability: 'earthquake',
+    maxHp: 120, speedMul: 0.8, meleeMul: 1.1, build: 'stocky', hair: 'bald', ability: 'earthquake',
     palette: {
       hair: '#c8a85a', hairDark: '#9a7e3a',     // klein beetje blond haar
       skin: '#d8a878', skinDark: '#b8895e',
@@ -194,7 +194,7 @@ const CHARACTERS = {
       shirt: '#5a4030', shirtDark: '#3a2820',
       pants: '#2a2622', shoe: '#161210',
     },
-    desc: 'Dik & klein, traag maar sterk (+30 HP, +20% melee). Stamp bij de landing schade in de buurt.'
+    desc: 'Dik & klein, traag maar sterk (+20 HP, +20% melee). Stamp bij de landing schade in de buurt.'
   },
   timo: {
     id: 'timo', name: 'Timo', cost: 4000, lvl: 16,
