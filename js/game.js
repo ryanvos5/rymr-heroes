@@ -4418,7 +4418,7 @@ const Game = {
       case 'zapdash': this.zapDash(); break;
       case 'heal': p.hp = p.maxHp; this._abFx(p, '#5aff7a'); this.spawnHealFx(p); break;
       case 'highjump': p.jumpMul = 1.4; this._abFx(p, '#8fd0ff'); break;
-      case 'fireaura10': p.fireAura = true; p.auraUntil = now + 10000 * dm; this._abFx(p, '#ff8a2a'); break;
+      case 'fireaura10': p.fireAura = true; p.auraUntil = now + 6000 * dm; this._abFx(p, '#ff8a2a'); break;
       case 'triplejump': p.maxJumps = Math.max(p.maxJumps, 2) + 1; p.jumps = p.maxJumps; this._abFx(p, '#8fd0ff'); break;
       case 'rage10': p.buffs.rage = now + 10000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'rage8': p.buffs.rage = now + 8000 * dm; this._abFx(p, '#ff5a3a'); break;
@@ -4645,7 +4645,7 @@ const Game = {
       case 'zapdash': this.botZapDash(); break;
       case 'heal': b.hp = b.maxHp; this._abFx(b, '#5aff7a'); this.spawnHealFx(b); break;
       case 'highjump': b.jumpMul = 1.4; this._abFx(b, '#8fd0ff'); break;
-      case 'fireaura10': b.fireAura = true; b.auraUntil = now + 10000; this._abFx(b, '#ff8a2a'); break;
+      case 'fireaura10': b.fireAura = true; b.auraUntil = now + 6000; this._abFx(b, '#ff8a2a'); break;
       case 'triplejump': b.maxJumps = Math.max(b.maxJumps, 2) + 1; b.jumps = b.maxJumps; this._abFx(b, '#8fd0ff'); break;
       case 'rage10': b.buffs.rage = now + 10000; this._abFx(b, '#ff5a3a'); break;
       case 'rage8': b.buffs.rage = now + 8000; this._abFx(b, '#ff5a3a'); break;

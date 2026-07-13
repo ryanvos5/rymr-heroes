@@ -365,7 +365,7 @@ const ABILITIES = {
   zapdash:    { name: 'Zap Dash',    desc: 'Dash naar je tegenstander: schade + knockback.' },
   heal:       { name: 'HP Herstel',  desc: 'Herstelt in één keer al je HP.' },
   highjump:   { name: 'Hoge Sprong', desc: 'Springt hoger — de rest van de match.' },
-  fireaura10: { name: 'Vuuraura',    desc: 'Vuuraura 10s: wie je aanraakt brandt.' },
+  fireaura10: { name: 'Vuuraura',    desc: 'Vuuraura 6s: wie je aanraakt brandt.' },
   triplejump: { name: 'Dubbel Sprong', desc: 'Een extra dubbel-jump — de rest van de match.' },
   earthquake: { name: 'Aardbeving',  desc: 'De map trilt 5s; je tegenstander wordt weggeschud.' },
   rage10:     { name: 'Rage',        desc: 'Rage 10s (2× schade).' },

@@ -209,7 +209,7 @@ I18N.CONTENT = {
       zapdash: { name: 'Zap Dash', desc: 'Dash to your opponent: damage + knockback.' },
       heal: { name: 'Heal', desc: 'Instantly restores all your HP.' },
       highjump: { name: 'High Jump', desc: 'Jumps higher — for the rest of the match.' },
-      fireaura10: { name: 'Fire Aura', desc: 'Fire aura 10s: whoever you touch burns.' },
+      fireaura10: { name: 'Fire Aura', desc: 'Fire aura 6s: whoever you touch burns.' },
       triplejump: { name: 'Double Jump', desc: 'An extra double jump — for the rest of the match.' },
       earthquake: { name: 'Earthquake', desc: 'The map shakes 5s; your opponent gets shaken off.' },
       rage10: { name: 'Rage', desc: 'Rage 10s (2× damage).' },
