@@ -576,11 +576,12 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 #loadout-bar.hidden { display: none; }
 .loadout-slot { pointer-events: auto; width: 44px; height: 44px; border-radius: 10px; border: 2px solid rgba(180,195,220,0.5); background: rgba(20,26,38,0.72); color: #fff; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; touch-action: none; -webkit-user-select: none; user-select: none; padding: 0; }
 .loadout-slot:active { transform: scale(0.92); }
-.loadout-slot.empty { display: none; }
+.loadout-slot.empty { border-style: dashed; border-color: rgba(180,195,220,0.32); background: rgba(20,26,38,0.30); pointer-events: none; }   /* lege slot: laat zien dat er nog ruimte is (max 3) */
+.loadout-slot.empty::after { content: '+'; color: rgba(200,215,235,0.4); font-family: var(--pixel-font); font-weight: 900; font-size: 20px; }
 .loadout-slot.depleted { opacity: 0.4; }
-.loadout-slot.used { filter: grayscale(0.65); }   /* deze match al ingezet (max 1x per powerup) */
+.loadout-slot.used { filter: grayscale(0.65); opacity: 0.6; }   /* deze match al ingezet (max 1x per powerup) */
 .loadout-slot .lo-ico { width: 30px; height: 30px; image-rendering: pixelated; }
-.loadout-slot .lo-n { position: absolute; right: 3px; bottom: 1px; font-size: 11px; font-weight: bold; color: #7affa0; text-shadow: 1px 1px 0 #000; }
+.loadout-slot .lo-n { position: absolute; right: -3px; top: -3px; min-width: 15px; height: 15px; padding: 0 3px; font-size: 12px; font-weight: 900; line-height: 15px; text-align: center; color: #fff; background: #2a7a3a; border: 1px solid #0d2e16; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.5); }
 /* controller-badge: welke D-pad-richting deze powerup inzet (↑ boven / → midden / ↓ onder) */
 .loadout-slot .lo-key { position: absolute; left: -7px; top: -7px; width: 17px; height: 17px; border-radius: 50%; background: #2f6fd0; border: 1.5px solid #bfe0ff; color: #fff; font-size: 12px; font-weight: 900; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,.55); pointer-events: none; }
 /* controller gekoppeld: verberg de beweeg-/gevechts-touchknoppen (die doet de controller nu) — ability/powerups/pauze blijven */
