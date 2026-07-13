@@ -576,6 +576,7 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 #loadout-bar.hidden { display: none; }
 .loadout-slot { pointer-events: auto; width: 44px; height: 44px; border-radius: 10px; border: 2px solid rgba(180,195,220,0.5); background: rgba(20,26,38,0.72); color: #fff; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; touch-action: none; -webkit-user-select: none; user-select: none; padding: 0; }
 .loadout-slot:active { transform: scale(0.92); }
+.loadout-count { text-align: center; font-family: var(--pixel-font); font-weight: 900; font-size: clamp(11px,1.9vw,14px); color: #7affa0; margin: 0 0 6px; text-shadow: 1px 1px 0 #000; flex: 0 0 auto; }
 .loadout-slot.empty { border-style: dashed; border-color: rgba(180,195,220,0.32); background: rgba(20,26,38,0.30); pointer-events: none; }   /* lege slot: laat zien dat er nog ruimte is (max 3) */
 .loadout-slot.empty::after { content: '+'; color: rgba(200,215,235,0.4); font-family: var(--pixel-font); font-weight: 900; font-size: 20px; }
 .loadout-slot.depleted { opacity: 0.4; }

@@ -419,7 +419,7 @@ I18N.UI_EN = {
   'Uit de match gezet — te lang weg (AFK). Je verliest.': 'Removed from the match — away too long (AFK). You lose.',
   'TIJD!': 'TIME!', 'Jij': 'You', 'Tegenstander': 'Opponent', 'NIET VLUCHTEN — VAL AAN!': "DON'T RUN — ATTACK!",
   'Tegenstander gevonden!': 'Opponent found!', 'Geen online speler gevonden — Bot Lv ': 'No online player found — Bot Lv ',
-  'Speciale ability': 'Special Ability',
+  'Speciale ability': 'Special Ability', '(vol)': '(full)',
   // rank-scherm
   'naar': 'to', 'kist': 'chest', 'JIJ': 'YOU', 'Winst': 'Win', 'Verlies': 'Loss', 'Hogere rank': 'Higher rank',
   // 1v1 uitslag-scherm (onder de Final score)

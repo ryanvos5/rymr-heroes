@@ -332,7 +332,8 @@ const Storage = {
   inLoadout(id) { return (this.data.loadout || []).includes(id); },
   toggleLoadout(id) {
     if (!SHOP_POWERUPS[id]) return false;
-    this.data.loadout = this.data.loadout || [];
+    // eerst oude/ongeldige ids opruimen (die telden anders mee voor de max 3 maar waren onzichtbaar)
+    this.data.loadout = (this.data.loadout || []).filter((x) => SHOP_POWERUPS[x]);
     const i = this.data.loadout.indexOf(id);
     if (i >= 0) this.data.loadout.splice(i, 1);
     else { if (this.data.loadout.length >= 3) return false; this.data.loadout.push(id); }

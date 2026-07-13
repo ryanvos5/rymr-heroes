@@ -2222,6 +2222,16 @@ const UI = {
   },
   // power-up-kaartjes: KOOP (meermaals) in de shop; in de inventaris = loadout aan/uit + aantal
   renderPowerupCards(grid, mode) {
+    // loadout-teller (alleen in de inventaris) — als losse regel boven de galerij zodat je ziet hoeveel je hebt gekozen
+    const par = grid.parentNode;
+    if (par) {
+      let lc = par.querySelector('.loadout-count');
+      if (mode === 'inventory') {
+        if (!lc) { lc = document.createElement('div'); lc.className = 'loadout-count'; par.insertBefore(lc, grid); }
+        const n = Storage.loadout().length;
+        lc.textContent = tl('Loadout') + ': ' + n + ' / 3' + (n >= 3 ? ' ' + tl('(vol)') : '');
+      } else if (lc) { lc.remove(); }
+    }
     POWERUP_ORDER.forEach((id) => {
       const pu = SHOP_POWERUPS[id]; if (!pu) return;
       if (mode === 'shop' && pu.chestOnly) return;              // kist-only power-ups niet te koop
