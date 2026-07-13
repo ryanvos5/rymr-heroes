@@ -2578,19 +2578,22 @@ const UI = {
       document.body.appendChild(sc);
     }
     const st = (Storage.charStats ? Storage.charStats(cid) : { hpBonus: 0, speedMul: 1 });
+    const lvl = (Storage.charLevelOf ? Storage.charLevelOf(cid) : 1);
     const weapon = c.forcedMelee || c.startMelee || 'bat';
     const baseDmg = (typeof WEAPONS !== 'undefined' && WEAPONS[weapon] && WEAPONS[weapon].damage) || 20;
-    const hp = c.maxHp + (st.hpBonus || 0);
+    const baseHp = c.maxHp, hpBonus = st.hpBonus || 0;                 // basis + level-bonus apart tonen
     const dmg = Math.round(baseDmg * (c.meleeMul || 1));
-    const speed = Math.round((c.speedMul || 1) * (st.speedMul || 1) * 100);
+    const baseSpeed = Math.round((c.speedMul || 1) * 100);
+    const speedBonus = Math.round((c.speedMul || 1) * (st.speedMul || 1) * 100) - baseSpeed;
+    const bonus = (n) => n > 0 ? ' <span class="hs-bonus">+' + n + '</span>' : '';
     const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
-    document.getElementById('hs-name').textContent = c.name;
+    document.getElementById('hs-name').innerHTML = this._esc(c.name) + ' <span class="hs-lvl">Lv ' + lvl + '</span>';
     const spr = document.getElementById('hs-sprite'); spr.innerHTML = '';
     spr.appendChild(this._charCanvas(c.palette, { weapon, build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }));
     document.getElementById('hs-stats').innerHTML =
-      '<div class="hs-row"><span>' + this._ic('heart') + ' HP</span><b>' + hp + '</b></div>' +
+      '<div class="hs-row"><span>' + this._ic('heart') + ' HP</span><b>' + baseHp + bonus(hpBonus) + '</b></div>' +
       '<div class="hs-row"><span>' + this._ic('swords') + ' Damage</span><b>' + dmg + '</b></div>' +
-      '<div class="hs-row"><span>' + this._ic('run') + ' Speed</span><b>' + speed + '</b></div>';
+      '<div class="hs-row"><span>' + this._ic('run') + ' Speed</span><b>' + baseSpeed + bonus(speedBonus) + '</b></div>';
     document.getElementById('hs-ability').innerHTML = ab
       ? '<div class="hs-ab-title">' + this._ic('fire') + ' ' + tl('Speciale ability') + ': <b>' + this._esc(ab.name) + '</b></div>' +
         '<div class="hs-ab-desc">' + this._esc(ab.desc) + '</div>'

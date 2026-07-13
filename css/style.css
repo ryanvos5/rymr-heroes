@@ -541,6 +541,8 @@ body.in-game #bg-layer { display: none; }     /* tijdens het spelen niet nodig (
 .hs-row > span { display: inline-flex; align-items: center; gap: 6px; color: #e8dcc4; font-size: clamp(12px,2vw,15px); }
 .hs-row .ic { width: 15px; height: 15px; }
 .hs-row b { color: #ffe27a; font-size: clamp(14px,2.4vw,19px); }
+.hs-lvl { font-size: clamp(11px,1.8vw,14px); color: #7fb4ff; font-weight: 900; vertical-align: middle; }
+.hs-bonus { color: #7affa0; font-size: .8em; font-weight: 900; }   /* level-bonus (bijv. +2 hp) */
 .hs-ability { text-align: left; border-top: 1px solid rgba(255,255,255,.12); padding-top: 7px; }
 .hs-ab-title { font-family: var(--pixel-font); font-weight: bold; font-size: clamp(12px,2vw,15px); color: #ffcaa0; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
 .hs-ab-title .ic { width: 15px; height: 15px; flex: 0 0 auto; }
