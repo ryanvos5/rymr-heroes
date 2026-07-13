@@ -4416,7 +4416,7 @@ const Game = {
     const dm = p.abilityDurMul || 1;                    // character-level: langere ability-duur
     switch (p.ability) {
       case 'zapdash': this.zapDash(); break;
-      case 'heal': p.hp = p.maxHp; this._abFx(p, '#5aff7a'); break;
+      case 'heal': p.hp = p.maxHp; this._abFx(p, '#5aff7a'); this.spawnHealFx(p); break;
       case 'highjump': p.jumpMul = 1.4; this._abFx(p, '#8fd0ff'); break;
       case 'fireaura10': p.fireAura = true; p.auraUntil = now + 10000 * dm; this._abFx(p, '#ff8a2a'); break;
       case 'triplejump': p.maxJumps = Math.max(p.maxJumps, 2) + 1; p.jumps = p.maxJumps; this._abFx(p, '#8fd0ff'); break;
@@ -4557,10 +4557,25 @@ const Game = {
   onVersusAbility(payload) {
     const r = this.vs && this.vs.remote; if (!r) return;
     this.spawnAbilityFx(r.x, r.y, this._abilityColor(payload && payload.ab));
+    if (payload && payload.ab === 'heal') this.spawnHealFx(r);   // tegenstander (Jenze) heelt -> toon het groene HP-effect ook bij hem
   },
   _abFx(p, col) {
     for (let i = 0; i < 16; i++) this.particles.push(new Particle(p.x, p.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, col, 420, 3));
     this.shake = Math.max(this.shake, 4);
+  },
+  // Jenze's HP-herstel: groen genezings-effect — dubbele gloed-ring + opstijgende sparkles + "+HP"
+  spawnHealFx(p) {
+    if (!p) return;
+    if (!this.abilityFx) this.abilityFx = [];
+    this.abilityFx.push({ x: p.x, y: p.y, born: this.time, dur: 660, color: '#5aff7a', ring: 44 });
+    this.abilityFx.push({ x: p.x, y: p.y, born: this.time, dur: 480, color: '#eaffe8', ring: 26 });
+    for (let i = 0; i < 26; i++) {                                   // opstijgende genezings-sparkles
+      const ox = (Math.random() - 0.5) * 28;
+      const c = (i % 3 === 0) ? '#eaffe8' : ((i % 3 === 1) ? '#8affa0' : '#5aff7a');
+      this.particles.push(new Particle(p.x + ox, p.y - Math.random() * 4, (Math.random() - 0.5) * 0.5, -1.3 - Math.random() * 1.8, c, 640, 2));
+    }
+    this.addFloatText(p.x, p.y - 26, '+HP', '#7affa0', true);         // drijvende +HP-tekst
+    this.shake = Math.max(this.shake, 3);
   },
 
   // ==== VISUELE "JUICE": impact-feedback, KO-cinematic, sfeer ====
@@ -4628,7 +4643,7 @@ const Game = {
     const now = this.time;
     switch (b.ability) {
       case 'zapdash': this.botZapDash(); break;
-      case 'heal': b.hp = b.maxHp; this._abFx(b, '#5aff7a'); break;
+      case 'heal': b.hp = b.maxHp; this._abFx(b, '#5aff7a'); this.spawnHealFx(b); break;
       case 'highjump': b.jumpMul = 1.4; this._abFx(b, '#8fd0ff'); break;
       case 'fireaura10': b.fireAura = true; b.auraUntil = now + 10000; this._abFx(b, '#ff8a2a'); break;
       case 'triplejump': b.maxJumps = Math.max(b.maxJumps, 2) + 1; b.jumps = b.maxJumps; this._abFx(b, '#8fd0ff'); break;
