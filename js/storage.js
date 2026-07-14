@@ -315,7 +315,8 @@ const Storage = {
   powerupCount(id) { return (this.data.powerups && this.data.powerups[id]) || 0; },
   buyPowerup(id) {
     const pu = SHOP_POWERUPS[id]; if (!pu) return false;
-    if (!this.spendCoins(pu.cost)) return false;
+    if (pu.costRubies) { if (!this.spendRubies(pu.costRubies)) return false; }   // sommige power-ups kosten robijnen
+    else if (!this.spendCoins(pu.cost)) return false;
     this.data.powerups = this.data.powerups || {};
     this.data.powerups[id] = (this.data.powerups[id] || 0) + 1;
     this.save(); return true;

@@ -816,7 +816,7 @@ const SHOP_POWERUPS = {
   speed:    { name: 'Speed',    cost: 70,  kind: 'speed',    icon: '⚡', desc: 'Even een stuk sneller.' },
   rage:     { name: 'Rage',     cost: 100, kind: 'rage',     icon: '⚔', desc: 'Even veel meer klap-schade.' },
   fireball: { name: 'Vuurbal',  cost: 120, kind: 'fireball', icon: '🔥', desc: '3 vuurballen die ook laten branden.' },
-  dragon:   { name: 'Draak',    cost: 1000, kind: 'dragon',  icon: '🐉', desc: 'Roep een draak op die vuur spuwt naar je tegenstander.' },
+  dragon:   { name: 'Draak',    cost: 0, costRubies: 35, kind: 'dragon',  icon: '🐉', desc: 'Roep een draak op die vuur spuwt naar je tegenstander.' },
   ak47:      { name: 'AK47',        cost: 0, kind: 'ak47',      icon: '🔫', desc: 'Machinegeweer met 50 kogels. Alleen uit kisten.', chestOnly: true },
   rocket:    { name: 'Raket',       cost: 0, kind: 'rocket',    icon: '🚀', desc: 'Raketwerper. Alleen uit kisten.', chestOnly: true },
   cannon:    { name: 'Kanon',       cost: 0, kind: 'cannon',    icon: '💣', desc: 'Kanonskogel die richt op je tegenstander. Alleen uit kisten.', chestOnly: true },

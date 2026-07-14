@@ -2248,9 +2248,15 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
       if (mode === 'shop') {
-        const afford = Storage.data.coins >= pu.cost;
-        btn.classList.add(afford ? 'buy' : 'cant');
-        btn.textContent = t('buy') + ' — ' + pu.cost + ' ●';
+        if (pu.costRubies) {                              // met robijnen te koop (◆)
+          const afford = Storage.rubies() >= pu.costRubies;
+          btn.classList.add(afford ? 'buy' : 'cant');
+          btn.textContent = afford ? t('buy') + ' — ' + pu.costRubies + ' ◆' : pu.costRubies + ' ◆ ' + t('too_few');
+        } else {
+          const afford = Storage.data.coins >= pu.cost;
+          btn.classList.add(afford ? 'buy' : 'cant');
+          btn.textContent = t('buy') + ' — ' + pu.cost + ' ●';
+        }
         this._tap(btn, () => { if (Storage.buyPowerup(id)) this.renderShop(); });
       } else {                              // inventaris: loadout-toggle
         if (inLo) { btn.classList.add('equipped'); btn.innerHTML = count > 0 ? this._ic('check') + ' ' + t('in_loadout') : this._ic('x') + ' ' + t('out_loadout'); card.classList.add('in-loadout'); if (count <= 0) card.classList.add('depleted'); this._tap(btn, () => { Storage.toggleLoadout(id); this.renderInventory(); }); }
