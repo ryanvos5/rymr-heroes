@@ -933,7 +933,7 @@ const ARMOR_SETS = {
 const ARMOR_SET_ORDER = ['leather', 'iron', 'steel'];
 function buildArmorPieces() {
   const slotHp   = { chest: 1.0, bottom: 0.7, hat: 0.55, feet: 0.45 };   // borst geeft het meest
-  const tierBase = { leather: 14, iron: 26, steel: 40 };                 // basis-HP per set
+  const tierBase = { leather: 6, iron: 12, steel: 18 };                  // basis-HP per set (fors verlaagd: harnas gaf veel te veel HP)
   const tierDur  = { leather: 60, iron: 110, steel: 170 };               // duurzaamheid (slijt langzaam)
   const tierMs   = { leather: 60 * 60e3, iron: 180 * 60e3, steel: 360 * 60e3 };   // smeedtijd: 1u -> 3u -> 6u (hoe beter, hoe langer)
   // elke set heeft leer + ijzer nodig; hogere sets ook staal (meer naarmate het beter wordt)
