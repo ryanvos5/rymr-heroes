@@ -1569,12 +1569,16 @@ const Sprites = {
     if (reached) this.px(ctx, '#fff', x + 4, top + 4, 3, 3);     // vinkje-achtig stipje
   },
 
-  /* ---------- SCHADUW onder personage ---------- */
-  shadow(ctx, cx, footY, w) {
-    ctx.globalAlpha = 0.28;
+  /* ---------- SCHADUW onder personage ----------
+     k (0..1, optioneel) = hoogte-factor: 1 = op de grond, richting 0 = hoog in de lucht.
+     De schaduw krimpt en vervaagt met de spronghoogte -> je ziet waar je landt. */
+  shadow(ctx, cx, footY, w, k) {
+    const f = (k === undefined) ? 1 : Math.max(0, Math.min(1, k));
+    if (f <= 0.04) return;
+    ctx.globalAlpha = 0.28 * (0.3 + 0.7 * f);
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(cx, footY + 1, w, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, footY + 1, w * (0.45 + 0.55 * f), 2.5 * (0.6 + 0.4 * f), 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
   },

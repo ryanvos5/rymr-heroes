@@ -847,6 +847,8 @@ const Game = {
       this.particles.push(new Particle(x, y, Math.cos(a) * 3.2, Math.sin(a) * 3.2, (i % 2 ? '#fff7c8' : '#ffe27a'), 300, 2));
     }
     this._parryFx = { x, y, t: this.time };
+    this.hitStop = Math.max(this.hitStop, 70);                               // korte clang-freeze: de parry moet je VOELEN
+    this.shake = Math.max(this.shake, 5);
   },
   // guard breekt: rode/grijze scherf-burst
   onGuardBreak(e) {
@@ -1286,17 +1288,17 @@ const Game = {
 
     const theme = this.theme || THEMES.city;
 
+    // schermschud-offset (gericht, bij klappen/explosies) — de hemel trilt licht mee
+    const sh = this._shakeOffset(), shx = sh.x, shy = sh.y;
+
     // lucht (thema-kleuren)
     const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, theme.sky[0]);
     sky.addColorStop(0.6, theme.sky[1]);
     sky.addColorStop(1, theme.sky[2]);
     ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(shx * 0.4 - 6, shy * 0.4 - 6, W + 12, H + 12);
 
-    // schermschud-offset (bij explosies)
-    const shx = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
-    const shy = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
     ctx.save();
     ctx.translate(shx, shy);
 
@@ -1611,7 +1613,7 @@ const Game = {
     // co-op: terwijl je 'down' bent zie je jezelf als doorzichtige geest bij je partner
     if (this.player.downed) ctx.globalAlpha = 0.35;
     // speler (Ryan) — schaduw op de grond, of op het platform bij parkour
-    if (this.player.onGround && !this.player.downed) Sprites.shadow(ctx, this.player.x, this.level.parkour ? this.player.y + 1 : CONFIG.GROUND_Y, 7);
+    if (!this.player.downed) { const ply = this.landingYFor(this.player); if (ply !== null) Sprites.shadow(ctx, this.player.x, ply, 7, 1 - (ply - this.player.y) / 90); }   // schaduw krimpt met spronghoogte
     const swingingBat = this.time < (this.player.swingUntil || 0) && this.player.swingWeapon;
     const pOpts = {
       walkPhase: this.player.walkPhase,
@@ -1672,9 +1674,10 @@ const Game = {
       if (this.floatTexts) for (const ft of this.floatTexts) {
         const t = (this.time - ft.born) / ft.dur; if (t < 0 || t >= 1) continue;
         ctx.globalAlpha = t < 0.15 ? t / 0.15 : (1 - (t - 0.15) / 0.85);
-        ctx.font = 'bold ' + Math.round(7 * ft.scale) + 'px "Courier New", monospace'; ctx.textAlign = 'center';
-        ctx.fillStyle = '#000'; ctx.fillText(ft.text, ft.x + 0.6, ft.y + 0.6);
-        ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+        const pop = t < 0.15 ? 1.55 - 0.55 * (t / 0.15) : 1;   // pop-in
+        ctx.font = 'bold ' + Math.round(7 * ft.scale * pop) + 'px "Courier New", monospace'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#000'; ctx.fillText(ft.text, Math.round(ft.x) + 0.6, Math.round(ft.y) + 0.6);
+        ctx.fillStyle = ft.color; ctx.fillText(ft.text, Math.round(ft.x), Math.round(ft.y));
         ctx.globalAlpha = 1; ctx.textAlign = 'left';
       }
     }
@@ -2806,6 +2809,7 @@ const Game = {
     if (this.abilityFx && this.abilityFx.length) this.abilityFx = this.abilityFx.filter((f) => this.time - f.born < f.dur);
     if (this.zapFx && this.time - this.zapFx.born >= this.zapFx.dur) this.zapFx = null;
     this.dtScale = Math.min(3, dt / 16.6667);
+    if (this.ko && this.time - this.ko.born < 450) this.dtScale *= 0.35;   // KO-cinematic: korte slow-motion terwijl de camera inzoomt
     // ---- visuele effect-timers (impact/KO/sfeer) ----
     if (this.impacts.length) this.impacts = this.impacts.filter((f) => this.time - f.born < f.dur);
     if (this.floatTexts.length) { for (const ft of this.floatTexts) { ft.y += ft.vy * this.dtScale; ft.vy += 0.05 * this.dtScale; } this.floatTexts = this.floatTexts.filter((ft) => this.time - ft.born < ft.dur); }
@@ -4579,17 +4583,45 @@ const Game = {
   },
 
   // ==== VISUELE "JUICE": impact-feedback, KO-cinematic, sfeer ====
+  // gerichte schermschud: impuls in de klap-richting (slingert uit) + wat ruis; zonder richting pure ruis
+  _shakeOffset() {
+    if (this.shake <= 0) { this._shakeDir = null; return { x: 0, y: 0 }; }   // richting opruimen zodra de schud is uitgedempt
+    const s = this.shake, d = this._shakeDir;
+    if (!d) return { x: Math.round((Math.random() - 0.5) * s), y: Math.round((Math.random() - 0.5) * s) };
+    const w = Math.sin(this.time * 0.09) * s * 0.7;
+    return { x: Math.round(d.x * w + (Math.random() - 0.5) * s * 0.6), y: Math.round(d.y * w + (Math.random() - 0.5) * s * 0.6) };
+  },
+  // oppervlak recht onder een entiteit (platform-top of vaste grond); null boven de afgrond
+  landingYFor(e) {
+    let ly = null;
+    if (this.platforms) for (const pf of this.platforms) {
+      if (pf.soft || pf.broken) continue;                                    // zachte/ingezakte wolken zijn niet vast
+      if (Math.abs(e.x - pf.x) < pf.w / 2 + 4 && pf.y >= e.y - 2 && (ly === null || pf.y < ly)) ly = pf.y;
+    }
+    if (this.obstacles) for (const o of this.obstacles) {                    // autodaken zijn ook landbaar
+      if (o.type !== 'car' || o.dead) continue;
+      const top = CONFIG.GROUND_Y - o.h;
+      if (Math.abs(e.x - o.x) < o.w / 2 + 4 && top >= e.y - 2 && (ly === null || top < ly)) ly = top;
+    }
+    if (this.level && !this.level.parkour && !this.overPit(e.x) && e.y <= CONFIG.GROUND_Y + 2 && (ly === null || CONFIG.GROUND_Y < ly)) ly = CONFIG.GROUND_Y;
+    return ly;
+  },
   addHitFeel(x, y, dir, dmg, power, localVictim, victim) {
     const big = (dmg >= 26) || (power >= 30);
-    // freeze-frame — alleen wanneer JIJ raakt (impact-juice); niet als JIJ geraakt wordt, anders
-    // hangt je eigen besturing even -> voelt stroef. Interval-slot tegen snelvuur (AK/vuurbal).
-    if (dmg > 0 && !localVictim && this.time - (this._hitStopAt || 0) > 90) { this.hitStop = Math.max(this.hitStop, big ? 85 : 52); this._hitStopAt = this.time; }
+    // freeze-frame die met schade schaalt: raker = langer bevroren (30-140ms). Het slachtoffer
+    // voelt een kortere freeze mee (0.6x) zodat de besturing niet stroef wordt. Interval-slot tegen snelvuur.
+    if (dmg > 0 && this.time - (this._hitStopAt || 0) > 90) {
+      const stop = Math.min(140, 30 + dmg * 1.6);
+      this.hitStop = Math.max(this.hitStop, localVictim ? stop * 0.6 : stop);
+      this._hitStopAt = this.time;
+    }
     this.addImpact(x, y, dir, big);                                          // schokgolf + richting-vonken
-    if (dmg > 0) this.addFloatText(x, y - 8, '-' + dmg, big ? '#ff5a3a' : '#ffe27a', big);
+    if (dmg > 0) this.addFloatText(x, y - 8, '-' + dmg, big ? '#ff5a3a' : '#ffe27a', big, 1.1 + Math.min(1.3, dmg / 30));
     if (victim) victim._flashUntil = this.time + 130;                        // witte hit-flash op het slachtoffer
     if (localVictim && dmg > 0) this.hurtFlash = Math.max(this.hurtFlash, big ? 240 : 150);   // rode schermrand als JIJ geraakt wordt
     if (big) this.smashFlash = Math.max(this.smashFlash, 90);
     this.shake = Math.max(this.shake, big ? 10 : 7);
+    this._shakeDir = { x: (dir >= 0 ? 1 : -1), y: -0.35 };                   // schud in de klap-richting
   },
   addImpact(x, y, dir, big) {
     this.impacts.push({ x, y, born: this.time, dur: big ? 260 : 200, big });
@@ -4599,8 +4631,8 @@ const Game = {
       this.particles.push(new Particle(x, y, dir * sp * (0.6 + Math.random()) + spread, -1 + spread - Math.random() * 2, i % 2 ? '#ffffff' : '#ffe27a', 300, big ? 3 : 2));
     }
   },
-  addFloatText(x, y, text, color, big) {
-    this.floatTexts.push({ x, y, vy: -1.1, text, color, born: this.time, dur: 700, scale: big ? 1.7 : 1.1 });
+  addFloatText(x, y, text, color, big, scale) {
+    this.floatTexts.push({ x, y, vy: -1.1, text, color, born: this.time, dur: 700, scale: scale || (big ? 1.7 : 1.1) });
   },
   // KO-cinematic op de ring-out-plek: witte flits + schokgolf + "SMASH!"/"K.O."
   triggerKO(x, y, won) {
@@ -4609,6 +4641,7 @@ const Game = {
     this.ko = { x, y, born: this.time, won: !!won };
     this.smashFlash = Math.max(this.smashFlash, 210);
     this.shake = Math.max(this.shake, 14);
+    this._shakeDir = { x: 0, y: -0.5 };                                      // KO-dreun: verticale schud
     this.addFloatText(x, y - 18, won ? 'SMASH!' : 'K.O.', won ? '#5aff7a' : '#ff5a5a', true);
     for (let i = 0; i < 22; i++) { const a = (i / 22) * 6.2832, sp = 3 + Math.random() * 4; this.particles.push(new Particle(x, y - 12, Math.cos(a) * sp, Math.sin(a) * sp - 1, i % 2 ? '#ffffff' : '#ffe27a', 520, 3)); }
     if (window.Sfx) Sfx.play('explos');
@@ -5517,10 +5550,11 @@ const Game = {
     if (!this.vs) return;
     const ctx = this.ctx, W = CONFIG.VIEW_W, H = CONFIG.VIEW_H;
     const map = this.vsMap || VERSUS_MAPS[0];
+    const sh = this._shakeOffset(), shx = sh.x, shy = sh.y;   // gerichte schermschud — ook de hemel trilt licht mee
     // lucht (map-thema)
     const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, map.sky[0]); sky.addColorStop(1, map.sky[1]);
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = sky; ctx.fillRect(shx * 0.4 - 6, shy * 0.4 - 6, W + 12, H + 12);
 
     // wolk-parallax voor lucht-maps (scherm-ruimte, beweegt licht mee)
     if (map.clouds) {
@@ -5544,8 +5578,6 @@ const Game = {
       }
     }
 
-    const shx = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
-    const shy = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
     const z = this.vsCamZoom || 1;
     const camX = this.vsCamX, camY = this.vsCamY, visW = W / z, visH = H / z;
     ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
@@ -5646,7 +5678,7 @@ const Game = {
     const r = this.vs.remote;
     if (r.alive && !r.iv) {
       const rc = (CHARACTERS[r.charId] || CHARACTERS.ryan);
-      if (r.onGround) Sprites.shadow(ctx, r.x, r.y + 1, r.giant ? 11 : 7);
+      { const rly = this.landingYFor(r); if (rly !== null) Sprites.shadow(ctx, r.x, rly + 1, r.giant ? 11 : 7, 1 - (rly - r.y) / 90); }   // schaduw krimpt met spronghoogte
       if (r.heli) { this.drawHeli(ctx, Math.round(r.x), Math.round(r.y), r.dir, rc.palette); }
       else {
       // zwaai-voortgang met een lokale klok (werkt voor bot én online: alleen een attacking-flag beschikbaar)
@@ -5677,7 +5709,7 @@ const Game = {
     if (!p.dead) {
       if (pInvis) ctx.globalAlpha = 0.35;
       if (!blink) {
-        if (p.onGround && !pInvis) Sprites.shadow(ctx, p.x, p.y + 1, p.giant ? 11 : 7);
+        if (!pInvis) { const ply = this.landingYFor(p); if (ply !== null) Sprites.shadow(ctx, p.x, ply + 1, p.giant ? 11 : 7, 1 - (ply - p.y) / 90); }   // schaduw krimpt met spronghoogte
         const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
         if (p.heli) { this.drawHeli(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal); }
         else {
@@ -5756,6 +5788,19 @@ const Game = {
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = im.big ? 2.4 : 1.6; ctx.globalAlpha = a * 0.9;
       ctx.beginPath(); ctx.arc(im.x, im.y, R, 0, 6.2832); ctx.stroke(); ctx.globalAlpha = 1;
     }
+    // perfecte parry: gouden clang-ring die uitzet (easeOutCubic)
+    if (this._parryFx) {
+      const t = (this.time - this._parryFx.t) / 260;
+      if (t >= 1) this._parryFx = null;
+      else if (t >= 0) {
+        const e = 1 - Math.pow(1 - t, 3), R = 6 + e * 26, a = 1 - t;
+        ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 3; ctx.globalAlpha = a * 0.95;
+        ctx.beginPath(); ctx.arc(this._parryFx.x, this._parryFx.y - 10, R, 0, 6.2832); ctx.stroke();
+        ctx.strokeStyle = '#fff7c8'; ctx.lineWidth = 1.4; ctx.globalAlpha = a * 0.8;
+        ctx.beginPath(); ctx.arc(this._parryFx.x, this._parryFx.y - 10, R * 0.7, 0, 6.2832); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
     // KO-schokgolf op de ring-out-plek
     if (this.ko) {
       const t = (this.time - this.ko.born) / 520;
@@ -5767,13 +5812,15 @@ const Game = {
         ctx.globalAlpha = 1;
       }
     }
-    // zwevende schade-/combo-cijfers (wereld-ruimte, schalen mee met de zoom)
+    // zwevende schade-/combo-cijfers (wereld-ruimte, schalen mee met de zoom) — pop-in: groot binnenkomen, terugveren
     if (this.floatTexts) for (const ft of this.floatTexts) {
       const t = (this.time - ft.born) / ft.dur; if (t < 0 || t >= 1) continue;
       ctx.globalAlpha = t < 0.15 ? t / 0.15 : (1 - (t - 0.15) / 0.85);
-      ctx.font = 'bold ' + Math.round(7 * ft.scale) + 'px "Courier New", monospace'; ctx.textAlign = 'center';
-      ctx.fillStyle = '#000'; ctx.fillText(ft.text, ft.x + 0.6, ft.y + 0.6);
-      ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+      const pop = t < 0.15 ? 1.55 - 0.55 * (t / 0.15) : 1;
+      ctx.font = 'bold ' + Math.round(7 * ft.scale * pop) + 'px "Courier New", monospace'; ctx.textAlign = 'center';
+      const ftx = Math.round(ft.x), fty = Math.round(ft.y);
+      ctx.fillStyle = '#000'; ctx.fillText(ft.text, ftx + 0.6, fty + 0.6);
+      ctx.fillStyle = ft.color; ctx.fillText(ft.text, ftx, fty);
       ctx.globalAlpha = 1; ctx.textAlign = 'left';
     }
     ctx.restore();
@@ -6822,7 +6869,7 @@ const Game = {
     if (pe.iv) return;                                    // onzichtbare ninja: niet tekenen
     const rc = CHARACTERS[pe.charId] || CHARACTERS.ryan;
     const airborne = pe.y < CONFIG.GROUND_Y - 5;
-    if (!airborne) Sprites.shadow(ctx, pe.x, Math.min(pe.y + 1, CONFIG.GROUND_Y), pe.giant ? 11 : 7);
+    { const ely = this.landingYFor(pe); if (ely !== null) Sprites.shadow(ctx, pe.x, ely + 1, pe.giant ? 11 : 7, 1 - (ely - pe.y) / 90); }   // schaduw krimpt met spronghoogte
     ctx.save(); ctx.translate(Math.round(pe.x), Math.round(pe.y)); const g = pe.giant ? 2.2 : 1; ctx.scale(g, g);
     Sprites.drawCharacter(ctx, 0, 0, pe.dir, rc.palette, {
       walkPhase: pe.walkPhase, airborne: airborne, attacking: pe.attacking,
@@ -6844,11 +6891,10 @@ const Game = {
   renderTraining() {
     if (!this.player || !this.vsMap) return;
     const ctx = this.ctx, W = CONFIG.VIEW_W, H = CONFIG.VIEW_H, GY = CONFIG.GROUND_Y, map = this.vsMap;
+    const _shT = this._shakeOffset(), shx = _shT.x, shy = _shT.y;   // gerichte schermschud — hemel trilt licht mee
     const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, map.sky[0]); sky.addColorStop(1, map.sky[1]);
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-    const shx = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
-    const shy = this.shake > 0 ? Math.round((Math.random() - 0.5) * this.shake) : 0;
+    ctx.fillStyle = sky; ctx.fillRect(shx * 0.4 - 6, shy * 0.4 - 6, W + 12, H + 12);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - this.dtScale * 0.5);
     const z = this.vsCamZoom || 1, camX = this.vsCamX, camY = this.vsCamY, visW = W / z, visH = H / z;
     ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
@@ -6884,7 +6930,7 @@ const Game = {
     if (!blink) {
       if (pInvis) ctx.globalAlpha = 0.35;
       const airborne = !p.onGround;
-      if (!airborne && !pInvis) Sprites.shadow(ctx, p.x, Math.min(p.y + 1, GY), 7);
+      if (!pInvis) { const ply = this.landingYFor(p); if (ply !== null) Sprites.shadow(ctx, p.x, ply + 1, 7, 1 - (ply - p.y) / 90); }   // schaduw krimpt met spronghoogte
       if (p.heli) { this.drawHeli(ctx, Math.round(p.x), Math.round(p.y), p.dir, p.pal); }
       else {
         const swinging = this.time < (p.swingUntil || 0) && p.swingWeapon;
