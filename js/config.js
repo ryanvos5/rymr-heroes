@@ -161,7 +161,7 @@ const ROCKET_AOE = 56;             // straal van de explosie
 */
 const CHARACTERS = {
   ryan: {
-    id: 'ryan', name: 'Ryan', cost: 0,
+    id: 'ryan', name: 'Ryan', cost: 0, rank: 0,   // startheld — altijd beschikbaar
     maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'natural', ability: 'zapdash',
     palette: {
       hair: '#5a3a22', hairDark: '#3f2817',
@@ -173,7 +173,7 @@ const CHARACTERS = {
     desc: 'Gebalanceerd. Snelste loper.'
   },
   tygo: {
-    id: 'tygo', name: 'Tygo', cost: 1200, lvl: 8,
+    id: 'tygo', name: 'Tygo', cost: 1200, lvl: 8, rank: 1,   // vrij te spelen bij Bronze II
     maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural', ability: 'highjump', abChargeMul: 3,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',  // blond-bruin
@@ -185,7 +185,7 @@ const CHARACTERS = {
     desc: 'Lang & taai (+10 HP). Hogere dubbel-jump. Gebruikt elk melee-wapen.'
   },
   just: {
-    id: 'just', name: 'Just', cost: 7200, lvl: 22,
+    id: 'just', name: 'Just', cost: 7200, lvl: 22, rank: 6,   // Gold I
     maxHp: 120, speedMul: 0.8, meleeMul: 1.1, build: 'stocky', hair: 'bald', ability: 'earthquake',
     palette: {
       hair: '#c8a85a', hairDark: '#9a7e3a',     // klein beetje blond haar
@@ -197,7 +197,7 @@ const CHARACTERS = {
     desc: 'Dik & klein, traag maar sterk (+20 HP, +20% melee). Stamp bij de landing schade in de buurt.'
   },
   timo: {
-    id: 'timo', name: 'Timo', cost: 4000, lvl: 16,
+    id: 'timo', name: 'Timo', cost: 4000, lvl: 16, rank: 4,   // Silver II
     maxHp: 90, speedMul: 1.1, meleeMul: 1.0, build: 'small', hair: 'natural', ability: 'triplejump', abChargeMul: 3,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',     // blond-bruin, natural
@@ -209,7 +209,7 @@ const CHARACTERS = {
     desc: 'Klein & wendbaar (kleine hitbox). Heeft een extra (kleinere) dubbel-jump.'
   },
   vince: {
-    id: 'vince', name: 'Vince', cost: 2500, lvl: 14,
+    id: 'vince', name: 'Vince', cost: 2500, lvl: 14, rank: 3,   // Silver I
     maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'spiky', fireAura: true, ability: 'fireaura10',
     palette: {
       hair: '#1a1a1a', hairDark: '#000000',     // zwarte stekels
@@ -221,7 +221,7 @@ const CHARACTERS = {
     desc: 'Gebalanceerd. Elke 30s een vuuraura (5s): wie je dan aanraakt brandt 3s.'
   },
   jenze: {
-    id: 'jenze', name: 'Jenze', cost: 500, lvl: 5,
+    id: 'jenze', name: 'Jenze', cost: 500, lvl: 5, rank: 1,   // Bronze II
     maxHp: 115, speedMul: 0.927, meleeMul: 1.05, build: 'bulky', hair: 'curly', ability: 'heal',   // speedMul x1.1-bump -> ~1.02 -> Speed 102 in de stats
     palette: {
       hair: '#6b4426', hairDark: '#4a2e18',  // bruine krullen
@@ -233,7 +233,7 @@ const CHARACTERS = {
     desc: 'Fors & taai: +40 HP, +30% melee, iets trager.'
   },
   ricky: {
-    id: 'ricky', name: 'Ricky', cost: 5500, lvl: 17,
+    id: 'ricky', name: 'Ricky', cost: 5500, lvl: 17, rank: 5,   // Silver III
     maxHp: 85, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'natural', ability: 'rage10',
     palette: {
       hair: '#6b4426', hairDark: '#4a2e18',   // bruin haar naar voren
@@ -245,7 +245,7 @@ const CHARACTERS = {
     desc: 'Elke 15s 3s RAGE (2× schade). 85 HP.'
   },
   yarno: {
-    id: 'yarno', name: 'Yarno', cost: 9200, lvl: 24,
+    id: 'yarno', name: 'Yarno', cost: 9200, lvl: 24, rank: 7,   // Gold II
     maxHp: 100, speedMul: 0.909, meleeMul: 1.0, build: 'normal', hair: 'back', ability: 'knife', abChargeMul: 3,   // speedMul x1.1-bump -> ~1.0 -> Speed 100 in de stats
     palette: {
       hair: '#161616', hairDark: '#000000',     // zwart, naar achteren
@@ -257,7 +257,7 @@ const CHARACTERS = {
     desc: 'Gebalanceerd, iets sneller. Start met een dagger.'
   },
   skeleton: {
-    id: 'skeleton', name: 'Skeleton Knight', costRubies: 250,
+    id: 'skeleton', name: 'Skeleton Knight', costRubies: 250,   // altijd te koop met robijnen (premium)
     maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain', outfit: 'skeleton',
     palette: {
       hair: '#dfe3dc', hairDark: '#aeb2ab',
@@ -292,7 +292,7 @@ const CHARACTERS = {
     desc: 'Bruut: fors & sterk (+25% melee). Alleen via Journey.'
   },
   kong: {
-    id: 'kong', name: 'Gorilla King', cost: 6000,
+    id: 'kong', name: 'Gorilla King', cost: 0, journeyOnly: true,   // vrij te spelen in Journey (wereld 1, level 15)
     maxHp: 130, speedMul: 0.809, meleeMul: 1.0, build: 'bulky', hair: 'bald', ability: 'rage3', abChargeMul: 4,   // speedMul x1.1-bump -> ~0.89 -> Speed 89 in de stats
     palette: {
       hair: '#2a2622', hairDark: '#15120f',
@@ -909,6 +909,21 @@ function rankShieldSVG(idx, px) {
 const CHEST_WIN_CHANCE = 0.5, CHEST_LOSS_CHANCE = 0.15;               // kans op een kist na een online match
 const CHEST_RARITY_WEIGHTS = { common: 62, rare: 26, epic: 9, legendary: 3 };   // betere kisten veel zeldzamer
 const CHEST_SLOTS = 3;                                                // je kunt er max 3 hebben
+
+// crates te koop in de shop (met robijnen): epic 150 ◆, legendary 450 ◆
+const CRATE_SHOP = [
+  { rarity: 'epic',      costRubies: 150 },
+  { rarity: 'legendary', costRubies: 450 },
+];
+// robijn-pakketten te koop met echt geld (Apple In-App Purchase). De prijzen hieronder zijn
+// richtprijzen; de échte, gelokaliseerde prijs komt van StoreKit zodra de producten in
+// App Store Connect staan. product = product-id in App Store Connect (consumable).
+const RUBY_PACKS = [
+  { id: 'rubies_s', rubies: 80,   price: '€1,99',  product: 'com.ryanvos.tinypowersmashers.rubies.small' },
+  { id: 'rubies_m', rubies: 250,  price: '€4,99',  product: 'com.ryanvos.tinypowersmashers.rubies.medium', best: true },
+  { id: 'rubies_l', rubies: 550,  price: '€9,99',  product: 'com.ryanvos.tinypowersmashers.rubies.large' },
+  { id: 'rubies_xl', rubies: 1200, price: '€19,99', product: 'com.ryanvos.tinypowersmashers.rubies.mega' },
+];
 
 /* ---------- SMEDERIJ (blacksmith): materialen + harnassen ---------- */
 // materialen vind je in kisten; bij de smid smeed je er harnas-stukken mee (kost tijd, te skippen met robijnen).

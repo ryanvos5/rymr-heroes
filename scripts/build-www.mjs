@@ -13,7 +13,7 @@ const root = path.resolve(here, '..');
 const out = path.join(root, 'www');
 
 // alleen deze bestanden/mappen horen in de app-bundle
-const include = ['index.html', 'css', 'js', 'vendor', 'icon.png', 'logo.png', 'menu-bg.svg'];
+const include = ['index.html', 'privacy.html', 'css', 'js', 'vendor', 'icon.png', 'logo.png', 'menu-bg.svg'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });

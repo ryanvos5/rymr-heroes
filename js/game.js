@@ -2649,6 +2649,16 @@ const Game = {
     ];
   },
 
+  // eerste-keer-uitleg: 1v1 tegen een stilstaande oefen-pop, coach Ryan legt de besturing uit
+  startTutorial() {
+    const map = VERSUS_MAPS[0];   // Jungle (grote map); vloer + val-dood worden in startVersus overschreven
+    this.journey = null;
+    this.startVersus('host', {
+      mapObj: map, mode: 'smash', bot: true, diff: 1, tutorial: true,
+      botChar: 'skeleton', swapSides: false, rounds: SMASH_ROUNDS,
+    });
+  },
+
   startVersus(role, opts) {
     opts = opts || {};
     this.journeyDrops = opts.journeyDrops || null;     // Journey: extra powerup-pool per level
@@ -2759,6 +2769,7 @@ const Game = {
 
     // ----- tegen de BOT (lokaal, geen XP) -----
     this.vsBot = !!opts.bot;
+    this.tutorial1v1 = !!opts.tutorial;   // eerste-keer-uitleg: passieve pop, niemand valt eruit
     this.bot = null;
     const lvl = Math.max(1, Math.min(10, opts.diff || 5));
     this.botLevel = lvl;
@@ -2830,6 +2841,15 @@ const Game = {
         onApe: (p) => this.onVersusApe(p),
       });
     }
+    // ----- TUTORIAL (eerste keer): oefen-pop die stil blijft, een doorlopende vloer en geen ring-out -----
+    if (opts.tutorial) {
+      this.vsFallY = 999999;                                          // niemand kan er tijdens de uitleg af vallen
+      const fy = (map.spawnL && map.spawnL.y) || 176;
+      this.platforms.push({ x: this.vsMapW / 2, y: fy, w: this.vsMapW + 800, bx: this.vsMapW / 2, by: fy, mv: null, dx: 0, dy: 0, soft: false, slide: 0, mast: false, roof: false, cloud: false, standT: 0, broken: false, reformAt: 0 });
+      if (this.bot) { this.bot.maxHp = 9999; this.bot.hp = 9999; this.bot._baseMaxHp = 9999; }   // onverwoestbare oefen-pop
+      this.vs.target = 999;                                           // ronde-teller haalt het doel nooit -> match eindigt niet vanzelf
+    }
+
     this.state = 'versus';
     const qb = document.getElementById('btn-vs-quit');     // online = LEAVE, bot = ✕
     if (qb) { qb.innerHTML = this.vsBot ? '<svg class="ic"><use href="#ic-x"/></svg>' : 'LEAVE'; qb.classList.toggle('leave', !this.vsBot); }
@@ -5017,8 +5037,17 @@ const Game = {
     const b = this.bot, v = this.vs;
     if (b.respawnInvuln > 0) b.respawnInvuln -= dt;
     if (b.giant && this.time >= (b._giantUntil || 0)) this._endGiant(b);   // reus-timer bot
-    const inp = this.botThink();
+    // TUTORIAL: de oefen-pop staat stil (geen aanval); wordt-ie weggeknald, zet 'm terug op z'n plek
+    const inp = this.tutorial1v1
+      ? { left: false, right: false, jump: false, duck: false, attack: false, melee: false, jumpPressed: false }
+      : this.botThink();
     b.update(dt, this, inp);
+    if (this.tutorial1v1) {
+      b.hp = b.maxHp;                                                     // pop blijft altijd heel
+      if (b.y > 620 || b.x < -240 || b.x > this.vsMapW + 240) {           // weggeknald -> terug naar spawn
+        const s = v.botSpawn; b.x = s.x; b.y = s.y; b.dir = s.dir; b.vx = 0; b.vy = 0; b.knockVx = 0; b.onGround = true;
+      }
+    }
     // bot meebewegen op een horizontaal platform
     if (b.onGround) for (const pf of this.platforms) {
       if (pf.dx && Math.abs(b.x - pf.x) < pf.w / 2 + b.w / 2 && Math.abs(b.y - pf.y) < 4) { b.x += pf.dx; break; }
@@ -5042,7 +5071,7 @@ const Game = {
 
     // bot schiet: vuurwapen (beide-wapens) of fireball/rocket (smash)
     const p2 = this.player;
-    const canShoot = b.onGround && !b.dead && this.time >= (b._shootCd || 0) && !p2.dead &&
+    const canShoot = !this.tutorial1v1 && b.onGround && !b.dead && this.time >= (b._shootCd || 0) && !p2.dead &&
       Math.abs(p2.y - b.y) < 22 && Math.abs(p2.x - b.x) > 30;
     if (canShoot) {
       const sdir = p2.x >= b.x ? 1 : -1;
@@ -5611,7 +5640,7 @@ const Game = {
 
   quitVersus() {
     if (window.Net) Net.leaveVersus();
-    this.vsBot = false; this.bot = null;
+    this.vsBot = false; this.tutorial1v1 = false; this.bot = null;
     this.journey = null; this.journeyDrops = null;
     this.state = 'menu';
     UI.show('menu');

@@ -79,6 +79,7 @@ const Storage = {
     } catch (e) {
       this.data = JSON.parse(JSON.stringify(DEFAULT_SAVE));
     }
+    try { this.reconcileRankUnlocks(); } catch (e) {}   // rank-helden vrijspelen die je al verdiend hebt
     return this.data;
   },
 
@@ -131,6 +132,7 @@ const Storage = {
     const clv = cloud.charLevel || {}, cxp = cloud.charXp || {};
     for (const k of Object.keys(clv)) if ((clv[k] || 0) > (d.charLevel[k] || 0)) { d.charLevel[k] = clv[k]; d.charXp[k] = cxp[k] || 0; }
     for (const k of Object.keys(cxp)) if ((clv[k] || 1) === (d.charLevel[k] || 1)) d.charXp[k] = Math.max(d.charXp[k] || 0, cxp[k] || 0);
+    try { this.reconcileRankUnlocks(); } catch (e) {}   // cloud-rp kan hoger zijn -> rank-helden vrijspelen
     this.save();
   },
 
@@ -230,11 +232,39 @@ const Storage = {
   },
 
   // ---- characters ----
-  ownsCharacter(id) { return this.data.ownedCharacters.includes(id); },
+  // een held is van jou als je 'm bezit, óf als je zijn unlock-rank hebt bereikt (rank-beloning)
+  ownsCharacter(id) {
+    if (this.data.ownedCharacters.includes(id)) return true;
+    const c = CHARACTERS[id];
+    return !!(c && typeof c.rank === 'number' && this.rankIndex() >= c.rank);
+  },
+  // heb je de unlock-rank van deze held al bereikt? (voor de shop-weergave)
+  rankUnlocked(id) {
+    const c = CHARACTERS[id];
+    return typeof c === 'object' && typeof c.rank === 'number' && this.rankIndex() >= c.rank;
+  },
+  // helden die bij een rank-index horen vrijspelen (bij het bereiken van die rank).
+  // Geeft de nieuw vrijgespeelde helden terug: [{id, name}] — voor de beloning-popup.
+  reconcileRankUnlocks() {
+    const idx = this.rankIndex(), granted = [];
+    if (typeof CHARACTER_ORDER === 'undefined') return granted;
+    for (const cid of CHARACTER_ORDER) {
+      const c = CHARACTERS[cid];
+      if (c && typeof c.rank === 'number' && idx >= c.rank && !this.data.ownedCharacters.includes(cid)) {
+        this.data.ownedCharacters.push(cid);
+        granted.push({ id: cid, name: c.name });
+      }
+    }
+    // veiligheid: uitgeruste held die je (nog) niet bezit -> terug naar Ryan
+    if (this.data.equippedCharacter && !this.ownsCharacter(this.data.equippedCharacter)) this.data.equippedCharacter = 'ryan';
+    if (granted.length) this.save();
+    return granted;
+  },
   buyCharacter(id) {
     const c = CHARACTERS[id];
     if (!c || this.ownsCharacter(id)) return false;
     if (c.journeyOnly) return false;                                   // alleen via Journey vrij te spelen
+    if (typeof c.rank === 'number') return false;                      // rank-helden koop je niet — die krijg je door te ranken
     if (playerLevel(this.data.xp || 0) < (c.lvl || 0)) return false;   // nog niet vrijgespeeld
     if (c.costRubies) { if (!this.spendRubies(c.costRubies)) return false; }   // sommige characters kosten robijnen i.p.v. munten
     else if (!this.spendCoins(c.cost || 0)) return false;
@@ -429,6 +459,28 @@ const Storage = {
     if (!CHEST_TYPES[rarity] || !this.canReceiveChest()) return false;
     this.chests().push({ r: rarity, u: 0 }); this.save(); return true;
   },
+  // een crate kopen met robijnen (shop → Crates-tab). Deze gaat METEEN open (geen kist-slot);
+  // de 3 kist-slots blijven vrij voor kisten die je in-game verdient.
+  // Geeft de beloning terug (object) bij succes, of 'poor'/'bad' bij mislukken.
+  buyCrate(rarity) {
+    const def = (typeof CRATE_SHOP !== 'undefined') && CRATE_SHOP.find((c) => c.rarity === rarity);
+    if (!def || !CHEST_TYPES[rarity]) return 'bad';
+    if (this.rubies() < def.costRubies) return 'poor';
+    if (!this.spendRubies(def.costRubies)) return 'poor';
+    return this.openCrateInstant(rarity);
+  },
+  // een crate direct openen (buit meteen bijschrijven), zonder een kist-slot te gebruiken
+  openCrateInstant(rarity) {
+    const rw = this.rollChestRewards(rarity);
+    this.data.coins = (this.data.coins || 0) + rw.gold;
+    this.data.xp = (this.data.xp || 0) + rw.xp;
+    this.data.powerups = this.data.powerups || {};
+    for (const id in rw.pus) this.data.powerups[id] = (this.data.powerups[id] || 0) + rw.pus[id];
+    if (rw.mats) { const m = this.materials(); for (const k in rw.mats) m[k] = (m[k] || 0) + rw.mats[k]; }
+    if (rw.rubies) this.data.rubies = (this.data.rubies || 0) + rw.rubies;
+    this.save();
+    return rw;
+  },
 
   // ---- rank (matchmaking) ----
   rp() { return this.data.rp || 0; },
@@ -470,8 +522,10 @@ const Storage = {
       }
       d.rankRewarded = newIdx;
     }
+    // helden vrijspelen die bij de nieuw bereikte rank(s) horen
+    const unlockedChars = this.reconcileRankUnlocks();
     this.save();
-    return { delta, streakBonus, higherBonus, oldRp, newRp, oldIdx, newIdx, rankedUp: newIdx > oldIdx, demoted: newIdx < oldIdx, rewards, streak: d.winStreak };
+    return { delta, streakBonus, higherBonus, oldRp, newRp, oldIdx, newIdx, rankedUp: newIdx > oldIdx, demoted: newIdx < oldIdx, rewards, unlockedChars, streak: d.winStreak };
   },
   startChest(i) {
     const c = this.chests()[i]; if (!c || c.u > 0) return false;

@@ -15,11 +15,19 @@ window.addEventListener('DOMContentLoaded', () => {
   // eenmalig voortgang herstellen via een ?restore=... link (ook handig op iOS)
   try { if (Storage.applyRestoreFromURL()) setTimeout(() => alert('✅ Voortgang hersteld!'), 300); } catch (e) {}
   try { Net.init(); } catch (e) { console.warn('Net.init', e); }
+  try { if (window.IAP) IAP.init(); } catch (e) {}   // in-app aankopen (inert tot een plugin gekoppeld is)
   try { Sfx.init(); } catch (e) {}
   Input.init();
   UI.init();
   Game.init(document.getElementById('game-canvas'));
   UI.show('menu');
+
+  // eerste keer opstarten: coach Ryan legt een oefen-match uit, daarna inloggen/registreren
+  try {
+    if (!localStorage.getItem('zombiedash_onboarded')) {
+      setTimeout(() => { try { UI.startOnboarding(); } catch (e) { console.warn('onboarding', e); } }, 500);
+    }
+  } catch (e) {}
 
   // oriëntatie bijhouden (voor de draai-hint) + canvas herschalen
   function updateOrientation() {

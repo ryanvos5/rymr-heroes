@@ -99,17 +99,40 @@ const Net = {
     return data;
   },
 
+  // ---- sociale login (Apple / Google) via Supabase OAuth ----
+  // Web/PWA: redirect-flow -> na akkoord komt de gebruiker terug op deze pagina en herkent
+  // onAuthStateChange de sessie. In de iOS-app (Capacitor) opent dit de systeem-browser; om
+  // de sessie terug te vangen is een deep-link (custom URL-scheme) + provider-config nodig.
+  async signInWithOAuth(provider) {
+    if (!this.ready) throw new Error('Geen verbinding met de server.');
+    const redirectTo = location.origin + location.pathname;
+    const { data, error } = await this.sb.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo, skipBrowserRedirect: false },
+    });
+    if (error) throw error;
+    return data;
+  },
+  async signInWithApple() { return this.signInWithOAuth('apple'); },
+  async signInWithGoogle() { return this.signInWithOAuth('google'); },
+
   async logout() {
     if (!this.ready) return;
     try { await this.sb.auth.signOut(); } catch (e) {}
     this.user = null;
     this._refreshUI();
   },
-  // account verwijderen: probeer server-side RPC (indien opgezet), daarna hoe dan ook uitloggen.
+  // account definitief verwijderen (Apple-eis): server-side RPC wist alle data + het auth-account,
+  // daarna hoe dan ook lokaal uitloggen. Een echte fout wordt doorgegeven zodat de UI het kan tonen.
   async deleteAccount() {
-    if (!this.ready) return;
-    try { if (this.sb && this.sb.rpc) await this.sb.rpc('delete_account'); } catch (e) {}
-    await this.logout();
+    if (!this.ready) throw new Error('Geen verbinding met de server.');
+    let rpcError = null;
+    try { const { error } = await this.sb.rpc('delete_account'); rpcError = error || null; }
+    catch (e) { rpcError = e; }
+    try { await this.sb.auth.signOut(); } catch (e) {}
+    this.user = null;
+    this._refreshUI();
+    if (rpcError) throw rpcError;
   },
 
   // na (her)inloggen: profiel borgen + cloud-save mergen

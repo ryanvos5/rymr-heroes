@@ -141,9 +141,18 @@ const UI = {
     $('btn-account').onclick = () => this.openAuth('login');
     $('btn-logout').onclick = () => { if (window.Net) Net.logout(); };
     $('btn-nick').onclick = () => this.promptNickname();
-    $('btn-auth-close').onclick = () => $('auth-screen').classList.add('hidden');
+    $('btn-auth-close').onclick = () => this.closeAuth();
     $('btn-auth-toggle').onclick = () => this.openAuth(this.authMode === 'login' ? 'register' : 'login');
     $('btn-auth-submit').onclick = () => this.submitAuth();
+    $('btn-auth-apple').onclick = () => this.oauthLogin('apple');
+    $('btn-auth-google').onclick = () => this.oauthLogin('google');
+    // ---- privacybeleid (Apple-eis) ----
+    { const bp = $('btn-privacy'); if (bp) bp.onclick = () => this.openPrivacy(); }
+    { const bap = $('btn-auth-privacy'); if (bap) bap.onclick = () => this.openPrivacy(); }
+    { const bpb = $('btn-privacy-back'); if (bpb) bpb.onclick = () => this.closePrivacy(); }
+    // ---- onboarding-coach (eerste keer) ----
+    $('btn-coach-next').onclick = () => this.coachNext();
+    $('btn-coach-skip').onclick = () => this.coachSkip();
     this.refreshAuthUI();
 
     // ---- vrienden (Friends) ----
@@ -186,6 +195,9 @@ const UI = {
     const roundsSlider = document.getElementById('vs-rounds-slider');
     if (roundsSlider) roundsSlider.oninput = () => this.setVoteRounds(parseInt(roundsSlider.value, 10));
     $('btn-vs-quit').onclick = () => {
+      // tijdens de eerste-keer-tutorial: niet zomaar naar het menu, maar de onboarding netjes afronden
+      // (coach sluiten + het inlog-/registratiescherm tonen), zodat het inlogscherm niet overgeslagen wordt
+      if (Game.tutorial1v1 || this._onboarding) { this.finishTutorial(); return; }
       // training-lobby verlaten
       if (Game.state === 'training') { Game.quitTraining(); return; }
       // online tijdens een live match: bevestigen + verlaten = jij verliest, tegenstander wint
@@ -787,6 +799,9 @@ const UI = {
     const btnNick = document.getElementById('btn-nick');
     const btnDel = document.getElementById('btn-delete-account');
     if (inLogged) {
+      this._authOnboarding = false;
+      const authScreen = document.getElementById('auth-screen');
+      if (authScreen && !authScreen.classList.contains('hidden')) setTimeout(() => authScreen.classList.add('hidden'), 500);
       status.innerHTML = this._ic('char') + ' ' + this._esc(Net.nickname()) + ' · ' + t('lvl') + ' ' + playerLevel(Storage.data.xp || 0);
       status.classList.remove('hidden');
       btnOut.classList.remove('hidden');
@@ -822,10 +837,15 @@ const UI = {
       : 'Are you sure you want to permanently delete your account? Your online progress and leaderboard spot will be lost.';
     if (!window.confirm(msg)) return;
     try {
-      if (Net.deleteAccount) { await Net.deleteAccount(); }
-      else if (Net.logout) { await Net.logout(); }
+      await Net.deleteAccount();
       this.refreshAuthUI();
-    } catch (e) { window.alert(String(e && e.message || e)); }
+      window.alert(I18N.lang === 'nl'
+        ? 'Je account en gegevens zijn verwijderd.'
+        : 'Your account and data have been deleted.');
+    } catch (e) {
+      this.refreshAuthUI();
+      window.alert((I18N.lang === 'nl' ? 'Verwijderen mislukt: ' : 'Deletion failed: ') + String(e && e.message || e));
+    }
   },
 
   // heeft de ingelogde speler een echte nickname? (anders valt nickname() terug op de e-mail)
@@ -864,16 +884,131 @@ const UI = {
     label.textContent = 'Lvl ' + L + ' · ' + into + '/' + need + ' XP';
   },
 
-  openAuth(mode) {
+  openAuth(mode, opts) {
+    opts = opts || {};
+    if (opts.onboarding) this._authOnboarding = true;   // na de tutorial: welkomst-context + andere sluit-knop
     this.authMode = mode;
     const isReg = mode === 'register';
-    document.getElementById('auth-title').textContent = isReg ? tl('REGISTREREN') : tl('INLOGGEN');
+    const onb = !!this._authOnboarding;
+    document.getElementById('auth-title').textContent = onb ? tl('WELKOM, HELD!') : (isReg ? tl('REGISTREREN') : tl('INLOGGEN'));
+    const sub = document.getElementById('auth-sub');
+    if (sub) sub.textContent = onb ? tl('Maak een account zodat je voortgang op elk toestel bewaard blijft.') : tl('Optioneel — bewaar je voortgang op elk toestel.');
     document.getElementById('btn-auth-submit').textContent = isReg ? tl('ACCOUNT AANMAKEN') : tl('INLOGGEN');
     document.getElementById('btn-auth-toggle').textContent = isReg ? tl('Al een account? Inloggen') : tl('Nog geen account? Registreren');
+    document.getElementById('btn-auth-close').textContent = onb ? tl('Later — speel als gast') : tl('Cancel');
     document.getElementById('auth-nick').classList.toggle('hidden', !isReg);
     document.getElementById('auth-pass').setAttribute('autocomplete', isReg ? 'new-password' : 'current-password');
     document.getElementById('auth-msg').textContent = '';
     document.getElementById('auth-screen').classList.remove('hidden');
+  },
+
+  closeAuth() {
+    document.getElementById('auth-screen').classList.add('hidden');
+    this._authOnboarding = false;
+  },
+
+  // privacybeleid tonen (in-app, laadt de gebundelde privacy.html in een iframe; springt naar de juiste taal)
+  openPrivacy() {
+    const scr = document.getElementById('privacy-screen'); if (!scr) return;
+    const fr = document.getElementById('privacy-frame');
+    if (fr) { const anchor = (I18N.lang === 'nl') ? '#nl' : '#en'; if (!fr.src || fr.src === 'about:blank' || fr.getAttribute('src') === 'about:blank') fr.src = 'privacy.html' + anchor; else try { fr.contentWindow.location.hash = anchor; } catch (e) {} }
+    scr.classList.remove('hidden');
+  },
+  closePrivacy() { const scr = document.getElementById('privacy-screen'); if (scr) scr.classList.add('hidden'); },
+
+  // Apple/Google-login (Supabase OAuth). Web/PWA: redirect-flow; onAuthStateChange vangt de sessie na terugkeer.
+  async oauthLogin(provider) {
+    const msg = document.getElementById('auth-msg');
+    const aBtn = document.getElementById('btn-auth-apple'), gBtn = document.getElementById('btn-auth-google');
+    if (!window.Net || !Net.ready) { if (msg) { msg.style.color = '#ff6a6a'; msg.textContent = tl('Geen verbinding met de server.'); } return; }
+    if (msg) { msg.style.color = ''; msg.textContent = tl('Bezig…'); }
+    if (aBtn) aBtn.disabled = true; if (gBtn) gBtn.disabled = true;
+    try {
+      if (provider === 'apple') await Net.signInWithApple(); else await Net.signInWithGoogle();
+      // bij de redirect-flow navigeert de pagina weg; komt-ie terug zonder redirect, dan doet onAuthStateChange de rest
+    } catch (e) {
+      if (msg) { msg.style.color = '#ff6a6a'; msg.textContent = (e && e.message) ? e.message : tl('Inloggen mislukt — probeer e-mail.'); }
+    } finally {
+      if (aBtn) aBtn.disabled = false; if (gBtn) gBtn.disabled = false;
+    }
+  },
+
+  // ================= ONBOARDING: coach Ryan (eerste keer opstarten) =================
+  // Stappen: tekst + optioneel een touch-knop om uit te lichten ("druk hier").
+  _coachSteps() {
+    return [
+      { text: 'Hoi, ik ben Ryan! Welkom bij Rymr Heroes. Ik leer je in 20 seconden hoe je vecht.' },
+      { text: 'LOPEN — gebruik de pijltjes ◀ ▶ links onderin om te bewegen.', hl: '.touch-left' },
+      { text: 'SPRINGEN — tik ▲ om te springen. Tik nóg eens in de lucht voor een dubbele sprong!', hl: '.touch-right [data-key="jump"]' },
+      { text: 'BLOKKEREN — houd ▼ ingedrukt om klappen te blokkeren en minder schade te krijgen.', hl: '.touch-right [data-key="duck"]' },
+      { text: 'SLAAN — tik op de wapen-knop om te meppen. Probeer de oefen-pop nu te raken!', hl: '.tbtn-melee' },
+      { text: 'SPECIAAL — de vlammende knop is je krachtaanval. Die laadt op terwijl je vecht.', hl: '#ability-btn' },
+      { text: 'DOEL — sla je tegenstander van het platform óf versla ’m. Wie de meeste rondes wint, wint de match!' },
+      { text: 'Je bent er klaar voor, held! Druk op Klaar om te beginnen. 💪' },
+    ];
+  },
+
+  startOnboarding() {
+    if (this._onboarding) return;
+    this._onboarding = true;
+    this._tutStep = 0;
+    try { Game.startTutorial(); } catch (e) { console.warn('startTutorial', e); this._onboarding = false; this.afterOnboarding(); return; }
+    { const qb = document.getElementById('btn-vs-quit'); if (qb) qb.classList.add('hidden'); }   // geen losse ✕: alleen de coach (Overslaan/Klaar) sluit de tutorial
+    this._drawCoachPortrait();
+    this._showCoachStep();
+  },
+
+  _drawCoachPortrait() {
+    const cv = document.getElementById('coach-portrait'); if (!cv) return;
+    const c = CHARACTERS.ryan;
+    try { this._drawCharPreview(cv, c.palette, { build: c.build, hair: c.hair, hat: 'none', outfit: c.outfit }, 0); } catch (e) {}
+  },
+
+  _clearCoachHighlight() {
+    document.querySelectorAll('.tut-highlight').forEach((el) => el.classList.remove('tut-highlight'));
+  },
+
+  _showCoachStep() {
+    const steps = this._coachSteps();
+    const i = Math.max(0, Math.min(steps.length - 1, this._tutStep || 0));
+    const step = steps[i];
+    const panel = document.getElementById('tutorial-coach'); if (!panel) return;
+    panel.classList.remove('hidden');
+    const txt = document.getElementById('coach-text'); if (txt) txt.textContent = tl(step.text);
+    // voortgangs-stipjes
+    const dots = document.getElementById('coach-dots');
+    if (dots) { dots.innerHTML = ''; for (let k = 0; k < steps.length; k++) { const d = document.createElement('span'); d.className = 'coach-dot' + (k === i ? ' on' : ''); dots.appendChild(d); } }
+    // knop-labels
+    const next = document.getElementById('btn-coach-next'); if (next) next.textContent = (i >= steps.length - 1) ? tl('Klaar!') : tl('Volgende');
+    const skip = document.getElementById('btn-coach-skip'); if (skip) { skip.textContent = tl('Overslaan'); skip.classList.toggle('hidden', i >= steps.length - 1); }
+    // touch-knop uitlichten (alleen op touch-toestellen zichtbaar)
+    this._clearCoachHighlight();
+    if (step.hl) { const el = document.querySelector(step.hl); if (el && !el.classList.contains('hidden')) el.classList.add('tut-highlight'); }
+    if (window.Sfx) { try { Sfx.play('click'); } catch (e) {} }
+  },
+
+  coachNext() {
+    const steps = this._coachSteps();
+    if ((this._tutStep || 0) >= steps.length - 1) { this.finishTutorial(); return; }
+    this._tutStep = (this._tutStep || 0) + 1;
+    this._showCoachStep();
+  },
+
+  coachSkip() { this.finishTutorial(); },
+
+  finishTutorial() {
+    this._clearCoachHighlight();
+    const panel = document.getElementById('tutorial-coach'); if (panel) panel.classList.add('hidden');
+    this._onboarding = false;
+    try { Game.tutorial1v1 = false; Game.quitVersus(); } catch (e) {}
+    try { localStorage.setItem('zombiedash_onboarded', '1'); } catch (e) {}
+    this.afterOnboarding();
+  },
+
+  // na de tutorial: inlog-/registratie-scherm (e-mail, Apple of Google)
+  afterOnboarding() {
+    if (window.Net && Net.isLoggedIn && Net.isLoggedIn()) return;   // al ingelogd (bv. bewaarde sessie) -> niet vragen
+    setTimeout(() => { try { this.openAuth('register', { onboarding: true }); } catch (e) {} }, 450);
   },
 
   async submitAuth() {
@@ -2108,6 +2243,7 @@ const UI = {
       if (rw.coins) rlist.push({ type: 'earn', coins: rw.coins, xp: 0, rank: rw.rank.name });
       if (rw.chest) { rlist.push({ type: 'chest', rarity: rw.chest }); gotChest = true; }
     }
+    if (rankRes && rankRes.unlockedChars) for (const ch of rankRes.unlockedChars) rlist.push({ type: 'char', id: ch.id, name: ch.name });   // rank-helden vrijgespeeld
     if (gotChest) this.renderChests();
     rlist.push(...this._levelUpRewards());
     if (rlist.length) this.showRewards(rlist);
@@ -2251,13 +2387,127 @@ const UI = {
     const tab = this._shopTab || 'chars';
     document.querySelectorAll('.shop-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     this.el.shopCoins.textContent = Storage.data.coins;
+    // robijn-saldo tonen op de crates/rubies-tabs; muntsaldo verbergen daar
+    const rubyWrap = document.getElementById('shop-rubies-wrap'), coinWrap = document.getElementById('shop-coins-wrap');
+    const rubyTab = (tab === 'crates' || tab === 'rubies');
+    if (rubyWrap) { rubyWrap.classList.toggle('hidden', !rubyTab); const rc = document.getElementById('shop-ruby-count'); if (rc) rc.textContent = Storage.rubies(); }
+    if (coinWrap) coinWrap.classList.toggle('hidden', rubyTab);
+    // subnote boven de grid (overleeft _galleryify, dat de grid leegmaakt)
+    const sub = document.getElementById('shop-subnote');
+    if (sub) {
+      let txt = '';
+      if (tab === 'crates') txt = tl('Gekochte crates gaan meteen open — je buit wordt direct bijgeschreven.');
+      else if (tab === 'rubies' && !(window.IAP && IAP.available)) txt = tl('In-app aankopen worden binnenkort geactiveerd.');
+      sub.textContent = txt; sub.classList.toggle('hidden', !txt);
+    }
     this.el.shopGrid.innerHTML = '';
     this._charAnims = [];
     if (tab === 'chars') this.renderCharCards();
     else if (tab === 'hats') this.renderHatCards();
     else if (tab === 'powerups') this.renderPowerupCards(this.el.shopGrid, 'shop');
+    else if (tab === 'crates') this.renderCrateCards();
+    else if (tab === 'rubies') this.renderRubyCards();
     else this.renderWeaponCards();
     this._galleryify(this.el.shopGrid, 'shop_' + tab);
+  },
+
+  // crate-icoon (gebruikt de bestaande kist-tekening) op een klein canvas
+  _drawCrateIcon(canvas, rarity) {
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2 + 14); ctx.scale(3, 3);
+    this._chestArt(ctx, rarity, 0);
+    ctx.restore();
+  },
+
+  // ---- Crates-tab: epic/legendary crates kopen met robijnen ----
+  renderCrateCards() {
+    const grid = this.el.shopGrid;
+    (typeof CRATE_SHOP !== 'undefined' ? CRATE_SHOP : []).forEach((c) => {
+      const type = CHEST_TYPES[c.rarity]; if (!type) return;
+      const card = document.createElement('div');
+      card.className = 'shop-card crate-card';
+      const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; cv.className = 'pu-ico';
+      this._drawCrateIcon(cv, c.rarity);
+      const desc = c.rarity === 'legendary'
+        ? tl('Beste buit: veel munten, XP, materialen en kans op zeldzame items.')
+        : tl('Rijke buit: munten, XP, materialen en items.');
+      const gold = type.gold ? (type.gold[0] + '–' + type.gold[1]) : '';
+      const info2 = document.createElement('div');
+      info2.innerHTML = '<div class="w-name" style="color:' + type.col + '">' + tl(type.name) + ' ' + tl('Crate') + '</div><div class="w-stats">' + desc + (gold ? '<br>' + tl('Munten') + ': ~' + gold : '') + '</div>';
+      card.appendChild(cv); card.appendChild(info2);
+      const btn = document.createElement('button');
+      btn.className = 'shop-buy';
+      const afford = Storage.rubies() >= c.costRubies;
+      btn.classList.add(afford ? 'buy' : 'cant');
+      btn.textContent = t('buy') + ' — ' + c.costRubies + ' ◆';
+      card.appendChild(btn);
+      this._tap(btn, () => this.buyCrate(c.rarity));
+      grid.appendChild(card);
+    });
+  },
+
+  buyCrate(rarity) {
+    const res = Storage.buyCrate(rarity);
+    if (res && typeof res === 'object') {   // beloning -> crate gaat meteen open met animatie
+      if (window.Sfx) Sfx.play('pickup');
+      this.renderShop();                    // robijn-saldo bijwerken
+      this.showChestRewards(res);           // openings-animatie + buit-popups
+    } else if (res === 'poor') {
+      this.toast(tl('Niet genoeg robijnen. Koop er via de Rubies-tab.'));
+    }
+  },
+
+  // ---- Rubies-tab: robijnen kopen met echt geld (Apple In-App Purchase) ----
+  renderRubyCards() {
+    const grid = this.el.shopGrid;
+    const packs = (typeof RUBY_PACKS !== 'undefined') ? RUBY_PACKS : [];
+    packs.forEach((p) => {
+      const card = document.createElement('div');
+      card.className = 'shop-card ruby-card';
+      const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; cv.className = 'pu-ico';
+      this._drawRubyIcon(cv, p.rubies);
+      const info = document.createElement('div');
+      info.innerHTML = '<div class="w-name">' + p.rubies + ' ◆ ' + tl('Robijnen') + (p.best ? ' <span class="ruby-best">' + tl('Beste deal') + '</span>' : '') + '</div><div class="w-stats">' + tl('Koop met Apple Pay') + '</div>';
+      card.appendChild(cv); card.appendChild(info);
+      const btn = document.createElement('button');
+      btn.className = 'shop-buy buy';
+      btn.textContent = ' ' + p.price;
+      btn.innerHTML = '<svg class="apay-ic" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6.6 8.9c-.4.5-1 .4-1.6.2.1-.6.4-1.2.7-1.6.4-.5 1-.8 1.5-.9.1.7-.2 1.3-.6 2.3zm.6.9c-.8 0-1.5.5-1.9.5-.4 0-1-.5-1.6-.5-.8 0-1.6.5-2 1.2-.9 1.5-.2 3.7.6 4.9.4.6.9 1.2 1.5 1.2.6 0 .8-.4 1.6-.4.7 0 .9.4 1.6.4.6 0 1-.6 1.4-1.1.4-.6.6-1.2.6-1.2 0 0-1.2-.5-1.2-1.9 0-1.2 1-1.7 1-1.8-.6-.8-1.4-.9-1.7-.9zM15.7 6.4v9.9h1.5v-3.4h2.1c1.9 0 3.3-1.3 3.3-3.2s-1.3-3.3-3.2-3.3h-3.7zm1.5 1.3h1.8c1.3 0 2 .7 2 2s-.7 2-2 2h-1.8v-4z"/></svg>' + p.price;
+      card.appendChild(btn);
+      this._tap(btn, () => this.buyRubies(p));
+      grid.appendChild(card);
+    });
+  },
+
+  _drawRubyIcon(canvas, n) {
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const px = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    // een trosje robijnen (meer robijnen = groter oogt via extra steentjes)
+    const gem = (cx, cy, s) => {
+      px('#ff9db0', cx - 2 * s, cy - 3 * s, 4 * s, s); px('#f24d68', cx - 3 * s, cy - 2 * s, 6 * s, s);
+      px('#e0364f', cx - 3 * s, cy - s, 6 * s, s); px('#c72740', cx - 2 * s, cy, 4 * s, s);
+      px('#a81e33', cx - s, cy + s, 2 * s, s); px('#ffd0da', cx + s, cy - 2 * s, s, 2 * s);
+    };
+    const big = n >= 500 ? 7 : 6;
+    gem(48, 50, big);
+    if (n >= 200) { gem(30, 62, 4); gem(66, 62, 4); }
+    if (n >= 1000) { gem(38, 34, 3); gem(58, 34, 3); }
+  },
+
+  async buyRubies(pack) {
+    if (!window.IAP) { this.toast(tl('In-app aankopen worden binnenkort geactiveerd.')); return; }
+    const res = await IAP.buyRubies(pack);
+    if (res === 'ok') {
+      if (window.Sfx) Sfx.play('pickup');
+      this.renderShop();
+      this.toast('+' + pack.rubies + ' ◆ ' + tl('Robijnen'));
+    } else if (res === 'unavailable') {
+      this.toast(tl('In-app aankopen worden binnenkort geactiveerd.'));
+    } else {
+      this.toast(tl('Aankoop niet voltooid.'));
+    }
   },
 
   // robuuste tik-binding: gebruikt pointer-events i.p.v. 'click'. Op touch met touch-action:none
@@ -3053,8 +3303,13 @@ const UI = {
         btn.onclick = () => { Storage.equipCharacter(cid); this.renderShop(); };
       } else if (c.journeyOnly) {
         card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Journey';
-      } else if (myLvl < (c.lvl || 0)) {
-        card.classList.add('locked'); btn.classList.add('cant'); btn.innerHTML = this._ic('lock') + ' Level ' + c.lvl;
+      } else if (typeof c.rank === 'number') {                     // vrij te spelen door een rank te bereiken
+        card.classList.add('locked'); btn.classList.add('cant');
+        const rk = RANKS[c.rank] || {};
+        btn.innerHTML = this._ic('lock') + ' <span style="color:' + (rk.col || '#fff') + '">' + this._esc(rk.name || ('Rank ' + c.rank)) + '</span>';
+        const hint = document.createElement('div'); hint.className = 'w-unlock';
+        hint.innerHTML = tl('Vrij te spelen bij') + ' <b style="color:' + (rk.col || '#fff') + '">' + this._esc(rk.name || '') + '</b>';
+        info.appendChild(hint);
       } else if (c.costRubies) {                                   // met robijnen te koop (◆)
         if (Storage.rubies() >= c.costRubies) {
           btn.classList.add('buy'); btn.textContent = t('buy') + ` — ${c.costRubies} ◆`;
