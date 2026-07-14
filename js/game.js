@@ -3023,14 +3023,18 @@ const Game = {
     this.particles = this.particles.filter((p) => p.life > 0);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 0.04);
 
-    // mijn stand uitzenden (~25x/sec) — vaker = minder achterstand op de tegenstander
+    // mijn stand uitzenden (~30x/sec) — vaker = minder achterstand op de tegenstander
     v.netTimer += dt;
-    if (v.netTimer >= 40) { v.netTimer = 0; this.sendVersusState(); }
+    if (v.netTimer >= 33) { v.netTimer = 0; this.sendVersusState(); }
 
-    // tegenstander vloeiend interpoleren; grote sprong (respawn/teleport) -> direct plaatsen i.p.v. langzaam glijden
+    // tegenstander vloeiend interpoleren met horizontale extrapolatie (dead reckoning):
+    // voorspel waar hij NU is o.b.v. de snelheid sinds de laatste update -> verbergt netwerk-latency bij lopen.
     const r = v.remote;
-    if (Math.abs(r.tx - r.x) > 160 || Math.abs(r.ty - r.y) > 120) { r.x = r.tx; r.y = r.ty; }
-    else { const lp = Math.min(1, (dt / 16.67) * 0.42); r.x += (r.tx - r.x) * lp; r.y += (r.ty - r.y) * lp; }
+    const sinceMs = r._lastStateAt ? Math.min(Date.now() - r._lastStateAt, 100) : 0;   // cap: max 100ms vooruit
+    const tgtX = (r.ax != null ? r.ax : r.tx) + (r.vxEst || 0) * sinceMs;
+    const tgtY = (r.ay != null ? r.ay : r.ty);
+    if (Math.abs(tgtX - r.x) > 160 || Math.abs(tgtY - r.y) > 120) { r.x = tgtX; r.y = tgtY; }   // grote sprong (respawn/teleport) -> direct plaatsen
+    else { const lp = Math.min(1, (dt / 16.67) * 0.55); r.x += (tgtX - r.x) * lp; r.y += (tgtY - r.y) * lp; }
 
     if (window.UI && UI.updateVersusHUD) UI.updateVersusHUD(v);
   },
@@ -5466,6 +5470,12 @@ const Game = {
   onVersusState(s) {
     if (!this.vs) return;
     const r = this.vs.remote;
+    // horizontale snelheid schatten uit de positieverandering sinds de vorige update (px/ms), voor extrapolatie
+    const now = Date.now();
+    const dtMs = r._lastStateAt ? (now - r._lastStateAt) : 0;
+    if (r.ax != null && dtMs > 8 && dtMs < 300) r.vxEst = (s.x - r.ax) / dtMs;
+    else r.vxEst = 0;
+    r.ax = s.x; r.ay = s.y; r._lastStateAt = now;   // laatst bekende (authoritatieve) positie
     r.tx = s.x; r.ty = s.y; r.vy = s.vy || 0; r.dir = s.d || 1;
     r.onGround = s.g !== 0; r.attacking = s.a === 1;
     r.swingWeapon = s.sw || null; r.walkPhase = s.wp || 0;
