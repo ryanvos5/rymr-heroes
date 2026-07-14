@@ -927,6 +927,20 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
 #versus-result #btn-vs-menu { order: 3; }
 #versus-result #vs-rematch-status { flex-basis: 100%; order: 9; margin: 2px auto 0; font-size: 11px; text-align: center; }
 #vs-result-map-list { grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: min(430px, 99%); }
+/* iOS landscape (korte hoogte): uitslagscherm compact -> alles past zonder verticaal scrollen */
+@media (max-height: 440px) {
+  #versus-result .overlay-box { padding: 6px 16px; overscroll-behavior: contain; }
+  #versus-result .vs-result-hero { display: none !important; }   /* winnaar-podium + confetti weg -> ruimte voor de rest */
+  #versus-result .screen-title { font-size: 15px; margin-bottom: 1px; }
+  #versus-result .result-stats { font-size: 11px; margin: 2px auto; line-height: 1.3; }
+  #versus-result .vs-result-vote { margin: 2px auto; }
+  #versus-result .vs-vote-title { font-size: 11px; margin-bottom: 2px; }
+  #versus-result #vs-result-map-list { gap: 3px; }
+  #versus-result .menu-buttons { margin-top: 5px; gap: 5px; }
+  #versus-result #btn-vs-rematch { flex-basis: auto; min-width: 78px; }   /* alle knoppen op één rij i.p.v. eigen rij */
+  #versus-result .menu-buttons .big-btn { padding: 6px 12px; font-size: 12px; min-width: 78px; }
+  #versus-result #vs-rematch-status { font-size: 10px; margin: 1px auto 0; }
+}
 #vs-result-map-list .vs-map-btn {
   flex-direction: column; align-items: center; gap: 1px;
   padding: 5px 3px; font-size: 10px; line-height: 1.1; min-height: 28px; justify-content: center;

@@ -2195,9 +2195,9 @@ const UI = {
         const d = rankRes.delta, rk = RANKS[rankRes.newIdx];
         html += '<br><span style="color:' + (d >= 0 ? '#7be07a' : '#ff7a6a') + ';font-weight:bold">' + (d >= 0 ? '+' : '') + d + ' RP</span>' +
           '  ·  <span style="color:' + rk.col + '">' + rk.name + '</span> (' + rankRes.newRp + ' RP)';
-        if (rankRes.streakBonus) html += '<br><span style="color:#ffd24a">🔥 ' + tl('Winreeks') + '! +' + rankRes.streakBonus + ' RP</span>';
+        if (rankRes.streakBonus) html += '<br><span style="color:#ffd24a">' + this._ic('fire') + ' ' + tl('Winreeks') + '! +' + rankRes.streakBonus + ' RP</span>';
         if (rankRes.higherBonus) html += (rankRes.streakBonus ? ' · ' : '<br>') + '<span style="color:#ffd24a">' + tl('Hogere rank verslagen') + ' +' + rankRes.higherBonus + ' RP</span>';
-        if (rankRes.rankedUp) html += '<br><span style="color:' + rk.col + ';font-weight:bold">⬆ ' + tl('NIEUWE RANK') + ': ' + rk.name + (rk.title ? ' — ' + rk.title : '') + '!</span>';
+        if (rankRes.rankedUp) html += '<br><span style="color:' + rk.col + ';font-weight:bold">' + this._ic('rankup') + ' ' + tl('NIEUWE RANK') + ': ' + rk.name + (rk.title ? ' — ' + rk.title : '') + '!</span>';
       }
       html += (window.Net && Net.isLoggedIn() ? '' : '<br>' + tl('(log in om je rank & munten mee te tellen)'));
       xpEl.innerHTML = html;
