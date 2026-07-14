@@ -145,7 +145,6 @@ const UI = {
     $('btn-auth-toggle').onclick = () => this.openAuth(this.authMode === 'login' ? 'register' : 'login');
     $('btn-auth-submit').onclick = () => this.submitAuth();
     $('btn-auth-apple').onclick = () => this.oauthLogin('apple');
-    $('btn-auth-google').onclick = () => this.oauthLogin('google');
     // ---- privacybeleid (Apple-eis) ----
     { const bp = $('btn-privacy'); if (bp) bp.onclick = () => this.openPrivacy(); }
     { const bap = $('btn-auth-privacy'); if (bap) bap.onclick = () => this.openPrivacy(); }
@@ -916,20 +915,20 @@ const UI = {
   },
   closePrivacy() { const scr = document.getElementById('privacy-screen'); if (scr) scr.classList.add('hidden'); },
 
-  // Apple/Google-login (Supabase OAuth). Web/PWA: redirect-flow; onAuthStateChange vangt de sessie na terugkeer.
+  // Apple-login (Supabase OAuth). Web/PWA: redirect-flow; onAuthStateChange vangt de sessie na terugkeer.
   async oauthLogin(provider) {
     const msg = document.getElementById('auth-msg');
-    const aBtn = document.getElementById('btn-auth-apple'), gBtn = document.getElementById('btn-auth-google');
+    const aBtn = document.getElementById('btn-auth-apple');
     if (!window.Net || !Net.ready) { if (msg) { msg.style.color = '#ff6a6a'; msg.textContent = tl('Geen verbinding met de server.'); } return; }
     if (msg) { msg.style.color = ''; msg.textContent = tl('Bezig…'); }
-    if (aBtn) aBtn.disabled = true; if (gBtn) gBtn.disabled = true;
+    if (aBtn) aBtn.disabled = true;
     try {
-      if (provider === 'apple') await Net.signInWithApple(); else await Net.signInWithGoogle();
+      await Net.signInWithApple();
       // bij de redirect-flow navigeert de pagina weg; komt-ie terug zonder redirect, dan doet onAuthStateChange de rest
     } catch (e) {
       if (msg) { msg.style.color = '#ff6a6a'; msg.textContent = (e && e.message) ? e.message : tl('Inloggen mislukt — probeer e-mail.'); }
     } finally {
-      if (aBtn) aBtn.disabled = false; if (gBtn) gBtn.disabled = false;
+      if (aBtn) aBtn.disabled = false;
     }
   },
 

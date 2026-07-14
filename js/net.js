@@ -160,7 +160,6 @@ const Net = {
     } catch (e) { console.warn('[Net] deep-link init', e); }
   },
   async signInWithApple() { return this.signInWithOAuth('apple'); },
-  async signInWithGoogle() { return this.signInWithOAuth('google'); },
 
   async logout() {
     if (!this.ready) return;

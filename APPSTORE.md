@@ -11,7 +11,7 @@ Bundle-id: `nl.thebrandingfive.rymrheroes` · App-naam: **Rymr Heroes** · Web/p
 
 - **Inloggen is optioneel** — je kunt de hele game als gast spelen ("Later — speel als gast").
   Apple verbiedt verplichte registratie voor functies die geen account nodig hebben (5.1.1(i)).
-- **Sign in with Apple aanwezig** — verplicht zodra je ook Google-login aanbiedt (4.8). Knop staat
+- **Sign in with Apple aanwezig** — Google-login is verwijderd, dus dit is niet meer verplicht (4.8), maar we houden de Apple-knop gewoon. Knop staat
   in het onboarding/inlogscherm.
 - **Account verwijderen dat écht verwijdert** (5.1.1(v)) — Instellingen → *Account verwijderen*.
   Roept de Supabase-functie `delete_account()` aan die profiel, vrienden, berichten én het
@@ -30,13 +30,11 @@ Bundle-id: `nl.thebrandingfive.rymrheroes` · App-naam: **Rymr Heroes** · Web/p
 ## ❗ Nog te doen — buiten de code
 
 ### 1. Auth-providers instellen (Supabase-dashboard → Authentication → Providers)
-Zonder dit geven de Apple/Google-knoppen een foutpagina.
+Zonder dit geeft de Apple-knop een foutpagina. (Google-login is verwijderd.)
 - [ ] **Apple** inschakelen (Services ID, Team ID, Key ID + .p8-sleutel uit je Apple Developer-account).
-- [ ] **Google** inschakelen (OAuth client-id + secret uit Google Cloud Console).
 - [ ] **Redirect-URL's** toevoegen in Supabase → Authentication → URL Configuration → Redirect URLs:
       - Web: `https://rymrheroes.thebrandingfive.nl`
       - iOS-app (deep-link, al in de app ingebouwd): `nl.thebrandingfive.rymrheroes://login-callback`
-- [ ] Google-provider redirect URI (in Google Cloud Console): `https://ldzdfgfaqiwwdogpltsu.supabase.co/auth/v1/callback`
 - E-mail/wachtwoord werkt nu al zonder extra config.
 
 ### 2. App Store Connect — app aanmaken & metadata
