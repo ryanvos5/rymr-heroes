@@ -3,7 +3,7 @@
 Doel: de app zonder afkeuringsrisico in de App Store krijgen. Hieronder staat wat **al in de
 code/app is geregeld** en wat **jij nog in App Store Connect / dashboards moet doen**.
 
-Bundle-id: `com.ryanvos.tinypowersmashers` · App-naam: **Rymr Heroes**
+Bundle-id: `nl.thebrandingfive.rymrheroes` · App-naam: **Rymr Heroes** · Web/privacy: `https://rymrheroes.thebrandingfive.nl`
 
 ---
 
@@ -33,13 +33,14 @@ Bundle-id: `com.ryanvos.tinypowersmashers` · App-naam: **Rymr Heroes**
 Zonder dit geven de Apple/Google-knoppen een foutpagina.
 - [ ] **Apple** inschakelen (Services ID, Team ID, Key ID + .p8-sleutel uit je Apple Developer-account).
 - [ ] **Google** inschakelen (OAuth client-id + secret uit Google Cloud Console).
-- [ ] **Redirect-URL's** toevoegen: je Vercel-domein én — voor de iOS-app — een deep-link
-      (custom URL-scheme) zodat de app na inloggen terugkeert. Voor de beste iOS-ervaring overweeg
-      native "Sign in with Apple" (plugin) i.p.v. de web-redirect.
+- [ ] **Redirect-URL's** toevoegen in Supabase → Authentication → URL Configuration → Redirect URLs:
+      - Web: `https://rymrheroes.thebrandingfive.nl`
+      - iOS-app (deep-link, al in de app ingebouwd): `nl.thebrandingfive.rymrheroes://login-callback`
+- [ ] Google-provider redirect URI (in Google Cloud Console): `https://ldzdfgfaqiwwdogpltsu.supabase.co/auth/v1/callback`
 - E-mail/wachtwoord werkt nu al zonder extra config.
 
 ### 2. App Store Connect — app aanmaken & metadata
-- [ ] App aanmaken met bundle-id `com.ryanvos.tinypowersmashers`, categorie **Games**.
+- [ ] App aanmaken met bundle-id `nl.thebrandingfive.rymrheroes`, categorie **Games**.
 - [ ] **Privacybeleid-URL** invullen (verplicht). Gebruik je Vercel-URL, bv. `https://<jouw-domein>/privacy.html`.
 - [ ] **Support-URL** en (optioneel) marketing-URL.
 - [ ] Naam, subtitel, beschrijving, keywords, **screenshots in landscape** (verplichte maten voor

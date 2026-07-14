@@ -44,5 +44,16 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>nl.thebrandingfive.rymrheroes</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>nl.thebrandingfive.rymrheroes</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -498,14 +498,23 @@ const Storage = {
     opts = opts || {};
     const d = this.data;
     const oldRp = d.rp || 0, oldIdx = rankForRp(oldRp);
+    // rankverschil met de tegenstander (+ = die stond hoger). Zonder bekende opp-rank: 0 (neutraal).
+    const oppIdx = (typeof opts.oppRp === 'number') ? rankForRp(opts.oppRp) : oldIdx;
+    const rankDiff = oppIdx - oldIdx;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     let delta = 0, streakBonus = 0, higherBonus = 0;
     if (opts.quit) { delta = RANK_RP.quit; d.winStreak = 0; }
     else if (opts.won) {
-      delta = RANK_RP.win;
+      // meer RP voor het verslaan van een hogere rank, minder voor een lagere
+      delta = clamp(RANK_RP.win + rankDiff * RANK_RP.perRankDiff, RANK_RP.winMin, RANK_RP.winMax);
+      higherBonus = rankDiff > 0 ? rankDiff * RANK_RP.perRankDiff : 0;   // upset-bonus (alleen tonen bij hogere rank verslagen)
       d.winStreak = (d.winStreak || 0) + 1;
       if (d.winStreak >= 3 && d.winStreak % 3 === 0) { streakBonus = RANK_RP.streakBonus; delta += streakBonus; }
-      if (typeof opts.oppRp === 'number' && rankForRp(opts.oppRp) > oldIdx) { higherBonus = RANK_RP.higherRankBonus; delta += higherBonus; }
-    } else { delta = RANK_RP.loss; d.winStreak = 0; }
+    } else {
+      // verlies kost meer tegen een lagere rank, minder tegen een hogere
+      delta = clamp(RANK_RP.loss + rankDiff * RANK_RP.perRankDiff, RANK_RP.lossMin, RANK_RP.lossMax);
+      d.winStreak = 0;
+    }
     let newRp = Math.max(0, oldRp + delta);
     const floorRp = rankFloorRp(Math.max(d.rankRewarded || 0, oldIdx));   // checkpoint-vloer: onder Brons/Zilver/Goud III of Champion zak je niet meer terug
     if (newRp < floorRp) newRp = floorRp;

@@ -10,6 +10,8 @@
     "open:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/browser": "^6.0.6",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
     "@capacitor/splash-screen": "^6.0.3",

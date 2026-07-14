@@ -6,6 +6,9 @@
    ============================================================ */
 const SUPA_URL = 'https://ldzdfgfaqiwwdogpltsu.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkemRmZ2ZhcWl3d2RvZ3BsdHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzgwNzQsImV4cCI6MjA5NjA1NDA3NH0.bzoEhgQB727gjS0JfEqxjLlqyam0fuy0J7UovCeg6oY';
+// deep-link waarop de app na social-login terugkomt (custom URL-scheme = bundle-id).
+// Deze exacte URL moet ook in Supabase → Authentication → URL Configuration → Redirect URLs staan.
+const OAUTH_REDIRECT = 'nl.thebrandingfive.rymrheroes://login-callback';
 
 const Net = {
   sb: null,
@@ -13,18 +16,22 @@ const Net = {
   ready: false,
   authReady: false,     // true zodra de sessie (wel/niet ingelogd) is opgehaald
   pushTimer: null,
+  isNative: false,
 
   init() {
     if (!window.supabase || !window.supabase.createClient) {
       console.warn('[Net] supabase-js niet geladen — alleen lokaal spelen.');
       return;
     }
+    this.isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     try {
       this.sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true },
+        // PKCE + in de app zelf de callback afhandelen (geen automatische URL-detectie in de WebView)
+        auth: { persistSession: true, autoRefreshToken: true, flowType: 'pkce', detectSessionInUrl: !this.isNative },
       });
     } catch (e) { console.warn('[Net] init faalde', e); return; }
     this.ready = true;
+    if (this.isNative) this._initNativeAuthDeepLink();   // vang de social-login-redirect op in de app
     this.loadMapRotation();   // welke maps staan aan/uit (cloud, door de eigenaar beheerd via de Map Maker)
 
     // bestaande sessie herstellen
@@ -105,6 +112,22 @@ const Net = {
   // de sessie terug te vangen is een deep-link (custom URL-scheme) + provider-config nodig.
   async signInWithOAuth(provider) {
     if (!this.ready) throw new Error('Geen verbinding met de server.');
+    if (this.isNative) {
+      // native (iOS-app): open het provider-scherm in een in-app browser; de app vangt de
+      // redirect (OAUTH_REDIRECT) op via de deep-link-listener en wisselt de code in voor een sessie.
+      const { data, error } = await this.sb.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: OAUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      if (data && data.url) {
+        if (P.Browser && P.Browser.open) await P.Browser.open({ url: data.url, presentationStyle: 'popover' });
+        else window.open(data.url, '_system');
+      }
+      return data;
+    }
+    // web/PWA: klassieke redirect-flow op de huidige pagina
     const redirectTo = location.origin + location.pathname;
     const { data, error } = await this.sb.auth.signInWithOAuth({
       provider,
@@ -112,6 +135,29 @@ const Net = {
     });
     if (error) throw error;
     return data;
+  },
+
+  // iOS: luister naar de terugkeer-deep-link na social-login en maak de sessie compleet
+  _initNativeAuthDeepLink() {
+    try {
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      if (!P.App || !P.App.addListener) return;
+      P.App.addListener('appUrlOpen', async (evt) => {
+        const url = evt && evt.url;
+        if (!url || url.indexOf('login-callback') === -1) return;
+        try { if (P.Browser && P.Browser.close) await P.Browser.close(); } catch (e) {}
+        try {
+          let code = null;
+          try { code = new URL(url).searchParams.get('code'); } catch (e) {
+            const m = url.match(/[?&]code=([^&]+)/); code = m ? decodeURIComponent(m[1]) : null;
+          }
+          if (!code) return;
+          const { error } = await this.sb.auth.exchangeCodeForSession(code);   // PKCE -> sessie
+          if (error) throw error;
+          // onAuthStateChange werkt de UI bij
+        } catch (e) { console.warn('[Net] social-login callback', e); }
+      });
+    } catch (e) { console.warn('[Net] deep-link init', e); }
   },
   async signInWithApple() { return this.signInWithOAuth('apple'); },
   async signInWithGoogle() { return this.signInWithOAuth('google'); },
@@ -273,10 +319,12 @@ const Net = {
     const ch = this.sb.channel('smash-mm', { config: { broadcast: { self: false } } });
     const mm = { ch, myId, paired: false, seek: null };
     this._mm = mm;
-    // rank-matchmaking: eerst RANK_WINDOW ms alleen tegen ±1 rank, daarna tegen wie dan ook online
+    // rank-matchmaking: eerst RANK_WINDOW ms alleen binnen RANK_TOL ranks, daarna tegen wie dan ook online.
+    // Ruime marges (±2 ranks / kort venster) omdat de spelersbasis nog klein is — zo matchen bv.
+    // Bronze I en Bronze III meteen i.p.v. allebei op een bot terug te vallen.
     const myRp = (window.Storage && Storage.rp) ? Storage.rp() : 0;
     const myRank = (typeof rankForRp === 'function') ? rankForRp(myRp) : 0;
-    const startAt = Date.now(), RANK_WINDOW = 4500;
+    const startAt = Date.now(), RANK_WINDOW = 2500, RANK_TOL = 2;
     const pairWith = (otherId) => {
       if (mm.paired || !otherId || otherId === myId) return;
       mm.paired = true;
@@ -292,7 +340,7 @@ const Net = {
       if (!o || o === myId) return;
       try { ch.send({ type: 'broadcast', event: 'seek', payload: { id: myId, rp: myRp } }); } catch (e) {}
       const oRank = (typeof rankForRp === 'function') ? rankForRp(p.rp || 0) : 0;
-      const inRange = Math.abs(oRank - myRank) <= 1;                 // zelfde rank of net erboven/onder
+      const inRange = Math.abs(oRank - myRank) <= RANK_TOL;         // binnen ±RANK_TOL ranks (bv. hele Bronze-tier)
       const windowOpen = (Date.now() - startAt) >= RANK_WINDOW;      // niemand met die rank gevonden -> iedereen mag
       if (inRange || windowOpen) pairWith(o);
     });

@@ -864,7 +864,9 @@ const RANKS = [
   { name: 'Champion',   rp: 2200, tier: 'champion', sub: 0, col: '#b06bff', glow: '#e2c8ff', coins: 2200, chest: 'legendary' },
   { name: 'Elite',      rp: 2700, tier: 'elite',    sub: 0, col: '#ff5a5a', glow: '#ffd0d0', coins: 3000, chest: 'legendary' },
 ];
-const RANK_RP = { win: 30, loss: -15, streakBonus: 10, higherRankBonus: 5, quit: -30 };
+// RP per match. Winst/verlies schaalt met het rankverschil (ELO-achtig):
+// een hogere rank verslaan = meer RP, een lagere rank verslaan = minder. perRankDiff = RP per rank verschil.
+const RANK_RP = { win: 30, loss: -15, streakBonus: 10, quit: -30, perRankDiff: 8, winMin: 10, winMax: 60, lossMin: -45, lossMax: -3 };
 function rankForRp(rp) { rp = rp || 0; let idx = 0; for (let i = 0; i < RANKS.length; i++) if (rp >= RANKS[i].rp) idx = i; return idx; }
 // Checkpoint-ranks: eenmaal bereikt zak je nooit meer onder deze rank (RP-vloer). Brons III, Zilver III, Goud III, Champion.
 const RANK_CHECKPOINTS = [2, 5, 8, 11];
@@ -919,10 +921,10 @@ const CRATE_SHOP = [
 // richtprijzen; de échte, gelokaliseerde prijs komt van StoreKit zodra de producten in
 // App Store Connect staan. product = product-id in App Store Connect (consumable).
 const RUBY_PACKS = [
-  { id: 'rubies_s', rubies: 80,   price: '€1,99',  product: 'com.ryanvos.tinypowersmashers.rubies.small' },
-  { id: 'rubies_m', rubies: 250,  price: '€4,99',  product: 'com.ryanvos.tinypowersmashers.rubies.medium', best: true },
-  { id: 'rubies_l', rubies: 550,  price: '€9,99',  product: 'com.ryanvos.tinypowersmashers.rubies.large' },
-  { id: 'rubies_xl', rubies: 1200, price: '€19,99', product: 'com.ryanvos.tinypowersmashers.rubies.mega' },
+  { id: 'rubies_s', rubies: 80,   price: '€1,99',  product: 'nl.thebrandingfive.rymrheroes.rubies.small' },
+  { id: 'rubies_m', rubies: 250,  price: '€4,99',  product: 'nl.thebrandingfive.rymrheroes.rubies.medium', best: true },
+  { id: 'rubies_l', rubies: 550,  price: '€9,99',  product: 'nl.thebrandingfive.rymrheroes.rubies.large' },
+  { id: 'rubies_xl', rubies: 1200, price: '€19,99', product: 'nl.thebrandingfive.rymrheroes.rubies.mega' },
 ];
 
 /* ---------- SMEDERIJ (blacksmith): materialen + harnassen ---------- */

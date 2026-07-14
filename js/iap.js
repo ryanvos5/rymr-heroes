@@ -21,11 +21,11 @@ const IAP = {
 
   // toekomstige product-id's (moeten exact matchen met App Store Connect)
   PRODUCTS: {
-    coins_small:  'com.ryanvos.tinypowersmashers.coins.small',    // consumable
-    coins_large:  'com.ryanvos.tinypowersmashers.coins.large',    // consumable
-    rubies_small: 'com.ryanvos.tinypowersmashers.rubies.small',   // consumable
-    rubies_large: 'com.ryanvos.tinypowersmashers.rubies.large',   // consumable
-    remove_ads:   'com.ryanvos.tinypowersmashers.noads',          // non-consumable (indien ooit ads)
+    coins_small:  'nl.thebrandingfive.rymrheroes.coins.small',    // consumable
+    coins_large:  'nl.thebrandingfive.rymrheroes.coins.large',    // consumable
+    rubies_small: 'nl.thebrandingfive.rymrheroes.rubies.small',   // consumable
+    rubies_large: 'nl.thebrandingfive.rymrheroes.rubies.large',   // consumable
+    remove_ads:   'nl.thebrandingfive.rymrheroes.noads',          // non-consumable (indien ooit ads)
   },
 
   init() {
