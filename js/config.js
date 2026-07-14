@@ -525,25 +525,25 @@ const THEMES = {
     name: 'Verlaten Stad',
     sky: ['#1a2438', '#243049', '#3a3142'], far: ['#1e2636', '#222a3a', '#192030'],
     near: ['#2e3a4e', '#34405a', '#283448', '#3a4358'], ground: '#2c2620', groundTop: '#3a342c',
-    lamp: '#ffe9a0', weather: null,
+    lamp: '#ffe9a0', weather: null, grade: '#6a86d8',
   },
   park: {
     name: 'Verwilderd Park',
     sky: ['#16302a', '#1f4038', '#34433a'], far: ['#1c2e22', '#21321f', '#19281a'],
     near: ['#26402c', '#2f4a30', '#28482a', '#244226'], ground: '#283318', groundTop: '#3a4a26',
-    lamp: '#d6f0a0', weather: 'fog', tree: true,
+    lamp: '#d6f0a0', weather: 'fog', tree: true, grade: '#8ad89a',
   },
   graveyard: {
     name: 'Kerkhof',
     sky: ['#201828', '#2a1f38', '#3a2a42'], far: ['#241a2e', '#2a1f38', '#1f1828'],
     near: ['#332840', '#3a2f4a', '#2a2440', '#3e3358'], ground: '#241f2a', groundTop: '#322a38',
-    lamp: '#c0a8ff', weather: 'fog', graves: true,
+    lamp: '#c0a8ff', weather: 'fog', graves: true, grade: '#a06ae8',
   },
   sewer: {
     name: 'Riool',
     sky: ['#0e1416', '#13201f', '#182826'], far: ['#142022', '#172a2c', '#101e20'],
     near: ['#1f3034', '#244044', '#1a2e30', '#284044'], ground: '#1a201f', groundTop: '#243030',
-    lamp: '#7affd0', weather: 'rain',
+    lamp: '#7affd0', weather: 'rain', grade: '#4ac8a0',
   },
   mountain: {
     name: 'De Bergen',
@@ -551,14 +551,14 @@ const THEMES = {
     far: ['#3c5070', '#34465f', '#46607f'],            // verre toppen
     near: ['#4a627e', '#3e5169', '#56708c', '#48607a'],// dichtere bergen
     ground: '#2a3850', groundTop: '#3a4e68',
-    lamp: '#ffe6a0', weather: null, mountains: true,
+    lamp: '#ffe6a0', weather: null, mountains: true, grade: '#ffd8a8',
   },
   arena: {
     name: 'Arena',
     sky: ['#10121a', '#181b26', '#222636'],
     far: ['#1c1f2a'], near: ['#2a2e3c'],
     ground: '#241f18', groundTop: '#3a3022',
-    lamp: '#ffd24a', weather: null, isArena: true,
+    lamp: '#ffd24a', weather: null, isArena: true, grade: '#ffca7a',
   },
   jungle: {
     name: 'Jungle',
@@ -566,7 +566,7 @@ const THEMES = {
     far: ['#173a22', '#1e482a', '#143420'],             // verre boomsilhouetten
     near: ['#21512c', '#2a6234', '#255a2e', '#1d4a26'], // dichte begroeiing
     ground: '#21341a', groundTop: '#3a5223',
-    lamp: '#c6ec9a', weather: 'fog', jungle: true,
+    lamp: '#c6ec9a', weather: 'fog', jungle: true, grade: '#7ad86a',
   },
   beach: {
     name: 'Strand',
@@ -574,7 +574,7 @@ const THEMES = {
     far: ['#2e6b4a', '#3a7a54', '#28604a'],             // verre palmen
     near: ['#3a8a5c', '#46996a', '#348a58', '#2e7a50'], // dichtere palmen/struiken
     ground: '#caa860', groundTop: '#e3c882',            // zand
-    lamp: '#ffe9a0', weather: null, jungle: true,        // zelfde palm-silhouetten als jungle
+    lamp: '#ffe9a0', weather: null, jungle: true, grade: '#ffe4b0',   // zelfde palm-silhouetten als jungle
   },
 };
 

@@ -663,7 +663,15 @@ const Game = {
     const lamps = [];
     for (let lx = 80; lx < level.length; lx += 150 + Math.floor(rnd() * 90)) lamps.push({ x: lx });
 
-    this.backdrop = { far, near, doors, lamps };
+    // grond-props op speel-diepte: grafstenen (kerkhof) / struiken (park) — seeded, dus stabiel per level
+    const props = [];
+    if (theme.graves || theme.tree) {
+      for (let px2 = 90; px2 < level.length - 60; px2 += 130 + Math.floor(rnd() * 110)) {
+        props.push({ x: px2, grave: !!theme.graves, cross: theme.graves && rnd() < 0.3, w: 10 + Math.floor(rnd() * 6), h: 10 + Math.floor(rnd() * 7), tilt: rnd() < 0.35 });
+      }
+    }
+
+    this.backdrop = { far, near, doors, lamps, props };
   },
 
   // obstakels langs de route: auto's (springen), lage balken (duiken),
@@ -1074,6 +1082,7 @@ const Game = {
       if (this.ko && this.time - this.ko.born > 1200) this.ko = null;
       this._maybeSpawnBrawler();
     }
+    this._updateAmbient(dt);                             // weer-deeltjes (regen/mist uit het thema)
 
     this.player.update(dt, this);
 
@@ -1310,21 +1319,28 @@ const Game = {
       for (let i = 0; i < 4; i++) { const lx = (i * 120 - this.cam.x * 0.1) % (W + 120) - 60; ctx.fillRect(lx, 0, 10, CONFIG.GROUND_Y); }
       ctx.globalAlpha = 1;
     } else if (!theme.mountains) {
-      // sterren (statisch t.o.v. lucht)
+      // sterren — heldere sterren fonkelen zachtjes, doffe blijven rustig
       for (let i = 0; i < 40; i++) {
         const sx = (i * 97) % W, sy = (i * 53) % 120;
-        Sprites.px(ctx, i % 5 ? '#3a4660' : '#aeb8d0', sx, sy, 1, 1);
+        if (i % 5) Sprites.px(ctx, '#3a4660', sx, sy, 1, 1);
+        else { ctx.globalAlpha = 0.55 + 0.45 * Math.sin(this.time / 600 + i * 1.7); Sprites.px(ctx, '#aeb8d0', sx, sy, 1, 1); ctx.globalAlpha = 1; }
       }
-      // maan met gloed
-      ctx.globalAlpha = 0.18; Sprites.px(ctx, '#e8e2c8', W - 76, 24, 34, 34); ctx.globalAlpha = 1;
-      Sprites.px(ctx, '#e8e2c8', W - 70, 30, 22, 22);
-      Sprites.px(ctx, '#1a2438', W - 64, 26, 10, 22);
+      // maan met gloed — per level op een andere plek (seed), niet altijd rechtsboven
+      const mseed = (this.level && this.level.id) || 1;
+      const mx = W - 76 - ((mseed * 37) % Math.max(40, W - 170)), my = 14 + ((mseed * 53) % 30);
+      ctx.globalAlpha = 0.18; Sprites.px(ctx, '#e8e2c8', mx - 6, my - 6, 34, 34); ctx.globalAlpha = 1;
+      Sprites.px(ctx, '#e8e2c8', mx, my, 22, 22);
+      Sprites.px(ctx, theme.sky[0], mx + 6, my - 4, 10, 22);
+      // langzaam driftende nachtwolken
+      ctx.globalAlpha = 0.16; ctx.fillStyle = '#8a94b0';
+      for (let i = 0; i < 3; i++) { const cw2 = ((i * 170 + this.time * 0.004) % (W + 140)) - 70, ch2 = 20 + (i % 3) * 26; ctx.fillRect(cw2, ch2, 38, 6); ctx.fillRect(cw2 + 9, ch2 - 4, 24, 6); }
+      ctx.globalAlpha = 1;
     } else {
-      // berg-thema: zon + wolken
+      // berg-thema: zon + wolken (driften langzaam door de lucht)
       ctx.globalAlpha = 0.2; Sprites.px(ctx, '#fff0c0', W - 72, 22, 32, 32); ctx.globalAlpha = 1;
       Sprites.px(ctx, '#ffe9a0', W - 66, 28, 20, 20);
       ctx.globalAlpha = 0.5; ctx.fillStyle = '#cfe0ee';
-      for (let i = 0; i < 5; i++) { const cx2 = (i * 140 - this.cam.x * 0.15) % (W + 120) - 60, cy2 = 24 + (i % 3) * 18; ctx.fillRect(cx2, cy2, 34, 7); ctx.fillRect(cx2 + 8, cy2 - 4, 22, 7); }
+      for (let i = 0; i < 5; i++) { const cx2 = ((i * 140 - this.cam.x * 0.15 + this.time * 0.005) % (W + 120) + W + 120) % (W + 120) - 60, cy2 = 24 + (i % 3) * 18; ctx.fillRect(cx2, cy2, 34, 7); ctx.fillRect(cx2 + 8, cy2 - 4, 22, 7); }
       ctx.globalAlpha = 1;
     }
 
@@ -1447,6 +1463,25 @@ const Game = {
       for (let gx = Math.floor(this.cam.x / 30) * 30; gx < this.cam.x + W; gx += 30) {
         Sprites.px(ctx, theme.groundTop, gx, CONFIG.GROUND_Y + 16, 14, 2);    // strepen/tegels
         Sprites.px(ctx, '#00000033', gx + 7, CONFIG.GROUND_Y + 26, 2, 2);     // gruis
+      }
+      // grond-props: grafstenen (kerkhof) / struiken (park) — op speel-diepte, achter de actie
+      if (this.backdrop.props) for (const g of this.backdrop.props) {
+        if (g.x < this.cam.x - 24 || g.x > this.cam.x + W + 24 || this.overPit(g.x)) continue;
+        const gy2 = CONFIG.GROUND_Y;
+        if (g.grave) {
+          const tx = g.x - (g.w >> 1);
+          Sprites.px(ctx, '#4a4456', tx, gy2 - g.h, g.w, g.h);                   // zerk
+          Sprites.px(ctx, '#5a5468', tx, gy2 - g.h, g.w, 2);                     // lichte top
+          Sprites.px(ctx, '#332e40', tx + g.w - 2, gy2 - g.h, 2, g.h);           // schaduwrand
+          if (g.cross) { Sprites.px(ctx, '#5a5468', g.x - 1, gy2 - g.h - 6, 2, 6); Sprites.px(ctx, '#5a5468', g.x - 3, gy2 - g.h - 4, 6, 2); }
+          if (g.tilt) Sprites.px(ctx, '#4a4456', tx - 2, gy2 - 3, 2, 3);         // afgebrokkeld brokje
+        } else {
+          ctx.fillStyle = '#2f4a30';                                             // struik: 3 bollen
+          ctx.beginPath(); ctx.arc(g.x, gy2 - 4, g.w * 0.55, 0, 6.2832); ctx.fill();
+          ctx.beginPath(); ctx.arc(g.x - g.w * 0.45, gy2 - 2, g.w * 0.4, 0, 6.2832); ctx.fill();
+          ctx.beginPath(); ctx.arc(g.x + g.w * 0.45, gy2 - 2, g.w * 0.4, 0, 6.2832); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.arc(g.x + 1, gy2 - 6, g.w * 0.3, 0, 6.2832); ctx.fill();
+        }
       }
       // Journey (Mario): ravijn-gaten uit de grond snijden (val = respawn) + zwevende platforms
       if (this.jStage && this.pits) for (const p of this.pits) {
@@ -1656,6 +1691,16 @@ const Game = {
     ctx.globalAlpha = 1;
     ctx.textAlign = 'left';
 
+    // weer-deeltjes (regen/mist uit het thema) — wereld-ruimte, over de scene
+    if (this.ambient && this.ambient.length && !this.vsMap) {
+      for (const a of this.ambient) {
+        const life = 1 - (this.time - a.born) / a.dur;
+        ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * (a.a || 0.85);
+        Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.h || a.s);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // ---- Power Smash-juice (Journey): impact-schokgolven, KO-ring, zweefcijfers (wereld-ruimte) ----
     if (this.jStage) {
       if (this.impacts) for (const im of this.impacts) {
@@ -1684,6 +1729,16 @@ const Game = {
 
     ctx.restore();   // wereld (camera)
     ctx.restore();   // schermschud
+
+    // kleurgrading per thema (soft-light) + zacht vignet — elk level z'n eigen film-look
+    if (theme.grade) {
+      ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.5;
+      ctx.fillStyle = theme.grade; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
+    const vgs = ctx.createRadialGradient(W / 2, H / 2, H * 0.5, W / 2, H / 2, H);
+    vgs.addColorStop(0, 'rgba(0,0,0,0)'); vgs.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = vgs; ctx.fillRect(0, 0, W, H);
 
     // schermflitsen (Journey-juice): witte KO-flits + rode "jij geraakt"-rand
     if (this.jStage) {
@@ -4648,23 +4703,39 @@ const Game = {
   },
   // sfeer-deeltjes per map (embers/bladeren/zeenevel/stof) — geven de arena leven
   _updateAmbient(dt) {
-    const map = this.vsMap; if (!map) return;
-    const kind = map.vulcan ? 'ember' : (map.jungle2 ? 'leaf' : ((map.beach || map.pirate) ? 'spray' : ((map.airplane || map.castle) ? 'spark' : ((map.cave || map.dohyo) ? 'dust' : null))));
+    if (!this.ambient) this.ambient = [];
+    const map = this.vsMap;
+    let kind = null, W = 720, gy = 232;
+    if (map) {
+      kind = map.vulcan ? 'ember' : (map.jungle2 ? 'leaf' : ((map.beach || map.pirate) ? 'spray' : ((map.airplane || map.castle) ? 'spark' : ((map.cave || map.dohyo) ? 'dust' : null))));
+      W = this.vsMapW || 720; gy = (map.fallY || 232);
+    } else if (this.theme && this.level) {               // singleplayer: weer uit het level-thema (rain/fog uit THEMES)
+      kind = this.theme.weather || null;
+      W = this.level.length || CONFIG.VIEW_W; gy = CONFIG.GROUND_Y;
+    }
     if (kind) {
-      this._ambClock += dt;
-      if (this._ambClock >= 150 && this.ambient.length < 55) {
+      this._ambClock = (this._ambClock || 0) + dt;
+      const iv = kind === 'rain' ? 26 : 150, cap = kind === 'rain' ? 90 : 55;   // regen heeft meer deeltjes nodig
+      if (this._ambClock >= iv && this.ambient.length < cap) {
         this._ambClock = 0;
-        const W = this.vsMapW || 720, x = Math.random() * W, gy = (map.fallY || 232);
+        // singleplayer: spawn rond de camera (anders verdunt het weer over de hele levellengte)
+        const x = map ? Math.random() * W : ((this.cam ? this.cam.x : 0) - 60 + Math.random() * (CONFIG.VIEW_W + 120));
         if (kind === 'ember') this.ambient.push({ x, y: gy + 8, vx: (Math.random() - 0.5) * 0.4, vy: -0.6 - Math.random() * 0.9, c: Math.random() < 0.5 ? '#ff7a2a' : '#ffd24a', s: 2, born: this.time, dur: 2600 });
         else if (kind === 'leaf') this.ambient.push({ x, y: -50 - Math.random() * 60, vx: (Math.random() - 0.5) * 0.7, vy: 0.5 + Math.random() * 0.6, c: Math.random() < 0.5 ? '#4a8c1f' : '#6abe30', s: 2, born: this.time, dur: 4600, sway: Math.random() * 6.28 });
         else if (kind === 'spray') this.ambient.push({ x, y: gy - 4, vx: (Math.random() - 0.5) * 0.5, vy: -1 - Math.random() * 1.2, c: '#bfe9ff', s: 2, born: this.time, dur: 1400 });
         else if (kind === 'spark') this.ambient.push({ x, y: Math.random() * 200 - 70, vx: (Math.random() - 0.5) * 0.3, vy: -0.2 - Math.random() * 0.3, c: '#ffffff', s: 1, born: this.time, dur: 2800 });
+        else if (kind === 'rain') this.ambient.push({ x, y: -30, vx: -0.4, vy: 4.2 + Math.random() * 1.6, c: '#9fc8e8', s: 1, h: 5, a: 0.5, born: this.time, dur: 1600 });
+        else if (kind === 'fog') this.ambient.push({ x, y: gy - 6 - Math.random() * 46, vx: 0.12 + Math.random() * 0.18, vy: (Math.random() - 0.5) * 0.04, c: '#a8b0c8', s: 3 + Math.floor(Math.random() * 2), a: 0.16, born: this.time, dur: 7000 });
         else this.ambient.push({ x, y: Math.random() * 180, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.2, c: '#7a808c', s: 1, born: this.time, dur: 3200 });
       }
     }
     if (this.ambient.length) {
-      for (const a of this.ambient) { a.x += a.vx * this.dtScale; a.y += a.vy * this.dtScale; if (a.sway != null) { a.sway += 0.05 * this.dtScale; a.x += Math.sin(a.sway) * 0.3; } }
-      this.ambient = this.ambient.filter((a) => this.time - a.born < a.dur);
+      for (const a of this.ambient) {
+        a.x += a.vx * this.dtScale; a.y += a.vy * this.dtScale;
+        if (a.sway != null) { a.sway += 0.05 * this.dtScale; a.x += Math.sin(a.sway) * 0.3; }
+        if (a.h && !map && a.y >= CONFIG.GROUND_Y - 2) a.dead = true;   // regendruppel raakt de grond
+      }
+      this.ambient = this.ambient.filter((a) => !a.dead && this.time - a.born < a.dur);
     }
   },
   _flashPal(pal) { const o = {}; for (const k in pal) o[k] = '#ffffff'; return o; },
@@ -5580,8 +5651,11 @@ const Game = {
 
     const z = this.vsCamZoom || 1;
     const camX = this.vsCamX, camY = this.vsCamY, visW = W / z, visH = H / z;
-    ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
 
+    // ---- achtergrond in een EIGEN transform met gereduceerde camerafactor -> parallax-diepte ----
+    // ver decor (grot/vulkaan/kasteel/oerwoud) schuift langzamer dan de wereld; interieurs subtieler.
+    const bgF = (map.templeIn || map.treasure || map.dohyo) ? 0.75 : 0.45;
+    ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX * bgF, -camY * bgF);
     if (map.cave) this.drawCaveBg(ctx);                 // diepe grotten / vleermuizen / druppels
     if (map.vulcan) this.drawVulcanBg(ctx);             // verre uitbarstingen + rook
     if (map.pirate) this.drawPirateBg(ctx);             // piratenschip-achtergrond + water
@@ -5593,6 +5667,9 @@ const Game = {
     if (map.treasure) this.drawTreasureBg(ctx);         // schatkamer: goud, juwelen, kisten, afgodsbeeld
     else if (map.templeIn) this.drawTempleInteriorBg(ctx);   // tempel van BINNEN: donkere zaal, pilaren, wandfakkels
     else if (map.temple) this.drawTempleBg(ctx);        // stenen tempel (buiten): verre piramide + fakkels
+    ctx.restore();
+
+    ctx.save(); ctx.translate(shx, shy); ctx.scale(z, z); ctx.translate(-camX, -camY);
 
     // afgrond onderin (map-thema), camera-bewust (volle zichtbare breedte bij uitzoomen)
     ctx.fillStyle = map.void || '#06090d'; ctx.fillRect(camX - 4, CONFIG.GROUND_Y - 2, visW + 8, visH + Math.abs(camY) + 320);
@@ -5661,8 +5738,8 @@ const Game = {
     if (this.ambient && this.ambient.length) {
       for (const a of this.ambient) {
         const life = 1 - (this.time - a.born) / a.dur;
-        ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * 0.85;
-        Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.s);
+        ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * (a.a || 0.85);
+        Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.h || a.s);
       }
       ctx.globalAlpha = 1;
     }
@@ -5836,6 +5913,15 @@ const Game = {
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 0.98);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.28)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    // kleurgrading per map (soft-light) — elke arena z'n eigen film-look
+    const grd = map.vulcan ? '#ff8a3a' : map.cave ? '#3a5a9a' : map.templeIn ? '#ffb35a' : map.treasure ? '#ffd06a'
+      : map.pirate ? '#3a7a9a' : (map.jungle2 || map.jbg) ? '#4a9a3a' : map.beach ? '#ffe2a0' : map.clouds ? '#a8d8ff'
+      : map.castle ? '#b8c8ff' : map.dohyo ? '#ffc890' : map.temple ? '#ffd8a0' : null;
+    if (grd) {
+      ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.45;
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
 
     // draken (drakenei-powerup) — scherm-ruimte, over de wereld heen
     this.renderDragons(ctx);
@@ -6920,7 +7006,7 @@ const Game = {
     // andere spelers
     for (const id in this.trainPeers) this.drawTrainPeer(ctx, this.trainPeers[id]);
     // sfeer + partikels
-    if (this.ambient && this.ambient.length) { for (const a of this.ambient) { const life = 1 - (this.time - a.born) / a.dur; ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * 0.8; Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.s); } ctx.globalAlpha = 1; }
+    if (this.ambient && this.ambient.length) { for (const a of this.ambient) { const life = 1 - (this.time - a.born) / a.dur; ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.4)) * (a.a || 0.8); Sprites.px(ctx, a.c, Math.round(a.x), Math.round(a.y), a.s, a.h || a.s); } ctx.globalAlpha = 1; }
     for (const pt of this.particles) { ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); Sprites.px(ctx, pt.color, pt.x, pt.y, pt.size, pt.size); }
     ctx.globalAlpha = 1;
     // lokale speler
