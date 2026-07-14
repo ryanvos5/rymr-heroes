@@ -1896,11 +1896,27 @@ const UI = {
         nt.style.top = (tm && !tm.classList.contains('hidden')) ? '100px' : '8px';   // ruim onder de normale timer, of bovenaan als die er niet is
       } else nt.classList.add('hidden');
     }
+    // mini-portretten naast de namen (1x per match opbouwen, gecachet op character+hoed)
+    this._ensureVsPortrait('me', Storage.data.equippedChar || 'ryan', Storage.data.equippedHat);
+    if (v.remote) this._ensureVsPortrait('them', v.remote.charId || 'ryan', v.remote.hat || 'none');
     // HP-balken
     const hpMe = document.getElementById('vs-hp-me');
     const hpThem = document.getElementById('vs-hp-them');
-    if (hpMe && Game.player) hpMe.style.width = Math.max(0, Math.min(100, (Game.player.hp / Game.player.maxHp) * 100)) + '%';
-    if (hpThem && v.remote) hpThem.style.width = Math.max(0, Math.min(100, (v.remote.hp / (v.remote.maxHp || 100)) * 100)) + '%';
+    const fracMe = Game.player ? Math.max(0, Math.min(100, (Game.player.hp / Game.player.maxHp) * 100)) : 100;
+    const fracThem = v.remote ? Math.max(0, Math.min(100, (v.remote.hp / (v.remote.maxHp || 100)) * 100)) : 100;
+    if (hpMe && Game.player) hpMe.style.width = fracMe + '%';
+    if (hpThem && v.remote) hpThem.style.width = fracThem + '%';
+    // 'ghost bar': net verloren HP blijft even bleek staan en loopt dan leeg (à la Street Fighter)
+    this._vsGhost = this._vsGhost || { me: 100, them: 100 };
+    const setGhost = (side, frac) => {
+      const g = document.getElementById('vs-hp-ghost-' + side); if (!g) return;
+      const cur = this._vsGhost[side];
+      const nxt = frac >= cur ? frac : Math.max(frac, cur - 0.55);   // zakt ~33%/s achter de echte balk aan
+      this._vsGhost[side] = nxt;
+      g.style.width = nxt + '%';
+    };
+    if (Game.player) setGhost('me', fracMe);
+    if (v.remote) setGhost('them', fracThem);
     // shield-balkjes (blauw, boven de hp)
     const shMe = document.getElementById('vs-shield-me'), shThem = document.getElementById('vs-shield-them');
     const setShield = (el, amt) => { if (!el) return; const on = amt > 0; el.classList.toggle('hidden', !on); if (on) el.firstElementChild.style.width = Math.max(0, Math.min(100, (amt / (typeof SMASH_SHIELD !== 'undefined' ? SMASH_SHIELD : 50)) * 100)) + '%'; };
@@ -1933,6 +1949,19 @@ const UI = {
         rb.className = 'vs-round-banner ' + (v.roundWonByMe ? 'win' : 'lose');
       } else rb.classList.add('hidden');
     }
+  },
+
+  // mini-portret (canvas) vóór de naam in de versus-HUD; alleen opnieuw tekenen als character/hoed wisselt
+  _ensureVsPortrait(side, cid, hat) {
+    const host = document.getElementById('vs-name-' + side); if (!host) return;
+    const key = cid + '|' + (hat || 'none');
+    if (host._puKey === key) return;
+    host._puKey = key;
+    const old = host.querySelector('.vs-portrait'); if (old) old.remove();
+    const c = CHARACTERS[cid] || CHARACTERS.ryan;
+    const cv = document.createElement('canvas'); cv.width = 120; cv.height = 92; cv.className = 'vs-portrait';
+    this._drawCharPreview(cv, c.palette, { build: c.build, hair: c.hair, hat: hat || 'none', outfit: c.outfit }, 0);
+    host.insertBefore(cv, host.firstChild);
   },
 
   showWinCelebration(name, won) {
@@ -1981,6 +2010,33 @@ const UI = {
 
   showVersusResult(won, myScore, oppScore, xpGained, isBot, coinsEarned, peerLeft, chestDrop, mmBot, rankRes) {
     const vw = document.getElementById('vs-win'); if (vw) vw.classList.add('hidden');
+    // winnaar-podium: de winnende held groot op een sunburst, met confetti als JIJ wint
+    const heroBox = document.getElementById('vs-result-hero');
+    if (heroBox) {
+      heroBox.classList.remove('hidden');
+      heroBox.classList.toggle('lost', !won);
+      const oldCv = heroBox.querySelector('canvas'); if (oldCv) oldCv.remove();
+      let cid = Storage.data.equippedChar || 'ryan', hat = Storage.data.equippedHat;
+      if (!won && typeof Game !== 'undefined' && Game.vs && Game.vs.remote && Game.vs.remote.charId) { cid = Game.vs.remote.charId; hat = Game.vs.remote.hat || 'none'; }
+      const hc = CHARACTERS[cid] || CHARACTERS.ryan;
+      const hcv = document.createElement('canvas'); hcv.width = 120; hcv.height = 92;
+      this._drawCharPreview(hcv, hc.palette, { build: hc.build, hair: hc.hair, hat: hat || 'none', outfit: hc.outfit }, 0);
+      heroBox.appendChild(hcv);
+      let cf = heroBox.querySelector('.vrh-confetti');
+      if (won) {
+        if (!cf) {
+          cf = document.createElement('div'); cf.className = 'vrh-confetti';
+          for (let i = 0; i < 16; i++) {
+            const p = document.createElement('i');
+            p.style.left = (4 + Math.random() * 92) + '%';
+            p.style.animationDelay = (Math.random() * 1.4) + 's';
+            p.style.background = ['#f2c94c', '#6abe30', '#ff7a5a', '#7fb4ff', '#ffe27a'][i % 5];
+            cf.appendChild(p);
+          }
+          heroBox.appendChild(cf);
+        }
+      } else if (cf) cf.remove();
+    }
     if (window.Sfx && Sfx.calmOutro) Sfx.calmOutro();   // matchmuziek langzaam uit -> rustgevend thema
 
     // knop-bindingen herstellen (Journey kan ze hebben overschreven)

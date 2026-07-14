@@ -1976,3 +1976,39 @@ body.is-touch.portrait.in-game #rotate-hint { display: flex; }
   .map-node .map-node-num .ic { width: 18px; height: 18px; }
   .map-node.boss { width: 46px; height: 46px; }
 }
+
+/* ====== UI-polish: schermovergangen, micro-interacties, victory-podium, HUD-portretten ====== */
+/* panelen komen zacht binnen (herstart automatisch bij elke keer tonen) */
+@keyframes screenIn { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes overlayIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.screen-inner { animation: screenIn .18s ease-out; }
+.overlay-box { animation: overlayIn .14s ease-out; }
+
+/* hover-states (alleen op apparaten met een muis) + toetsenbord-focus */
+@media (hover: hover) {
+  .stone-btn:hover, .stone-tile:hover { filter: brightness(1.12); transition: filter .12s; }
+  .shop-buy:hover, .big-btn:hover, .gal-arrow:hover, .reward-ok:hover, .back-btn:hover { filter: brightness(1.15); transition: filter .12s; }
+}
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* victory-podium in het uitslagscherm: held op een draaiende sunburst + confetti */
+.vs-result-hero { position: relative; width: 128px; height: 100px; margin: 2px auto 4px; }
+.vs-result-hero canvas { position: relative; z-index: 2; width: 110px; height: 84px; image-rendering: pixelated; margin-top: 8px; filter: drop-shadow(0 6px 6px rgba(0,0,0,.45)); }
+.vrh-burst { position: absolute; left: 50%; top: 50%; width: 132px; height: 132px; margin: -66px 0 0 -66px; z-index: 1; background: repeating-conic-gradient(rgba(242,201,76,.16) 0 9deg, transparent 9deg 18deg); border-radius: 50%; animation: vrhSpin 14s linear infinite; }
+.vs-result-hero.lost .vrh-burst { background: repeating-conic-gradient(rgba(140,150,170,.10) 0 9deg, transparent 9deg 18deg); }
+@keyframes vrhSpin { to { transform: rotate(360deg); } }
+.vrh-confetti { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.vrh-confetti i { position: absolute; top: -8px; width: 4px; height: 7px; opacity: 0; animation: vrhFall 1.7s ease-in infinite; }
+@keyframes vrhFall { 0% { transform: translateY(0) rotate(0); opacity: 0; } 12% { opacity: .95; } 100% { transform: translateY(106px) rotate(300deg); opacity: 0; } }
+
+/* mini-portret vóór de naam in de versus-HUD */
+.vs-portrait { width: 26px; height: 20px; image-rendering: pixelated; flex: 0 0 auto; filter: drop-shadow(0 1px 0 rgba(0,0,0,.8)); }
+
+/* 'ghost bar': bleke strook die toont wat je net aan HP verloor */
+.vs-hp { position: relative; }
+.vs-hp-ghost { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(255,224,130,.5); z-index: 1; }
+.vs-hp-fill { position: relative; z-index: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-inner, .overlay-box, .vrh-burst, .vrh-confetti i { animation: none; }
+}

@@ -849,13 +849,13 @@ const Game = {
       this.particles.push(new Particle(x, y, (Math.random() - 0.7) * 3, (Math.random() - 0.5) * 2.5, Math.random() < 0.5 ? '#cfd6df' : '#9aa3ad', 220, 2));
   },
   // perfecte parry: felle witte/gouden flits in een ring
-  spawnParryFlash(x, y) {
+  spawnParryFlash(x, y, freeze) {
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2;
       this.particles.push(new Particle(x, y, Math.cos(a) * 3.2, Math.sin(a) * 3.2, (i % 2 ? '#fff7c8' : '#ffe27a'), 300, 2));
     }
     this._parryFx = { x, y, t: this.time };
-    this.hitStop = Math.max(this.hitStop, 70);                               // korte clang-freeze: de parry moet je VOELEN
+    if (freeze) this.hitStop = Math.max(this.hitStop, 70);                   // clang-freeze alleen voor de parrier zelf (anders eet 'ie de input van de weggeslagen aanvaller op)
     this.shake = Math.max(this.shake, 5);
   },
   // guard breekt: rode/grijze scherf-burst
@@ -4651,23 +4651,23 @@ const Game = {
     let ly = null;
     if (this.platforms) for (const pf of this.platforms) {
       if (pf.soft || pf.broken) continue;                                    // zachte/ingezakte wolken zijn niet vast
-      if (Math.abs(e.x - pf.x) < pf.w / 2 + 4 && pf.y >= e.y - 2 && (ly === null || pf.y < ly)) ly = pf.y;
+      if (Math.abs(e.x - pf.x) < pf.w / 2 + 7 && pf.y >= e.y - 2 && (ly === null || pf.y < ly)) ly = pf.y;   // +7 = zelfde rand-marge als de physics (w/2)
     }
     if (this.obstacles) for (const o of this.obstacles) {                    // autodaken zijn ook landbaar
       if (o.type !== 'car' || o.dead) continue;
       const top = CONFIG.GROUND_Y - o.h;
-      if (Math.abs(e.x - o.x) < o.w / 2 + 4 && top >= e.y - 2 && (ly === null || top < ly)) ly = top;
+      if (Math.abs(e.x - o.x) < o.w / 2 + 7 && top >= e.y - 2 && (ly === null || top < ly)) ly = top;
     }
     if (this.level && !this.level.parkour && !this.overPit(e.x) && e.y <= CONFIG.GROUND_Y + 2 && (ly === null || CONFIG.GROUND_Y < ly)) ly = CONFIG.GROUND_Y;
     return ly;
   },
   addHitFeel(x, y, dir, dmg, power, localVictim, victim) {
     const big = (dmg >= 26) || (power >= 30);
-    // freeze-frame die met schade schaalt: raker = langer bevroren (30-140ms). Het slachtoffer
-    // voelt een kortere freeze mee (0.6x) zodat de besturing niet stroef wordt. Interval-slot tegen snelvuur.
-    if (dmg > 0 && this.time - (this._hitStopAt || 0) > 90) {
-      const stop = Math.min(140, 30 + dmg * 1.6);
-      this.hitStop = Math.max(this.hitStop, localVictim ? stop * 0.6 : stop);
+    // freeze-frame die met schade schaalt: raker = langer bevroren (30-140ms). ALLEEN wanneer JIJ raakt —
+    // een freeze als jij geraakt wordt eet je input op (sprong-tik verdwijnt in de freeze -> ring-out).
+    if ((this._hitStopAt || 0) > this.time) this._hitStopAt = 0;             // klok is gereset (nieuwe match) -> slot vrijgeven
+    if (dmg > 0 && !localVictim && this.time - (this._hitStopAt || 0) > 90) {
+      this.hitStop = Math.max(this.hitStop, Math.min(140, 30 + dmg * 1.6));
       this._hitStopAt = this.time;
     }
     this.addImpact(x, y, dir, big);                                          // schokgolf + richting-vonken
@@ -4697,7 +4697,7 @@ const Game = {
     this.smashFlash = Math.max(this.smashFlash, 210);
     this.shake = Math.max(this.shake, 14);
     this._shakeDir = { x: 0, y: -0.5 };                                      // KO-dreun: verticale schud
-    this.addFloatText(x, y - 18, won ? 'SMASH!' : 'K.O.', won ? '#5aff7a' : '#ff5a5a', true);
+    this.addFloatText(x, y - 18, won ? 'SMASH!' : 'K.O.', won ? '#5aff7a' : '#ff5a5a', true, 2.6);   // KO-tekst altijd groter dan schade-popups (max 2.4)
     for (let i = 0; i < 22; i++) { const a = (i / 22) * 6.2832, sp = 3 + Math.random() * 4; this.particles.push(new Particle(x, y - 12, Math.cos(a) * sp, Math.sin(a) * sp - 1, i % 2 ? '#ffffff' : '#ffe27a', 520, 3)); }
     if (window.Sfx) Sfx.play('explos');
   },
@@ -5333,7 +5333,7 @@ const Game = {
     if (parry) {
       // 100% geblokt + de aanvaller stuitert alleen terug (geen stun meer)
       p.knockVx = 0; p.guard = Math.min(GUARD_MAX, p.guard + 400);
-      this.spawnParryFlash(p.x, p.y - 14); this.shake = Math.max(this.shake, 6);
+      this.spawnParryFlash(p.x, p.y - 14, true); this.shake = Math.max(this.shake, 6);
       if (this.vsBot && this.bot && !this.bot.dead) {
         const kd = this.bot.x >= p.x ? 1 : -1;
         this.bot.knockVx = kd * 20; this.bot.vy = -4.5; this.bot.onGround = false;
