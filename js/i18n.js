@@ -475,7 +475,7 @@ I18N.UI_EN = {
   // shop: crates + robijnen
   'Crate': 'Crate', 'Robijnen': 'Rubies', 'Munten': 'Coins', 'Beste deal': 'Best deal',
   'Koop met Apple Pay': 'Buy with Apple Pay',
-  'Vrij te spelen bij': 'Unlock at', 'Oplaadtijd': 'Charge time',
+  'Vrij te spelen bij': 'Unlock at', 'Oplaadtijd': 'Charge time', 'Sprong': 'Jump', 'sprong': 'jump',
   'Gekochte crates gaan meteen open — je buit wordt direct bijgeschreven.': 'Purchased crates open instantly — your loot is added right away.',
   'Beste buit: veel munten, XP, materialen en kans op zeldzame items.': 'Best loot: lots of coins, XP, materials and a chance at rare items.',
   'Rijke buit: munten, XP, materialen en items.': 'Rich loot: coins, XP, materials and items.',

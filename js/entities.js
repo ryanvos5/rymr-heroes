@@ -44,6 +44,7 @@ class Player {
     this.maxJumps = 1;   // wordt 2 in wereld 2 (dubbel-jump)
     this.jumps = 1;
     this.dblJumpMul = ch.dblJumpMul || 1;   // Tygo springt z'n dubbel-jump hoger
+    this.baseJumpMul = (typeof charJumpOf === 'function') ? charJumpOf(ch) : 1;   // basis-spronghoogte per bouw (klein hoger, zwaar lager)
     this.extraJumps = ch.extraJump ? 1 : 0; // Timo: 1 extra (kleinere) dubbel-jump
     this.extraJumpLeft = 0;
     this.vine = null; this._vineCd = 0;     // Jungle: aan een liaan slingeren
@@ -249,7 +250,7 @@ class Player {
     if (jumpPressed && !this.ducking && !inCloud && !rooted) {
       if (this.jumps > 0) {
         const air = !this.onGround;              // dit is de dubbel-jump (al in de lucht)
-        this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * (air ? this.dblJumpMul : 1);
+        this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * (this.baseJumpMul || 1) * (air ? this.dblJumpMul : 1);
         this.onGround = false;
         this.jumps--;
         this.jumping = true;     // variabele spronghoogte: actief
@@ -258,7 +259,7 @@ class Player {
         }
         if (window.Sfx && this === game.player) Sfx.play('jump');
       } else if (this.extraJumpLeft > 0 && this.maxJumps >= 2) {
-        this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * 0.7;   // extra dubbel-jump
+        this.vy = CONFIG.JUMP_VELOCITY * (this.jumpMul || 1) * (this.baseJumpMul || 1) * 0.7;   // extra dubbel-jump
         this.onGround = false;
         this.extraJumpLeft--;
         this.jumping = true;

@@ -1042,6 +1042,9 @@ function charTierMul(ch) {
   return 2.0;
 }
 function charUpgradeCost(ch, lvl) { return Math.round(250 * lvl * (lvl + 3) * charTierMul(ch)); }   // L1->2:1000, L2->3:2500, ...
+// basis-spronghoogte per bouw: klein/licht springt hoger, zwaar lager (subtiel)
+function charJumpMul(build) { return ({ small: 1.12, tall: 1.05, normal: 1.0, stocky: 0.92, bulky: 0.88 })[build] || 1.0; }
+function charJumpOf(c) { return (c && c.jumpMul != null) ? c.jumpMul : charJumpMul(c && c.build); }   // per-char override, anders naar bouw
 function charHpBonus(lvl) { return (lvl - 1) * 2; }                          // +2 HP per level
 function charSpeedMul(lvl) { return 1 + Math.max(0, lvl - 10) * 0.01; }      // vanaf lvl 10: tot +10% snelheid
 function charAbilityDurMul(lvl) { return 1 + Math.max(0, lvl - 5) * 0.05; }  // vanaf lvl 5: tot +75% ability-duur
