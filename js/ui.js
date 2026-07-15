@@ -2471,8 +2471,9 @@ const UI = {
       card.appendChild(cv); card.appendChild(info);
       const btn = document.createElement('button');
       btn.className = 'shop-buy buy';
-      btn.textContent = ' ' + p.price;
-      btn.innerHTML = '<svg class="apay-ic" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6.6 8.9c-.4.5-1 .4-1.6.2.1-.6.4-1.2.7-1.6.4-.5 1-.8 1.5-.9.1.7-.2 1.3-.6 2.3zm.6.9c-.8 0-1.5.5-1.9.5-.4 0-1-.5-1.6-.5-.8 0-1.6.5-2 1.2-.9 1.5-.2 3.7.6 4.9.4.6.9 1.2 1.5 1.2.6 0 .8-.4 1.6-.4.7 0 .9.4 1.6.4.6 0 1-.6 1.4-1.1.4-.6.6-1.2.6-1.2 0 0-1.2-.5-1.2-1.9 0-1.2 1-1.7 1-1.8-.6-.8-1.4-.9-1.7-.9zM15.7 6.4v9.9h1.5v-3.4h2.1c1.9 0 3.3-1.3 3.3-3.2s-1.3-3.3-3.2-3.3h-3.7zm1.5 1.3h1.8c1.3 0 2 .7 2 2s-.7 2-2 2h-1.8v-4z"/></svg>' + p.price;
+      // toon de echte App Store-prijs zodra StoreKit die geleverd heeft; anders de richtprijs
+      const price = (window.IAP && IAP.priceFor && IAP.priceFor(p.product)) || p.price;
+      btn.innerHTML = '<svg class="apay-ic" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6.6 8.9c-.4.5-1 .4-1.6.2.1-.6.4-1.2.7-1.6.4-.5 1-.8 1.5-.9.1.7-.2 1.3-.6 2.3zm.6.9c-.8 0-1.5.5-1.9.5-.4 0-1-.5-1.6-.5-.8 0-1.6.5-2 1.2-.9 1.5-.2 3.7.6 4.9.4.6.9 1.2 1.5 1.2.6 0 .8-.4 1.6-.4.7 0 .9.4 1.6.4.6 0 1-.6 1.4-1.1.4-.6.6-1.2.6-1.2 0 0-1.2-.5-1.2-1.9 0-1.2 1-1.7 1-1.8-.6-.8-1.4-.9-1.7-.9zM15.7 6.4v9.9h1.5v-3.4h2.1c1.9 0 3.3-1.3 3.3-3.2s-1.3-3.3-3.2-3.3h-3.7zm1.5 1.3h1.8c1.3 0 2 .7 2 2s-.7 2-2 2h-1.8v-4z"/></svg>' + price;
       card.appendChild(btn);
       this._tap(btn, () => this.buyRubies(p));
       grid.appendChild(card);
@@ -2500,10 +2501,15 @@ const UI = {
     const res = await IAP.buyRubies(pack);
     if (res === 'ok') {
       if (window.Sfx) Sfx.play('pickup');
+      this.syncCoins();
       this.renderShop();
       this.toast('+' + pack.rubies + ' ◆ ' + tl('Robijnen'));
     } else if (res === 'unavailable') {
       this.toast(tl('In-app aankopen worden binnenkort geactiveerd.'));
+    } else if (res === 'pending') {
+      this.toast(tl('Aankoop wacht op goedkeuring.'));
+    } else if (res === 'cancelled') {
+      /* gebruiker annuleerde zelf — geen melding nodig */
     } else {
       this.toast(tl('Aankoop niet voltooid.'));
     }

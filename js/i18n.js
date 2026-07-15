@@ -485,6 +485,7 @@ I18N.UI_EN = {
   'Niet genoeg robijnen. Koop er via de Rubies-tab.': 'Not enough rubies. Buy some in the Rubies tab.',
   'In-app aankopen worden binnenkort geactiveerd.': 'In-app purchases are coming soon.',
   'Aankoop niet voltooid.': 'Purchase not completed.',
+  'Aankoop wacht op goedkeuring.': 'Purchase is awaiting approval.',
   'Hoi, ik ben Ryan! Welkom bij Rymr Heroes. Ik leer je in 20 seconden hoe je vecht.': 'Hi, I\'m Ryan! Welcome to Rymr Heroes. I\'ll teach you to fight in 20 seconds.',
   'LOPEN — gebruik de pijltjes ◀ ▶ links onderin om te bewegen.': 'MOVE — use the ◀ ▶ arrows at the bottom left to walk around.',
   'SPRINGEN — tik ▲ om te springen. Tik nóg eens in de lucht voor een dubbele sprong!': 'JUMP — tap ▲ to jump. Tap again in mid-air for a double jump!',
