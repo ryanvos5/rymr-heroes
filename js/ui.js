@@ -2909,16 +2909,18 @@ const UI = {
     const speedBonus = Math.round((c.speedMul || 1) * (st.speedMul || 1) * 100) - baseSpeed;
     const bonus = (n) => n > 0 ? ' <span class="hs-bonus">+' + n + '</span>' : '';
     const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
+    const chargeS = (typeof ABILITY_CHARGE_MS !== 'undefined') ? Math.round(ABILITY_CHARGE_MS * (c.abChargeMul || 1) / 1000) : 0;   // oplaadtijd van de ability
     document.getElementById('hs-name').innerHTML = this._esc(c.name) + ' <span class="hs-lvl">Lv ' + lvl + '</span>';
     const spr = document.getElementById('hs-sprite'); spr.innerHTML = '';
     spr.appendChild(this._charCanvas(c.palette, { weapon, build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }));
     document.getElementById('hs-stats').innerHTML =
       '<div class="hs-row"><span>' + this._ic('heart') + ' HP</span><b>' + baseHp + bonus(hpBonus) + '</b></div>' +
       '<div class="hs-row"><span>' + this._ic('swords') + ' Damage</span><b>' + dmg + '</b></div>' +
-      '<div class="hs-row"><span>' + this._ic('run') + ' Speed</span><b>' + baseSpeed + bonus(speedBonus) + '</b></div>';
+      '<div class="hs-row"><span>' + this._ic('run') + ' Speed</span><b>' + baseSpeed + bonus(speedBonus) + '</b></div>' +
+      (ab ? '<div class="hs-row"><span>' + this._ic('fire') + ' ' + tl('Oplaadtijd') + '</span><b>' + chargeS + 's</b></div>' : '');
     document.getElementById('hs-ability').innerHTML = ab
       ? '<div class="hs-ab-title">' + this._ic('fire') + ' ' + tl('Speciale ability') + ': <b>' + this._esc(ab.name) + '</b></div>' +
-        '<div class="hs-ab-desc">' + this._esc(ab.desc) + '</div>'
+        '<div class="hs-ab-desc">' + this._esc(ab.desc) + ' <span class="hs-ab-charge">(' + tl('Oplaadtijd') + ': ' + chargeS + 's)</span></div>'
       : '';
     document.getElementById('btn-hero-stats-back').onclick = () => sc.classList.add('hidden');
     sc.onclick = (e) => { if (e.target === sc) sc.classList.add('hidden'); };
@@ -3288,10 +3290,11 @@ const UI = {
       const spd = c.speedMul >= 1 ? tl('snel') : (c.speedMul >= 0.9 ? tl('iets trager') : tl('traag'));
       const mel = c.meleeMul > 1 ? `+${Math.round((c.meleeMul - 1) * 100)}%` : tl('normaal');
       const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
+      const chargeS = (typeof ABILITY_CHARGE_MS !== 'undefined') ? Math.round(ABILITY_CHARGE_MS * (c.abChargeMul || 1) / 1000) : 0;   // oplaadtijd van de ability
       const info = document.createElement('div');
       info.innerHTML = `<div class="w-name">${c.name}</div>
         <div class="w-stats">${this._ic('heart')} <b>${c.maxHp}</b> · melee ${mel} · ${spd}` +
-        (ab ? `<br>${this._ic('fire')} <b>${ab.name}</b>: ${ab.desc}` : '') + `</div>`;
+        (ab ? `<br>${this._ic('fire')} <b>${ab.name}</b>: ${ab.desc}<br><span class="w-charge">${tl('Oplaadtijd')}: ${chargeS}s</span>` : '') + `</div>`;
 
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
