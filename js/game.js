@@ -4712,6 +4712,7 @@ const Game = {
     const r = this.vs && this.vs.remote; if (!r) return;
     this.spawnAbilityFx(r.x, r.y, this._abilityColor(payload && payload.ab));
     if (payload && payload.ab === 'heal') this.spawnHealFx(r);   // tegenstander (Jenze) heelt -> toon het groene HP-effect ook bij hem
+    if (payload && payload.ab === 'longreach') { r._reachUntil = this.time + LONGREACH_MS; this._reachSweepFx(r); }   // tegenstander (Tygo) -> lange armen + zwaai-veeg, 6s
   },
   _abFx(p, col) {
     for (let i = 0; i < 16; i++) this.particles.push(new Particle(p.x, p.y - 14, (Math.random() - 0.5) * 3, -Math.random() * 3, col, 420, 3));
@@ -5143,6 +5144,7 @@ const Game = {
     r.rage = b.hasBuff('rage', this.time); r.burn = b.burnUntil > this.time;
     r.shieldHp = b.shieldHp || 0; r.giant = !!b.giant; r.heli = !!b.heli;
     r.walkPhase = b.walkPhase; r.alive = !b.dead; r.charId = b.charId;
+    r._reachUntil = b._reachUntil || 0;   // "Lang Bereik"-buff mee-spiegelen (lange armen bij een bot-Tygo)
     r.hp = b.hp; r.maxHp = b.maxHp; r.ducking = b.ducking;
     r.iv = !!(b._invisUntil && this.time < b._invisUntil);   // ninja onzichtbaar -> jij ziet 'm niet
     r.rooted = !!(b._rootedUntil && this.time < b._rootedUntil);   // in een val vast
@@ -5884,6 +5886,7 @@ const Game = {
         walkPhase: r.walkPhase, airborne: !r.onGround, attacking: r.attacking, ducking: r.ducking, swing: rSwing,
         weapon: r.giant ? null : (r.swingWeapon || r.heldWeapon || 'bat'), build: rc.build, hair: rc.hair, squash: r.flat,
         hat: r.hat || 'none', t: this.time, rage: r.rage, burning: r.burn, outfit: rc.outfit,
+        longReach: !!(r._reachUntil && this.time < r._reachUntil),   // tegenstander/bot met "Lang Bereik": lange armen
       };
       Sprites.drawCharacter(ctx, 0, 0, r.dir, rc.palette, rOpts);
       if (r._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (r._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, r.dir, this._flashPal(rc.palette), rOpts); ctx.globalAlpha = 1; }   // witte hit-flash
@@ -5917,6 +5920,7 @@ const Game = {
           squash: (p.flatUntil && this.time < p.flatUntil),
           hat: Storage.data.equippedHat, t: this.time, armor: p.giant ? null : p.armorRender,
           rage: p.hasBuff('rage', this.time), burning: p.burnUntil > this.time, outfit: p.outfit,
+          longReach: !!(p._reachUntil && this.time < p._reachUntil),   // Tygo "Lang Bereik": lange armen
         };
         Sprites.drawCharacter(ctx, 0, 0, p.dir, p.pal, pOpts);
         if (p._flashUntil > this.time) { ctx.globalAlpha = Math.min(0.9, (p._flashUntil - this.time) / 130 * 0.95); Sprites.drawCharacter(ctx, 0, 0, p.dir, this._flashPal(p.pal), pOpts); ctx.globalAlpha = 1; }   // witte hit-flash

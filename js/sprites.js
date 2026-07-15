@@ -526,7 +526,7 @@ const Sprites = {
     if (pose.hat && pose.hat !== 'none') this.drawHat(ctx, pose.hat, cx, headTop, hh, dir, pose.t || 0);
 
     // --- arm + wapen ---
-    this.drawArmAndWeapon(ctx, cx, torsoTop, dir, pal, weapon, pose.attacking, bh, pose.shielding, pose.swing);
+    this.drawArmAndWeapon(ctx, cx, torsoTop, dir, pal, weapon, pose.attacking, bh, pose.shielding, pose.swing, pose.longReach);
 
     // --- in brand staan (burn) ---
     if (pose.burning) {
@@ -669,9 +669,9 @@ const Sprites = {
     else P(S(skin, 0.32), -hh + 1, headTop, hh * 2 - 2, 1);     // kale-hoofd glans
   },
 
-  drawArmAndWeapon(ctx, cx, torsoTop, dir, pal, weaponId, attacking, bh, shielding, swing) {
+  drawArmAndWeapon(ctx, cx, torsoTop, dir, pal, weaponId, attacking, bh, shielding, swing, longReach) {
     const armY = torsoTop + 3;
-    const reach = attacking ? 9 : 5;
+    const reach = (attacking ? 9 : 5) + (longReach ? 7 : 0);   // "Lang Bereik" (Tygo): armen zichtbaar langer
     const sh = (bh || 5) - 2;   // schouder-offset (breder bij fors lijf)
     const w = WEAPONS[weaponId] || WEAPONS.bat;
 
