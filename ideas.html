@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rymr Heroes — Deel je idee</title>
+<style>
+  :root { --gold:#e6a91c; --gold-lt:#ffd76a; --bg0:#140a10; --bg1:#241018; --panel:#2a1620; --line:#4a2530; --text:#f0e2d2; --dim:#b79a86; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    background: radial-gradient(120% 80% at 50% 0%, #3a1622 0%, var(--bg1) 45%, var(--bg0) 100%);
+    color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .card { width: 100%; max-width: 460px; background: var(--panel); border: 2px solid var(--line);
+    border-radius: 16px; padding: 24px 22px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  h1 { margin: 0 0 4px; font-size: 22px; color: var(--gold-lt); letter-spacing: .5px; }
+  h1 .beta { font-size: 12px; color: var(--dim); vertical-align: middle; margin-left: 6px; }
+  p.intro { margin: 0 0 18px; font-size: 14px; line-height: 1.55; color: var(--dim); }
+  label { display: block; font-size: 12px; color: var(--dim); margin: 12px 0 5px; }
+  input, textarea {
+    width: 100%; padding: 11px 12px; font-size: 15px; color: var(--text);
+    background: #1c0e15; border: 1.5px solid var(--line); border-radius: 9px; outline: none; font-family: inherit;
+  }
+  input:focus, textarea:focus { border-color: var(--gold); }
+  textarea { min-height: 120px; resize: vertical; }
+  button {
+    width: 100%; margin-top: 18px; padding: 13px; font-size: 16px; font-weight: 700; cursor: pointer;
+    color: #2a2208; background: linear-gradient(180deg, var(--gold-lt), var(--gold)); border: none; border-radius: 10px;
+  }
+  button:active { transform: scale(.98); }
+  .hp { position: absolute; left: -9999px; }
+  .foot { margin-top: 16px; font-size: 12px; color: var(--dim); text-align: center; }
+  .foot a { color: var(--gold-lt); }
+  .thanks { text-align: center; }
+  .thanks .big { font-size: 44px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="card" id="form-card">
+    <h1>Deel je idee <span class="beta">Rymr Heroes BETA</span></h1>
+    <p class="intro">Heb je een idee, wens of iets dat beter kan? Laat het ons weten — we lezen alles en gebruiken het om de game te verbeteren. <br><span style="opacity:.8">Got an idea or feedback? Let us know!</span></p>
+    <form action="https://formsubmit.co/thebrandingfive@gmail.com" method="POST">
+      <input type="hidden" name="_subject" value="Nieuw idee — Rymr Heroes">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_next" value="https://rymrheroes.thebrandingfive.nl/ideas?sent=1">
+      <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off">
+      <label for="name">Naam / Name <span style="opacity:.6">(optioneel)</span></label>
+      <input id="name" type="text" name="Naam" placeholder="Je naam of nickname">
+      <label for="email">E-mail <span style="opacity:.6">(optioneel — voor als we willen reageren)</span></label>
+      <input id="email" type="email" name="E-mail" placeholder="jij@voorbeeld.nl">
+      <label for="msg">Je idee / Your idea</label>
+      <textarea id="msg" name="Idee" placeholder="Vertel ons je idee…" required></textarea>
+      <button type="submit">Versturen / Send</button>
+    </form>
+    <p class="foot">Rymr Heroes · <a href="/privacy">Privacybeleid</a></p>
+  </div>
+
+  <div class="card thanks hidden" id="thanks-card">
+    <div class="big">🎉</div>
+    <h1>Bedankt!</h1>
+    <p class="intro">Je idee is verstuurd. We waarderen het enorm dat je meedenkt. <br><span style="opacity:.8">Thanks — your idea has been sent!</span></p>
+    <p class="foot">Je kunt dit venster nu sluiten.</p>
+  </div>
+
+  <script>
+    // toon de bedankt-staat na een succesvolle inzending (?sent=1)
+    if (location.search.indexOf('sent=1') !== -1) {
+      document.getElementById('form-card').classList.add('hidden');
+      document.getElementById('thanks-card').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

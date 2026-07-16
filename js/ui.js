@@ -1110,8 +1110,7 @@ const UI = {
         sc.classList.add('hidden');
       });
       this._tap(document.getElementById('btn-beta-ideas'), () => {
-        const em = (typeof BETA_IDEAS_EMAIL !== 'undefined') ? BETA_IDEAS_EMAIL : '';
-        this._openExternal('mailto:' + em + '?subject=' + encodeURIComponent('Rymr Heroes — idee'));
+        this._openExternal(typeof BETA_IDEAS_URL !== 'undefined' ? BETA_IDEAS_URL : '');
         sc.classList.add('hidden');
       });
     }
