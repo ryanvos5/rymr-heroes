@@ -174,7 +174,7 @@ const CHARACTERS = {
   },
   tygo: {
     id: 'tygo', name: 'Tygo', cost: 1200, lvl: 8, rank: 1,   // vrij te spelen bij Bronze II
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural', ability: 'longreach', abChargeMul: 2,
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'natural', ability: 'longreach', abChargeS: 46,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',  // blond-bruin
       skin: '#dcb088', skinDark: '#b88f64',
@@ -186,7 +186,7 @@ const CHARACTERS = {
   },
   just: {
     id: 'just', name: 'Just', cost: 7200, lvl: 22, rank: 6,   // Gold I
-    maxHp: 120, speedMul: 0.8, meleeMul: 1.1, build: 'stocky', hair: 'bald', ability: 'earthquake',
+    maxHp: 120, speedMul: 0.8, meleeMul: 1.1, build: 'stocky', hair: 'bald', ability: 'earthquake', abChargeS: 70,
     palette: {
       hair: '#c8a85a', hairDark: '#9a7e3a',     // klein beetje blond haar
       skin: '#d8a878', skinDark: '#b8895e',
@@ -198,7 +198,7 @@ const CHARACTERS = {
   },
   timo: {
     id: 'timo', name: 'Timo', cost: 4000, lvl: 16, rank: 4,   // Silver II
-    maxHp: 90, speedMul: 1.1, meleeMul: 1.0, build: 'small', hair: 'natural', ability: 'acrobat', abChargeMul: 2,
+    maxHp: 90, speedMul: 1.1, meleeMul: 1.0, build: 'small', hair: 'natural', ability: 'acrobat', abChargeS: 60,
     palette: {
       hair: '#a8824a', hairDark: '#7a5e30',     // blond-bruin, natural
       skin: '#d8a878', skinDark: '#b8895e',
@@ -210,7 +210,7 @@ const CHARACTERS = {
   },
   vince: {
     id: 'vince', name: 'Vince', cost: 2500, lvl: 14, rank: 3,   // Silver I
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'spiky', fireAura: true, ability: 'fireaura10',
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'spiky', fireAura: true, ability: 'fireaura10', abChargeS: 60,
     palette: {
       hair: '#1a1a1a', hairDark: '#000000',     // zwarte stekels
       skin: '#d8a878', skinDark: '#b8895e',
@@ -222,7 +222,7 @@ const CHARACTERS = {
   },
   jenze: {
     id: 'jenze', name: 'Jenze', cost: 500, lvl: 5, rank: 1,   // Bronze II
-    maxHp: 115, speedMul: 0.927, meleeMul: 1.05, build: 'bulky', hair: 'curly', ability: 'heal',   // speedMul x1.1-bump -> ~1.02 -> Speed 102 in de stats
+    maxHp: 115, speedMul: 0.927, meleeMul: 1.05, build: 'bulky', hair: 'curly', ability: 'heal', abChargeS: 60,   // speedMul x1.1-bump -> ~1.02 -> Speed 102 in de stats
     palette: {
       hair: '#6b4426', hairDark: '#4a2e18',  // bruine krullen
       skin: '#dcab7e', skinDark: '#bb8a5e',
@@ -282,7 +282,7 @@ const CHARACTERS = {
   },
   koba: {
     id: 'koba', name: 'Koba', cost: 0, journeyOnly: true,
-    maxHp: 110, speedMul: 0.836, meleeMul: 1.05, build: 'bulky', hair: 'bald', ability: 'rage8',   // speedMul x1.1-bump -> ~0.92 -> Speed 92 in de stats
+    maxHp: 110, speedMul: 0.836, meleeMul: 1.05, build: 'bulky', hair: 'bald', ability: 'rage8', abChargeS: 66,   // speedMul x1.1-bump -> ~0.92 -> Speed 92 in de stats
     palette: {
       hair: '#7a3a1e', hairDark: '#54260f',
       skin: '#a85e34', skinDark: '#7a421f',     // orang-oetan-rood
@@ -316,7 +316,7 @@ const CHARACTERS = {
   },
   monnik: {
     id: 'monnik', name: 'Monnik', cost: 0, journeyOnly: true,
-    maxHp: 120, speedMul: 0.9, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'stunpulse', outfit: 'monk',
+    maxHp: 120, speedMul: 0.9, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'stunpulse', abChargeS: 66, outfit: 'monk',
     palette: {
       hair: '#5a3a22', hairDark: '#3f2817',
       skin: '#d8a878', skinDark: '#b8895e',
@@ -327,7 +327,7 @@ const CHARACTERS = {
   },
   ninja: {
     id: 'ninja', name: 'Ninja', cost: 0, journeyOnly: true,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', outfit: 'ninja',
+    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', abChargeS: 55, outfit: 'ninja',
     palette: {
       hair: '#1a1a1e', hairDark: '#0c0c0e',
       skin: '#c99a6a', skinDark: '#9a7048',

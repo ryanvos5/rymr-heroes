@@ -67,7 +67,9 @@ class Player {
     // ---- character-ability (oplaadbaar in een match) ----
     this.ability = ch.ability || null;
     this.abCharge = 0;          // 0..1 (vol = te gebruiken)
-    this.abChargeMul = ch.abChargeMul || 1;   // Timo/Tygo/Bonzo: 3× langere oplaadtijd
+    // oplaadtijd: directe abChargeS (seconden) heeft voorrang, anders de multiplier (× basis 42s)
+    const _abBaseMs = (typeof ABILITY_CHARGE_MS !== 'undefined') ? ABILITY_CHARGE_MS : 42000;
+    this.abChargeMul = (ch.abChargeS != null) ? (ch.abChargeS * 1000 / _abBaseMs) : (ch.abChargeMul || 1);
     this.abilityDurMul = 1;     // character-level: langere ability-duur (alleen voor de lokale speler gezet)
     this.jumpMul = 1;           // Tygo: hogere sprong (ability)
     this._ultraUntil = 0;       // ultra rage (4× schade)
