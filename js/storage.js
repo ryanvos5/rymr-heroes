@@ -573,16 +573,10 @@ const Storage = {
     const simple = ['heal', 'shield', 'speed', 'rage'];
     if (rarity === 'common') { if (Math.random() < 0.45) add(pick(simple)); }
     else if (rarity === 'rare') { if (Math.random() < 0.75) add(pick(simple)); if (Math.random() < 0.30) add(pick(simple)); }
-    else if (rarity === 'epic') {
-      const pool = [['heal', 5], ['shield', 5], ['speed', 5], ['rage', 5],
-        ['fireball', 3], ['beachball', 3], ['coco', 3], ['boom', 3], ['dart', 3], ['cannon', 2.5],
-        ['ak47', 2], ['rocket', 1.3]];
-      const n = ri(2, 4); for (let i = 0; i < n; i++) add(wpick(pool));
-    } else {   // legendary: ALLE power-ups uit het spel, de goede zeldzamer
-      const pool = [['heal', 6], ['shield', 6], ['speed', 6], ['rage', 6],
-        ['fireball', 3], ['beachball', 3], ['coco', 3], ['boom', 3], ['dart', 3], ['cannon', 2.6],
-        ['ak47', 2.2], ['rocket', 1.6], ['dragon', 1], ['rock', 1.4], ['lightning', 1.2]];
-      const n = ri(5, 8); for (let i = 0; i < n; i++) add(wpick(pool));
+    else {   // epic/legendary: power-ups uit de gedeelde pool (CRATE_POOLS in config.js — zelfde kansen als getoond in de shop)
+      const pool = (typeof CRATE_POOLS !== 'undefined' && CRATE_POOLS[rarity]) || [];
+      const dr = (typeof CRATE_DRAWS !== 'undefined' && CRATE_DRAWS[rarity]) || [2, 4];
+      const n = ri(dr[0], dr[1]); for (let i = 0; i < n; i++) add(wpick(pool));
     }
     // smeed-materialen (schalen met rarity) — de nieuwe drop
     const mats = {}; const addMat = (id, n2) => { if (n2 > 0) mats[id] = (mats[id] || 0) + n2; };

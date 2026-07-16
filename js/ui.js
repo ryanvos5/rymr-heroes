@@ -2447,8 +2447,47 @@ const UI = {
       btn.textContent = t('buy') + ' — ' + c.costRubies + ' ◆';
       card.appendChild(btn);
       this._tap(btn, () => this.buyCrate(c.rarity));
+      // App Store-richtlijn 3.1.1: kansen tonen vóór aankoop
+      const odds = document.createElement('button');
+      odds.className = 'crate-odds-link';
+      odds.textContent = tl('Kansen bekijken');
+      this._tap(odds, () => this.openCrateOdds(c.rarity));
+      card.appendChild(odds);
       grid.appendChild(card);
     });
+  },
+
+  // Loot box-kansen tonen vóór aankoop (App Store 3.1.1)
+  openCrateOdds(rarity) {
+    const pool = (typeof CRATE_POOLS !== 'undefined' && CRATE_POOLS[rarity]) || [];
+    const draws = (typeof CRATE_DRAWS !== 'undefined' && CRATE_DRAWS[rarity]) || [2, 4];
+    const type = (typeof CHEST_TYPES !== 'undefined' && CHEST_TYPES[rarity]) || {};
+    let sc = document.getElementById('crate-odds');
+    if (!sc) {
+      sc = document.createElement('div'); sc.id = 'crate-odds'; sc.className = 'overlay hidden';
+      sc.innerHTML = '<div class="overlay-box crate-odds-box">' +
+        '<button class="corner-back" id="btn-crate-odds-back" aria-label="Back"><svg class="ic"><use href="#ic-undo"/></svg></button>' +
+        '<h2 class="screen-title" id="co-title"></h2>' +
+        '<div id="co-body" class="hs-stats"></div>' +
+      '</div>';
+      document.body.appendChild(sc);
+    }
+    const tot = pool.reduce((s, p) => s + p[1], 0) || 1;
+    const rows = pool.slice().sort((a, b) => b[1] - a[1]).map((p) => {
+      const sp = (typeof SHOP_POWERUPS !== 'undefined' && SHOP_POWERUPS[p[0]]) || {};
+      const pct = p[1] / tot * 100;
+      const pctStr = (pct >= 10 ? pct.toFixed(0) : pct.toFixed(1)) + '%';
+      return '<div class="hs-row"><span>' + (sp.icon || '') + ' ' + this._esc(sp.name || p[0]) + '</span><b>' + pctStr + '</b></div>';
+    }).join('');
+    const rubyLine = rarity === 'epic' ? ' ' + tl('en 2–10 robijnen') : (rarity === 'legendary' ? ' ' + tl('en 5–20 robijnen') : '');
+    document.getElementById('co-title').textContent = tl(type.name || '') + ' ' + tl('Crate') + ' — ' + tl('Kansen');
+    document.getElementById('co-body').innerHTML =
+      '<p class="screen-sub">' + tl('Elke crate geeft') + ' ' + draws[0] + '–' + draws[1] + ' ' + tl('power-ups — kans per power-up:') + '</p>' +
+      rows +
+      '<p class="screen-sub">' + tl('Altijd erbij: munten, XP en smeed-materialen') + rubyLine + '.</p>';
+    sc.classList.remove('hidden');
+    document.getElementById('btn-crate-odds-back').onclick = () => sc.classList.add('hidden');
+    sc.onclick = (e) => { if (e.target === sc) sc.classList.add('hidden'); };
   },
 
   buyCrate(rarity) {

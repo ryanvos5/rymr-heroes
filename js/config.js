@@ -864,6 +864,19 @@ const CHEST_TYPES = {
 };
 const CHEST_ORDER = ['common', 'rare', 'epic', 'legendary'];
 
+// Loot box-kansen (App Store-richtlijn 3.1.1): exacte power-up-gewichten per koopbare crate.
+// Deze pools worden gebruikt bij het OPENEN (storage.js rollChestRewards) én getoond als
+// kansen in de shop (ui.js openCrateOdds), zodat de weergegeven kansen altijd kloppen.
+const CRATE_POOLS = {
+  epic: [['heal', 5], ['shield', 5], ['speed', 5], ['rage', 5],
+    ['fireball', 3], ['beachball', 3], ['coco', 3], ['boom', 3], ['dart', 3], ['cannon', 2.5],
+    ['ak47', 2], ['rocket', 1.3]],
+  legendary: [['heal', 6], ['shield', 6], ['speed', 6], ['rage', 6],
+    ['fireball', 3], ['beachball', 3], ['coco', 3], ['boom', 3], ['dart', 3], ['cannon', 2.6],
+    ['ak47', 2.2], ['rocket', 1.6], ['dragon', 1], ['rock', 1.4], ['lightning', 1.2]],
+};
+const CRATE_DRAWS = { epic: [2, 4], legendary: [5, 8] };   // aantal power-ups dat een crate trekt (min–max)
+
 /* ---------- RANK-systeem (alleen echte online matchmaking-potjes; bots tellen niet) ---------- */
 const RANKS = [
   { name: 'Bronze I',   rp: 0,    tier: 'bronze',   sub: 1, col: '#cd7f32', glow: '#e59b52', coins: 0,    chest: null },
