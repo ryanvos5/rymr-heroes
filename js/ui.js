@@ -2466,7 +2466,7 @@ const UI = {
     if (!sc) {
       sc = document.createElement('div'); sc.id = 'crate-odds'; sc.className = 'overlay hidden';
       sc.innerHTML = '<div class="overlay-box crate-odds-box">' +
-        '<button class="corner-back" id="btn-crate-odds-back" aria-label="Back"><svg class="ic"><use href="#ic-arrow-l"/></svg></button>' +
+        '<button class="corner-back" id="btn-crate-odds-back" aria-label="Back"><svg class="ic"><use href="#ic-undo"/></svg></button>' +
         '<h2 class="screen-title" id="co-title"></h2>' +
         '<div id="co-body" class="hs-stats"></div>' +
       '</div>';
