@@ -2396,7 +2396,10 @@ const UI = {
     if (sub) {
       let txt = '';
       if (tab === 'crates') txt = tl('Gekochte crates gaan meteen open — je buit wordt direct bijgeschreven.');
-      else if (tab === 'rubies' && !(window.IAP && IAP.available)) txt = tl('In-app aankopen worden binnenkort geactiveerd.');
+      else if (tab === 'rubies' && !(window.IAP && IAP.available)) {
+        txt = tl('In-app aankopen worden binnenkort geactiveerd.');
+        if (window.IAP && IAP.diagText) txt += '  ·  ' + IAP.diagText();   // tijdelijke diagnose op het scherm
+      }
       sub.textContent = txt; sub.classList.toggle('hidden', !txt);
     }
     this.el.shopGrid.innerHTML = '';

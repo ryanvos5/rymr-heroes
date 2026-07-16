@@ -23,10 +23,18 @@ public class RymrIAP: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "RymrIAP"
     public let jsName = "RymrIAP"
     public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "ping", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getProducts", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise)
     ]
+
+    // bevestigt dat de native plugin geladen is (raakt StoreKit niet aan)
+    @objc func ping(_ call: CAPPluginCall) {
+        var sk2 = false
+        if #available(iOS 15.0, *) { sk2 = true }
+        call.resolve(["ok": true, "storeKit2": sk2])
+    }
 
     private var updatesTask: Task<Void, Never>?
 
