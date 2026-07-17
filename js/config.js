@@ -258,7 +258,7 @@ const CHARACTERS = {
   },
   skeleton: {
     id: 'skeleton', name: 'Skeleton Knight', costRubies: 250,   // altijd te koop met robijnen (premium)
-    maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain', outfit: 'skeleton',
+    maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain', abChargeS: 32, outfit: 'skeleton',
     palette: {
       hair: '#dfe3dc', hairDark: '#aeb2ab',
       skin: '#e8ece4', skinDark: '#b0b6ac',      // botwit (handen/botten)
