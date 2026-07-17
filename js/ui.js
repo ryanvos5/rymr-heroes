@@ -3406,16 +3406,9 @@ const UI = {
         weapon: c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit,
       });
 
-      // stats t.o.v. Ryan
-      const spd = c.speedMul >= 1 ? tl('snel') : (c.speedMul >= 0.9 ? tl('iets trager') : tl('traag'));
-      const mel = c.meleeMul > 1 ? `+${Math.round((c.meleeMul - 1) * 100)}%` : tl('normaal');
-      const ab = (typeof ABILITIES !== 'undefined' && ABILITIES[c.ability]) ? ABILITIES[c.ability] : null;
-      const chargeS = (c.abChargeS != null) ? c.abChargeS : ((typeof ABILITY_CHARGE_MS !== 'undefined') ? Math.round(ABILITY_CHARGE_MS * (c.abChargeMul || 1) / 1000) : 0);   // oplaadtijd van de ability
-      const jumpVal = (typeof charJumpOf === 'function') ? Math.round(charJumpOf(c) * 100) : 100;   // relatieve spronghoogte
+      // alleen de naam op de kaart — alle stats + ability zitten achter de "i" (net als in de inventaris)
       const info = document.createElement('div');
-      info.innerHTML = `<div class="w-name">${c.name}</div>
-        <div class="w-stats">${this._ic('heart')} <b>${c.maxHp}</b> · melee ${mel} · ${spd} · ${tl('sprong')} ${jumpVal}` +
-        (ab ? `<br>${this._ic('fire')} <b>${ab.name}</b>: ${ab.desc}<br><span class="w-charge">${tl('Oplaadtijd')}: ${chargeS}s</span>` : '') + `</div>`;
+      info.innerHTML = `<div class="w-name">${c.name}</div>`;
 
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
@@ -3449,6 +3442,12 @@ const UI = {
 
       card.appendChild(canvas);
       card.appendChild(info);
+      // op het plaatje tikken of op de "i" -> stats-venster van de hero (zelfde als in de inventaris)
+      canvas.style.cursor = 'pointer';
+      this._tap(canvas, () => this.openHeroStats(cid), { immediate: true });
+      const iBadge = document.createElement('span'); iBadge.className = 'hero-info-i'; iBadge.textContent = 'i';
+      this._tap(iBadge, () => this.openHeroStats(cid), { immediate: true });
+      card.appendChild(iBadge);
       card.appendChild(btn);
       grid.appendChild(card);
     });

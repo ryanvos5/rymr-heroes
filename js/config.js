@@ -258,7 +258,7 @@ const CHARACTERS = {
   },
   pirate: {
     id: 'pirate', name: 'Pirate Captain', cost: 5000, lvl: 26, rank: 8,   // vrij te spelen bij Gold III
-    maxHp: 105, speedMul: 0.909, meleeMul: 1.0, build: 'normal', hair: 'back', ability: 'parrotdive', abChargeS: 52,   // speedMul x1.1-bump -> ~1.0 -> Speed 100
+    maxHp: 105, speedMul: 0.909, meleeMul: 1.0, build: 'normal', hair: 'back', ability: 'parrotdive', abChargeS: 52, outfit: 'pirate',   // speedMul x1.1-bump -> ~1.0 -> Speed 100
     palette: {
       hair: '#2a1a12', hairDark: '#170e08',      // donker haar naar achteren
       skin: '#d8a878', skinDark: '#b8895e',

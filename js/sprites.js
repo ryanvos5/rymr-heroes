@@ -503,6 +503,42 @@ const Sprites = {
       this.px(ctx, '#8fd0ff', cx + (dir > 0 ? 1 : -2), slitY - 1, 2, 1);             // gloed boven het vooroog
       this.px(ctx, '#3aa0ff', cx + (dir > 0 ? 1 : -2), slitY, 2, 2);                 // vooroog: fel blauw
       this.px(ctx, '#2f6fd0', cx + (dir > 0 ? -3 : 2), slitY, 1, 2);                 // achteroog: dof blauw
+    } else if (pose.outfit === 'pirate') {
+      // --- PIRATE CAPTAIN: kapiteinsjas met goudwerk + ooglap + driekante steek ---
+      const gold = '#e8b53a', goldDk = '#a8761c', black = '#191920', blackLt = '#34343e';
+      const coatLt = this._shade(pal.shirt, 0.3), coatDk = pal.shirtDark;
+      // jas: revers die V-vormig naar beneden loopt
+      const rev = Math.min(4, torsoH - 3);
+      for (let i = 0; i < rev; i++) {
+        this.px(ctx, coatLt, cx - 3 - i, torsoTop + i, 2, 1);
+        this.px(ctx, coatLt, cx + 2 + i, torsoTop + i, 2, 1);
+        this.px(ctx, coatDk, cx - 3 - i, torsoTop + i, 1, 1);
+      }
+      // gouden knopenrij aan de kijkkant
+      for (let i = 1; i < torsoH - 3; i += 2) this.px(ctx, gold, cx + (dir > 0 ? 1 : -2), torsoTop + i, 1, 1);
+      // gouden schouderstuk (epaulet) op de voorste schouder
+      const epX = cx + (dir > 0 ? bh - 3 : -bh);
+      this.px(ctx, gold, epX, torsoTop, 3, 2);
+      this.px(ctx, goldDk, epX, torsoTop + 1, 3, 1);
+      // brede riem met gouden gesp
+      this.px(ctx, black, cx - bh, torsoTop + torsoH - 4, bh * 2, 2);
+      this.px(ctx, gold, cx - 1, torsoTop + torsoH - 4, 2, 2);
+      this.px(ctx, goldDk, cx - 1, torsoTop + torsoH - 3, 2, 1);
+      // --- ooglap op het achterste oog + band over het voorhoofd ---
+      this.px(ctx, black, cx - hh, headTop + 2, hh * 2, 1);                           // band
+      this.px(ctx, black, cx + (dir > 0 ? -3 : 1), headTop + 3, 2, 2);                // de lap zelf
+      // stoppelbaard langs de kaak
+      this.px(ctx, pal.hairDark, cx - hh + 1, headTop + headH - 2, hh * 2 - 2, 2);
+      // --- driekante steek (tricorn) ---
+      this.px(ctx, black, cx - hh - 3, headTop - 1, hh * 2 + 6, 2);                   // brede rand
+      this.px(ctx, blackLt, cx - hh - 3, headTop - 1, hh * 2 + 6, 1);                 // rand-highlight
+      this.px(ctx, black, cx - hh - 2, headTop - 3, 2, 2);                            // opgeslagen punt links
+      this.px(ctx, black, cx + hh, headTop - 3, 2, 2);                                // opgeslagen punt rechts
+      this.px(ctx, black, cx - hh + 1, headTop - 4, hh * 2 - 2, 3);                   // bol
+      this.px(ctx, blackLt, cx - hh + 2, headTop - 4, hh * 2 - 4, 1);                 // highlight op de bol
+      this.px(ctx, gold, cx - hh + 1, headTop - 2, hh * 2 - 2, 1);                    // gouden bies
+      this.px(ctx, '#e9ede5', cx - 1, headTop - 4, 2, 2);                             // doodskopje
+      this.px(ctx, black, cx - 1, headTop - 3, 1, 1);
     }
 
     // --- harnas (blacksmith): ridder-plaatwerk — over lijf/hoofd, ONDER de cosmetische hoed ---
