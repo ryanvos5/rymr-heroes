@@ -2759,6 +2759,7 @@ const Game = {
       introUntil: this.time + VERSUS_INTRO_MS, introShown: false, musicStarted: false,   // map-intro vóór het aftellen
       timed: !!opts.timed, matchTimer: opts.timed ? MATCH_TIME_MS : 0, timeUp: false, suddenDeath: false, zoomTarget: null,   // matchmaking: 3-min tijdslimiet
       roundFreezeUntil: 0, roundMsg: '',
+      _snapNext: true,                                // 1e stand van de tegenstander direct plaatsen (geen glij-in bij de matchstart)
       roundPlayStart: 0, _fleeWarnAt: 0, myLastHit: 0, oppLastHit: 0,   // anti-vluchten: laatste pvp-schade per kant
       _usedPU: {},                                                      // welke loadout-powerups deze match al zijn ingezet (max 1x elk)
       remote: {
@@ -2922,12 +2923,21 @@ const Game = {
       if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 0.04);
       if (this.ko) this.updateVersusCamera();          // KO-cinematic: camera zoomt in op de ring-out
       if (window.UI && UI.updateVersusHUD) UI.updateVersusHUD(v);
+      // online: óók tijdens de freeze je stand blijven sturen — anders staat de verbinding stil
+      // en loopt de tegenstander bij de ronde-start achter (dat gaf de lag aan het begin).
+      if (!this.vsBot) { v.netTimer += dt; if (v.netTimer >= 33) { v.netTimer = 0; this.sendVersusState(); } }
       return;
     } else if (v.roundMsg) {                          // freeze net afgelopen -> nieuwe ronde
       v.roundMsg = '';
       this.respawnLocal();
       if (this.vsBot) this.respawnBot(); else v.remote.alive = true;
       v.countdown = 1600;                             // korte aftelling: camera zoomt weer in op jou
+      // online: stuur je verse spawn-plek METEEN (niet pas over ~33ms) en zet de tegenstander
+      // klaar om zijn eerste stand direct te plaatsen -> vloeiende ronde-start i.p.v. een schok
+      if (!this.vsBot) {
+        this.sendVersusState(); v.netTimer = 0;
+        v._snapNext = true; v.remote.vxEst = 0;
+      }
     }
 
     this.updateVersusPlatforms();
@@ -5662,6 +5672,9 @@ const Game = {
     if (r.ax != null && dtMs > 8 && dtMs < 300) r.vxEst = (s.x - r.ax) / dtMs;
     else r.vxEst = 0;
     r.ax = s.x; r.ay = s.y; r._lastStateAt = now;   // laatst bekende (authoritatieve) positie
+    // ronde-/matchstart: de eerste stand ná de respawn direct plaatsen i.p.v. ernaartoe glijden,
+    // en geen oude snelheid meer voorspellen -> geen schok/lag aan het begin van een ronde.
+    if (this.vs._snapNext) { this.vs._snapNext = false; r.vxEst = 0; r.x = s.x; r.y = s.y; }
     r.tx = s.x; r.ty = s.y; r.vy = s.vy || 0; r.dir = s.d || 1;
     r.onGround = s.g !== 0; r.attacking = s.a === 1;
     r.swingWeapon = s.sw || null; r.walkPhase = s.wp || 0;
