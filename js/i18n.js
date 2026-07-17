@@ -56,7 +56,7 @@ const I18N = {
       add_friend_hint: 'Add a friend by their username.', ph_username: 'Username…', ph_message: 'Message…',
       friends_login: 'Log in via the menu (▸ account) to add friends and chat.',
       challenge: 'Challenge', invite_title: 'INVITE', join: 'JOIN', ignore: 'IGNORE',
-      vs_title: '1 VS 1 ONLINE', vs_sub: 'Knock your opponent off the platform! First to 5 points wins.',
+      vs_title: '1 VS 1 ONLINE', vs_sub: 'Knock your opponent off the platform! First to {rounds} points wins.',
       searching: 'Searching for an opponent…', mm_post: 's left — otherwise you face a strong bot',
       create_room: 'CREATE ROOM', play_vs_bot: 'PLAY VS BOT', code: 'CODE',
       room_code: 'Room code: ', waiting_opponent: 'Waiting for opponent…',
@@ -115,7 +115,7 @@ const I18N = {
       add_friend_hint: 'Voeg een vriend toe met zijn gebruikersnaam.', ph_username: 'Gebruikersnaam…', ph_message: 'Bericht…',
       friends_login: 'Log in via het menu (▸ account) om vrienden toe te voegen en te chatten.',
       challenge: 'Uitdagen', invite_title: 'UITNODIGING', join: 'MEEDOEN', ignore: 'NEGEREN',
-      vs_title: '1 VS 1 ONLINE', vs_sub: 'Sla je tegenstander van het platform! Eerst bij 5 punten wint.',
+      vs_title: '1 VS 1 ONLINE', vs_sub: 'Sla je tegenstander van het platform! Eerst bij {rounds} punten wint.',
       searching: 'Zoeken naar tegenstander…', mm_post: 's — anders speel je tegen een sterke bot',
       create_room: 'KAMER MAKEN', play_vs_bot: 'SPEEL TEGEN BOT', code: 'CODE',
       room_code: 'Kamercode: ', waiting_opponent: 'Wachten op tegenstander…',
@@ -141,9 +141,15 @@ const I18N = {
   },
   t(key, fallback) {
     const d = this.DICT[this.lang] || this.DICT.en;
-    if (d[key] != null) return d[key];
-    if (this.DICT.en[key] != null) return this.DICT.en[key];
-    return fallback != null ? fallback : key;
+    let s = null;
+    if (d[key] != null) s = d[key];
+    else if (this.DICT.en[key] != null) s = this.DICT.en[key];
+    else s = (fallback != null ? fallback : key);
+    // {rounds} = het echte aantal punten om te winnen -> tekst loopt nooit uit de pas met SMASH_ROUNDS
+    if (typeof s === 'string' && s.indexOf('{rounds}') !== -1) {
+      s = s.replace(/\{rounds\}/g, (typeof SMASH_ROUNDS !== 'undefined' ? SMASH_ROUNDS : 8));
+    }
+    return s;
   },
   set(lang) {
     if (lang !== 'nl' && lang !== 'en') return;
