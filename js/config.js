@@ -420,7 +420,7 @@ const ABILITY_CHARGE_MS = 42000;   // basis-oplaadtijd van de ability (combos ve
 const CHAT_ENABLED = false;
 
 // BETA-welkomstpopup (bij opstarten). Vul de echte waarden in:
-const BETA_REVIEW_URL = 'https://apps.apple.com/app/id0000000000?action=write-review';   // <- vervang 0000000000 door je App Store-ID zodra Apple die toewijst
+const BETA_REVIEW_URL = 'https://apps.apple.com/app/id6791213109?action=write-review';   // App Store-ID van Rymr Heroes -> opent meteen het review-scherm
 const BETA_IDEAS_URL = 'https://rymrheroes.thebrandingfive.nl/ideas';                       // ideeën-formulier (mailt naar thebrandingfive@gmail.com via FormSubmit)
 // Journey-enemy-stats blijven ongewijzigd (online zijn koba/kong aangepast)
 const JOURNEY_ENEMY_OVERRIDE = {
