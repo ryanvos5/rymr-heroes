@@ -17,6 +17,36 @@ window.addEventListener('DOMContentLoaded', () => {
   try { Net.init(); } catch (e) { console.warn('Net.init', e); }
   try { if (window.IAP) IAP.init(); } catch (e) {}   // in-app aankopen (inert tot een plugin gekoppeld is)
   try { Sfx.init(); } catch (e) {}
+  // ---- TIJDELIJKE audio-diagnose (alleen met ?adbg=1) — toont op het scherm wat er met
+  //      het geluid gebeurt bij weg-swipen/terugkomen. Gewone spelers zien dit nooit. ----
+  try {
+    if (/[?&]adbg=1/.test(location.search)) {
+      const box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:6px;top:6px;z-index:99999;max-width:70vw;max-height:52vh;overflow:auto;'
+        + 'background:rgba(0,0,0,.82);color:#5aff7a;font:11px/1.35 monospace;padding:6px 8px;border-radius:8px;white-space:pre;pointer-events:none';
+      document.body.appendChild(box);
+      const lines = [];
+      const st = () => (window.Sfx && Sfx.ctx ? Sfx.ctx.state : 'no-ctx');
+      const loop = () => (window.Sfx && Sfx._timer ? 'loop:ON' : 'loop:off');
+      const t0 = (typeof performance !== 'undefined' ? performance.now() : 0);
+      const log = (ev) => {
+        const secs = (((typeof performance !== 'undefined' ? performance.now() : 0) - t0) / 1000).toFixed(1);
+        lines.unshift(secs + 's ' + ev + ' -> ' + st() + ' ' + loop() + (Sfx && Sfx.musicOn ? '' : ' (music OFF)'));
+        box.textContent = lines.slice(0, 22).join('\n');
+      };
+      log('start');
+      ['visibilitychange'].forEach((e) => document.addEventListener(e, () => log('vis(' + document.visibilityState + ')')));
+      ['focus', 'blur', 'pageshow', 'pagehide'].forEach((e) => window.addEventListener(e, () => log(e)));
+      try {
+        const P = window.Capacitor && window.Capacitor.Plugins;
+        if (P && P.App && P.App.addListener) P.App.addListener('appStateChange', (s) => log('appState(active=' + (s && s.isActive) + ')'));
+      } catch (e) {}
+      const hookCtx = () => { if (window.Sfx && Sfx.ctx && !Sfx.ctx._dbgHooked) { Sfx.ctx._dbgHooked = true; Sfx.ctx.onstatechange = () => log('STATECHANGE'); } };
+      hookCtx(); setInterval(hookCtx, 1000);   // ctx kan later pas ontstaan -> blijf haken
+      let last = st(); setInterval(() => { const s = st(); if (s !== last) { last = s; log('poll'); } }, 500);
+    }
+  } catch (e) {}
+
   Input.init();
   UI.init();
   Game.init(document.getElementById('game-canvas'));
