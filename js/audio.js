@@ -15,14 +15,16 @@ const Sfx = {
     // migratie: oude gecombineerde 'tps_sound'-uit -> beide uit
     try { if (localStorage.getItem('tps_sound') === '0') { this.sfxOn = false; this.musicOn = false; } } catch (e) {}
     this.enabled = this.sfxOn;
-    // audio mag pas starten na een gebruikersgebaar (browserregel)
-    const kick = () => { this.resume(); window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); window.removeEventListener('touchstart', kick); };
-    window.addEventListener('pointerdown', kick);
+    // Audio mag alleen starten/hervatten ROND een gebruikersgebaar — iOS is daar streng in en
+    // negeert een resume() die uit een achtergrond-event komt. Deze listener blijft daarom
+    // BESTAAN (niet eenmalig): komt de app terug en lukt het hervatten niet vanzelf, dan zet
+    // de eerste de beste tik het geluid alsnog aan. Doet niets zolang alles al draait.
+    const kick = () => { if (!this.ctx || this.ctx.state !== 'running') this.wake(); };
+    window.addEventListener('pointerdown', kick, { passive: true });
+    window.addEventListener('touchstart', kick, { passive: true });
     window.addEventListener('keydown', kick);
-    window.addEventListener('touchstart', kick);
-    // iOS: als je de app weg-swipet raakt de AudioContext 'suspended' en loopt de muziek-timer
-    // uit de pas. Deze handlers blijven bestaan (de 'kick' hierboven verdwijnt na één tik) en
-    // hervatten geluid + muziek zodra de app weer actief is.
+    // iOS: bij weg-swipen raakt de AudioContext 'suspended' en loopt de muziek-timer uit de pas.
+    // Deze handlers hervatten geluid + muziek zodra de app weer actief is.
     const wake = () => this.wake();   // focus/pageshow betekenen al "we zijn terug" -> niet op document.hidden wachten
     document.addEventListener('visibilitychange', () => { if (!document.hidden) this.wake(); });
     window.addEventListener('focus', wake);
@@ -38,13 +40,19 @@ const Sfx = {
   wake() {
     this._ensure();
     if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') { try { this.ctx.resume(); } catch (e) {} }
     clearTimeout(this._wakeTimer);
-    this._wakeTimer = setTimeout(() => {                     // even wachten tot de context echt draait
-      if (!this.ctx || this.ctx.state !== 'running') return;
-      if (!this.musicOn || !this._curTheme) return;
-      this._stopLoop(); this._startLoop();                   // schone herstart -> muziek komt terug
-    }, 300);
+    // iOS hervat soms pas rond een gebaar -> blijf het ~2s proberen. Lukt het dan nog niet,
+    // dan pakt de blijvende 'kick'-listener (eerste tik) het alsnog op.
+    const attempt = (tries) => {
+      if (!this.ctx) return;
+      if (this.ctx.state === 'suspended') { try { this.ctx.resume(); } catch (e) {} }
+      if (this.ctx.state === 'running') {
+        if (this.musicOn && this._curTheme) { this._stopLoop(); this._startLoop(); }   // schone herstart -> muziek komt terug
+        return;
+      }
+      if (tries > 0) this._wakeTimer = setTimeout(() => attempt(tries - 1), 250);
+    };
+    attempt(8);
   },
 
   _ensure() {
