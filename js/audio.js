@@ -19,7 +19,10 @@ const Sfx = {
     // negeert een resume() die uit een achtergrond-event komt. Deze listener blijft daarom
     // BESTAAN (niet eenmalig): komt de app terug en lukt het hervatten niet vanzelf, dan zet
     // de eerste de beste tik het geluid alsnog aan. Doet niets zolang alles al draait.
-    const kick = () => { if (!this.ctx || this.ctx.state !== 'running') this.wake(); };
+    // Blijvende gebaar-listener. Op iOS mag audio alleen ROND een tik (her)starten, én na een
+    // 'interrupted' (backgrounden) meldt de context wel 'running' maar blijft stil -> de enige
+    // echte fix is 'm binnen dit gebaar volledig OPNIEUW opbouwen. Doet niets zolang alles speelt.
+    const kick = () => { if (!this.ctx || this.ctx.state !== 'running' || this._stale) this._rebuild(); };
     window.addEventListener('pointerdown', kick, { passive: true });
     window.addEventListener('touchstart', kick, { passive: true });
     window.addEventListener('keydown', kick);
@@ -64,6 +67,27 @@ const Sfx = {
     this.master = this.ctx.createGain(); this.master.gain.value = 0.9; this.master.connect(this.ctx.destination);
     this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = this.musicOn ? 0.13 : 0; this.musicGain.connect(this.master);
     this.sfxGain = this.ctx.createGain(); this.sfxGain.gain.value = this.sfxOn ? 0.32 : 0; this.sfxGain.connect(this.master);
+    // markeer de context als 'verouderd' zodra 'ie uit 'running' gaat (iOS: 'interrupted' bij
+    // backgrounden) -> de eerstvolgende tik bouwt 'm dan opnieuw op.
+    try { this.ctx.onstatechange = () => { if (this.ctx) this._stale = (this.ctx.state !== 'running'); }; } catch (e) {}
+  },
+
+  // Volledig NIEUWE AudioContext opbouwen. De enige betrouwbare fix voor iOS' 'interrupted -> stil':
+  // resume() meldt dan wel 'running' maar geeft geen geluid. Wordt alleen aangeroepen vanuit een
+  // gebruikersgebaar (de 'kick'-listener), anders zou de verse context suspended blijven.
+  _rebuild() {
+    try { if (this.ctx && this.ctx.state !== 'closed') this.ctx.close(); } catch (e) {}
+    this.ctx = null; this.master = null; this.musicGain = null; this.sfxGain = null;
+    this._stopLoop();
+    this._ensure();                                    // verse context + gain-nodes + onstatechange
+    if (this.ctx) { try { this.ctx.resume(); } catch (e) {} }   // binnen het gebaar -> gaat naar 'running'
+    this._stale = false;
+    const startIfReady = () => {
+      if (this.ctx && this.ctx.state === 'running' && this.musicOn && this._curTheme && !this._timer) this._startLoop();
+    };
+    startIfReady();
+    clearTimeout(this._wakeTimer);
+    this._wakeTimer = setTimeout(startIfReady, 180);   // context wordt soms 1 tick later pas 'running'
   },
   resume() {
     this._ensure();
