@@ -5201,6 +5201,12 @@ const Game = {
   },
 
   // ===== BOT (lokale AI-tegenstander) =====
+  // is de speler nu onzichtbaar? (Ninja-ability / Smoke Vanish) -> bots kunnen 'm niet zien
+  _playerInvisible() {
+    const p = this.player;
+    return !!(p && p._invisUntil && this.time < p._invisUntil);
+  },
+
   updateBot(dt) {
     const b = this.bot, v = this.vs;
     if (b.respawnInvuln > 0) b.respawnInvuln -= dt;
@@ -5242,6 +5248,7 @@ const Game = {
     // bot schiet: vuurwapen (beide-wapens) of fireball/rocket (smash)
     const p2 = this.player;
     const canShoot = !this.tutorial1v1 && b.onGround && !b.dead && this.time >= (b._shootCd || 0) && !p2.dead &&
+      !this._playerInvisible() &&                                  // onzichtbaar -> de bot heeft geen doelwit om op te richten
       Math.abs(p2.y - b.y) < 22 && Math.abs(p2.x - b.x) > 30;
     if (canShoot) {
       const sdir = p2.x >= b.x ? 1 : -1;
@@ -5411,11 +5418,21 @@ const Game = {
 
   // de AI: speelstijl + moeilijkheid uit het profiel (this.botCfg, level 1..10)
   botThink() {
-    const b = this.bot, p = this.player, now = this.time;
+    const b = this.bot, now = this.time;
+    const pReal = this.player;
     const cfg = this.botCfg || BOT_PROFILES[4];
     const inp = { left: false, right: false, jump: false, duck: false, attack: false, melee: false, jumpPressed: false };
     if (b.dead) return inp;
     if (this._quakeUntil > now) return inp;   // aardbeving: de bot wordt weggeschud en kan niks doen
+    // ONZICHTBAAR (Ninja-ability / Smoke Vanish): de bot ziet je NIET meer. Hij onthoudt je
+    // laatst bekende plek en reageert daar verder op — loop je weg, dan zoekt/slaat hij op de
+    // oude plek en mist hij je. Blijf je stilstaan, dan kan hij je nog per ongeluk raken.
+    const pInvis = this._playerInvisible();
+    if (!pInvis) b._seen = { x: pReal.x, y: pReal.y, onGround: pReal.onGround };
+    const p = (pInvis && b._seen)
+      ? { x: b._seen.x, y: b._seen.y, onGround: b._seen.onGround, ducking: false, _guardBroken: false,
+          dead: pReal.dead, respawnInvuln: pReal.respawnInvuln, w: pReal.w, h: pReal.h, dir: pReal.dir, vy: 0 }
+      : pReal;
     const dx = p.x - b.x;
     const aDx = Math.abs(dx);
     const face = () => { if (aDx > 8) b.dir = dx > 0 ? 1 : -1; };
