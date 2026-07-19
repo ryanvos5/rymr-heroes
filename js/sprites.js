@@ -76,6 +76,31 @@ const Sprites = {
 
   // Papegaai van de Pirate Captain (ability "Parrot Dive"): klein, fel, klappende vleugel.
   // pecking = true tijdens een pik -> kop schiet naar voren.
+  /* Banaan (Bonzo's Monkey Mayhem). Vliegend = gele boog die meedraait;
+     als schil = plat op de grond met open punten, zodat je 'm als gevaar herkent. */
+  drawBanana(ctx, cx, cy, rot, peel) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(cy));
+    const yel = '#f2c94c', yelDk = '#d9a92c', tip = '#5a3f18';
+    if (peel) {
+      // schil: plat liggend, met twee omgekrulde punten
+      this.px(ctx, yelDk, -6, -1, 12, 2);
+      this.px(ctx, yel, -6, -2, 12, 1);
+      this.px(ctx, yel, -8, -3, 3, 2);                 // linker krul omhoog
+      this.px(ctx, yel, 5, -3, 3, 2);                  // rechter krul omhoog
+      this.px(ctx, tip, -1, -2, 2, 1);                 // steeltje
+    } else {
+      ctx.rotate(rot);
+      this.px(ctx, yel, -5, -3, 10, 3);                // boog-lijf
+      this.px(ctx, yelDk, -5, 0, 10, 2);               // schaduwkant
+      this.px(ctx, yel, -6, -2, 2, 3);                 // uiteinden iets omhoog
+      this.px(ctx, yel, 4, -2, 2, 3);
+      this.px(ctx, tip, -7, -2, 2, 2);                 // donkere puntjes
+      this.px(ctx, tip, 5, -2, 2, 2);
+    }
+    ctx.restore();
+  },
+
   drawParrot(ctx, cx, cy, dir, t, pecking) {
     ctx.save();
     ctx.translate(Math.round(cx), Math.round(cy));

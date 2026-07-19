@@ -2714,6 +2714,7 @@ const Game = {
     this._dragonUsed = false;                                        // max 1 draak per match
     this.dragons = [];
     this.parrots = [];                                               // Pirate Captain-ability "Parrot Dive"
+    this.bananas = [];                                               // Bonzo-ability "Monkey Mayhem"
     // Cave: knoppen + muur + sfeer (bats/druppels)
     this.caveWall = null; this._caveArmAt = this.time + CAVE_ARM_MS; this.caveArmed = -1;
     this.caveButtons = (map.buttons || []).map((b) => ({ at: b.at, x: b.x, y: b.y }));
@@ -2739,6 +2740,7 @@ const Game = {
     this.jungleApe = map.ape ? { x: map.ape.x, floorY: map.ape.floorY, y: map.ape.floorY, vy: 0, state: 'idle', dir: 1, nextAt: this.time + 1400, hitP: false, hitB: false, _net: 0 } : null;
     this.monkey = null;
     this.parrots = [];
+    this.bananas = [];
     // Airplane: vogels die vanaf de voorkant (links) langs scheren
     this.birds = []; this._birdAt = map.airplane ? this.time + 2600 : 0;
     // Jungle: stun-darts die af en toe door de map schieten
@@ -3621,6 +3623,7 @@ const Game = {
     this.updateDragons(dt);
     // papegaai (Pirate Captain-ability)
     this.updateParrots(dt);
+    this.updateBananas(dt);
     // vallende stenen (steen-powerup, alleen Cave)
     this.updateRocks(dt);
   },
@@ -3676,6 +3679,104 @@ const Game = {
   },
 
   onVersusDragon() { this.spawnDragon('foe'); },
+
+  /* ===== Bonzo-ability "Monkey Mayhem" =====
+     3 bananen die door de arena stuiteren. Een directe treffer doet schade; daarna
+     blijft de banaan als schil liggen en glijd je uit als je erop stapt.
+     Online: net als bij de papegaai rekent de WERPER de treffers uit en stuurt die
+     door. De bananen van de tegenstander zijn bij mij puur decor — hun stuiterpad
+     hoeft dus niet gelijk te lopen, wat met willekeurige stuiters ook niet kan. */
+  spawnBananas(owner) {
+    this.bananas = this.bananas || [];
+    const src = owner === 'me' ? this.player : (owner === 'bot' ? this.bot : (this.vs && this.vs.remote));
+    if (!src) return;
+    const away = owner === 'me' ? (this.player.dir || 1) : -1;
+    for (let i = 0; i < BANANA_COUNT; i++) {
+      this.bananas.push({
+        owner, born: this.time, until: this.time + BANANA_DUR,
+        x: src.x, y: src.y - 22,
+        vx: away * (1.4 + Math.random() * 2.2) * (i === 1 ? 0.55 : 1),   // spreiding: 1 kort, 2 ver
+        vy: -(3.4 + Math.random() * 2.8),
+        rot: Math.random() * 6.28, spin: (Math.random() - 0.5) * 0.5,
+        live: true, peel: false, rest: 0,
+      });
+    }
+    if (window.Sfx) Sfx.play('pickup');
+  },
+
+  // wie kan door DEZE banaan geraakt worden? (spiegelt _parrotTarget)
+  _bananaTarget(owner) {
+    if (owner === 'me') return this.vsBot ? this.bot : (this.vs ? this.vs.remote : null);
+    if (owner === 'bot') return this.player;
+    return null;                                    // 'foe' = decor, de werper meldt de treffer
+  },
+
+  updateBananas(dt) {
+    if (!this.bananas || !this.bananas.length) return;
+    const mapW = this.vsMapW || CONFIG.VIEW_W;
+    const ds = this.dtScale;
+    for (const b of this.bananas) {
+      if (!b.peel) {
+        const py = b.y;
+        b.vy += BANANA_GRAV * ds;
+        b.x += b.vx * ds; b.y += b.vy * ds;
+        b.rot += b.spin * ds;
+        // zijkanten van de map: terugkaatsen
+        if (b.x < 6) { b.x = 6; b.vx = Math.abs(b.vx) * BANANA_BOUNCE; }
+        else if (b.x > mapW - 6) { b.x = mapW - 6; b.vx = -Math.abs(b.vx) * BANANA_BOUNCE; }
+        // op een platform stuiteren (van boven af, net als de spelers)
+        if (b.vy > 0) for (const pf of this.platforms) {
+          if (pf.soft) continue;
+          if (Math.abs(b.x - pf.x) > pf.w / 2) continue;
+          if (py <= pf.y + 1 && b.y >= pf.y) {
+            b.y = pf.y; b.vy = -Math.abs(b.vy) * BANANA_BOUNCE; b.vx *= 0.82; b.spin *= 0.7;
+            if (Math.abs(b.vy) < 1.2) { b.vy = 0; b.vx = 0; b.spin = 0; b.peel = true; b.live = false; b.rest = pf.y; }
+            break;
+          }
+        }
+        if (b.y > (this.vsFallY || 999)) b.until = 0;     // van de map gevallen
+      }
+      // treffer-check (alleen voor bananen die ik zelf simuleer)
+      const t = this._bananaTarget(b.owner);
+      if (t && !t.dead && (t.alive === undefined || t.alive) && !t.respawnInvuln) {
+        if (Math.hypot(t.x - b.x, (t.y - 14) - b.y) < BANANA_HIT_R) this.bananaTouch(b, t);
+      }
+    }
+    this.bananas = this.bananas.filter((b) => this.time < b.until);
+  },
+
+  // contact met een banaan: vliegend = schade, stilliggende schil = uitglijden
+  bananaTouch(b, t) {
+    const dir = t.x >= b.x ? 1 : -1;
+    if (b.live) {
+      b.live = false; b.peel = true; b.vx = 0; b.vy = 0; b.spin = 0;   // valt neer als schil
+      if (b.owner === 'me') {
+        if (this.vsBot) this.applyHitToBot(dir, 6, -3, BANANA_DMG);
+        else if (window.Net) Net.versusSend('hit', { dir, power: 6, vy: -3, dmg: BANANA_DMG, pvp: 1 });
+      } else {
+        this.onVersusHit({ dir, power: 6, vy: -3, dmg: BANANA_DMG, pvp: 1 });
+      }
+      this.addFloatText(b.x, b.y - 18, tl('BANAAN!'), '#ffd24a', false);
+      this.shake = Math.max(this.shake, 4);
+    } else {
+      if (this.time < (b.slipCd || 0)) return;
+      b.slipCd = this.time + 400;
+      b.until = 0;                                                     // schil is verbruikt
+      // uitglijden = kort uit balans; via een 'hit' zonder schade (stun bestaat al)
+      if (b.owner === 'me') {
+        if (this.vsBot) {
+          this.applyHitToBot(dir, 3, -1.5, 0);
+          this.bot.stunUntil = Math.max(this.bot.stunUntil || 0, this.time + BANANA_SLIP_MS);
+        } else if (window.Net) Net.versusSend('hit', { dir, power: 3, vy: -1.5, dmg: 0, stun: BANANA_SLIP_MS, pvp: 1 });
+      } else {
+        this.onVersusHit({ dir, power: 3, vy: -1.5, dmg: 0, stun: BANANA_SLIP_MS, pvp: 1 });
+      }
+      this.addFloatText(t.x, t.y - 30, tl('UITGEGLEDEN!'), '#ffd24a', false);
+    }
+    for (let i = 0; i < 7; i++)
+      this.particles.push(new Particle(b.x, b.y - 4, (Math.random() - 0.5) * 2, -Math.random() * 1.4, '#f2c94c', 320, 2));
+    if (window.Sfx) Sfx.play('hit');
+  },
 
   // ===== Pirate Captain-ability "Parrot Dive" =====
   // Een papegaai vliegt 8s rond, duikt op de dichtstbijzijnde vijand en pikt hem lek:
@@ -3755,7 +3856,8 @@ const Game = {
     t.fireAura = false; t.auraUntil = 0;
     t._invisUntil = 0; t._reachUntil = 0; t._fastMeleeUntil = 0;
     t._stunStrikeUntil = 0; t._ultraUntil = 0; t._rage3Until = 0;
-    t.abCharge = 0;                                     // ability-lading kwijt -> opnieuw opladen
+    // De opgebouwde lading blijft staan: de papegaai onderbreekt alleen wat er LOOPT.
+    // (Eerder ging hier abCharge = 0, waardoor je je hele ability-opbouw kwijtraakte.)
     this.addFloatText(t.x, t.y - 30, tl('ONDERBROKEN'), '#ffd24a', false);
   },
 
@@ -4602,6 +4704,7 @@ const Game = {
       case 'triplejump': p.maxJumps = Math.max(p.maxJumps, 2) + 1; p.jumps = p.maxJumps; this._abFx(p, '#8fd0ff'); break;
       case 'acrobat': this.acrobat(p); break;
       case 'parrotdive': this.spawnParrot('me'); break;
+      case 'bananas': this.spawnBananas('me'); p.buffs.speed = now + BONZO_RUSH_MS; this._abFx(p, '#f2c94c'); break;
       case 'rage10': p.buffs.rage = now + 10000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'rage8': p.buffs.rage = now + 8000 * dm; this._abFx(p, '#ff5a3a'); break;
       case 'ultrarage': p.buffs.rage = now + 5000 * dm; p._ultraUntil = now + 5000 * dm; this._abFx(p, '#ff2a2a'); break;
@@ -4719,7 +4822,7 @@ const Game = {
     return this.useAbility();
   },
   _abilityColor(ab) {
-    return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', acrobat: '#8fe0ff', longreach: '#5fe0b0', fireaura10: '#ff8a2a',
+    return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', bananas: '#f2c94c', acrobat: '#8fe0ff', longreach: '#5fe0b0', fireaura10: '#ff8a2a',
       rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', rage3: '#ff3a2a', zapdash: '#ffe27a',
       earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', stunpulse: '#8fd0ff', souldrain: '#a45bff', invisible: '#b06bff', parrotdive: '#3ad06a' })[ab] || '#c9a6ff';
   },
@@ -4809,6 +4912,7 @@ const Game = {
     this.spawnAbilityFx(r.x, r.y, this._abilityColor(payload && payload.ab));
     if (payload && payload.ab === 'heal') this.spawnHealFx(r);   // tegenstander (Jenze) heelt -> toon het groene HP-effect ook bij hem
     if (payload && payload.ab === 'longreach') { r._reachUntil = this.time + LONGREACH_MS; this._reachSweepFx(r); }   // tegenstander (Tygo) -> lange armen + zwaai-veeg, 6s
+    if (payload && payload.ab === 'bananas') this.spawnBananas('foe');            // decor: de werper meldt de treffers
     if (payload && payload.ab === 'parrotdive') this.spawnParrot('foe');   // tegenstander (Pirate Captain) -> zijn papegaai duikt op mij
   },
   _abFx(p, col) {
@@ -4947,6 +5051,7 @@ const Game = {
       case 'triplejump': b.maxJumps = Math.max(b.maxJumps, 2) + 1; b.jumps = b.maxJumps; this._abFx(b, '#8fd0ff'); break;
       case 'acrobat': this.acrobat(b); break;
       case 'parrotdive': this.spawnParrot('bot'); break;
+      case 'bananas': this.spawnBananas('bot'); b.buffs.speed = now + BONZO_RUSH_MS; this._abFx(b, '#f2c94c'); break;
       case 'rage10': b.buffs.rage = now + 10000; this._abFx(b, '#ff5a3a'); break;
       case 'rage8': b.buffs.rage = now + 8000; this._abFx(b, '#ff5a3a'); break;
       case 'ultrarage': b.buffs.rage = now + 5000; b._ultraUntil = now + 5000; this._abFx(b, '#ff2a2a'); break;
@@ -5458,6 +5563,7 @@ const Game = {
       else if (b.ability === 'heal') want = b.hp < b.maxHp * 0.55;                   // pas helen als het nodig is
       else if (b.ability === 'fireaura10' || b.ability === 'knife') want = aDx < 90; // in de buurt om te raken
       else if (b.ability === 'souldrain') want = b.hp < b.maxHp * 0.9 || aDx < 300;  // steelt HP: inzetten als 'ie wat schade heeft of de speler in de buurt is
+      else if (b.ability === 'bananas') want = aDx < 340;                            // bananen: pas gooien als je een beetje in de buurt bent
       else if (b.ability === 'acrobat') want = aDx < 80;                             // vlakbij: salto over de aanval + shockwave
       else if (b.ability === 'longreach') want = aDx < 120;                           // net binnen bereik: langer bereik + knockback
       else want = true;                                                              // buffs (rage/jumps): meteen
@@ -6174,6 +6280,7 @@ const Game = {
     this.renderDragons(ctx);
     // papegaai (Pirate Captain-ability) — over de wereld heen
     this.renderParrots(ctx);
+    this.renderBananas(ctx);
     // bliksem (Cave/Sky) — scherm-ruimte
     this.renderLightning(ctx);
     // combo-teller
@@ -6342,6 +6449,18 @@ const Game = {
     for (const p of this.parrots) {
       const sx = Math.round((p.x - camX) * z), sy = Math.round((p.y - camY) * z);
       Sprites.drawParrot(ctx, sx, sy, p.dir, this.time, !!p.peckFx);
+    }
+  },
+
+  // bananen/schillen (Monkey Mayhem) — wereld-coördinaten omrekenen naar het scherm
+  renderBananas(ctx) {
+    if (!this.bananas || !this.bananas.length) return;
+    const camX = this.vsCamX, camY = this.vsCamY, z = this.vsCamZoom || 1;
+    for (const b of this.bananas) {
+      const sx = Math.round((b.x - camX) * z), sy = Math.round((b.y - camY) * z);
+      const fade = (b.until - this.time) < 1600 && Math.floor(this.time / 130) % 2 === 0;   // knippert vlak voor het verdwijnen
+      if (fade) continue;
+      Sprites.drawBanana(ctx, sx, sy, b.peel ? 0 : b.rot, b.peel);
     }
   },
 

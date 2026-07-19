@@ -283,14 +283,14 @@ const CHARACTERS = {
   // ---- Journey-only mensapen (alleen vrij te spelen in Journey, niet te koop) ----
   bonzo: {
     id: 'bonzo', name: 'Bonzo', cost: 0, journeyOnly: true,
-    maxHp: 80, speedMul: 1.12, meleeMul: 0.95, build: 'small', hair: 'natural', ability: 'triplejump', abChargeMul: 3,
+    maxHp: 80, speedMul: 1.12, meleeMul: 0.95, build: 'small', hair: 'natural', ability: 'bananas', abChargeS: 64,
     palette: {
       hair: '#3a2a1c', hairDark: '#241810',
       skin: '#8a5e38', skinDark: '#5e3f22',     // chimp-vacht
       eye: '#2a1a0e',
       shirt: '#5a4030', shirtDark: '#3a281c', pants: '#2a1c12', shoe: '#140d08',
     },
-    desc: 'Chimp: snel & wendbaar, extra sprong. Alleen via Journey.'
+    desc: 'Chimp: snel & wendbaar. Gooit 3 stuiterende bananen. Alleen via Journey.'
   },
   koba: {
     id: 'koba', name: 'Koba', cost: 0, journeyOnly: true,
@@ -495,6 +495,7 @@ const ABILITIES = {
   parrotdive: { name: 'Parrot Dive', desc: 'Je papegaai vliegt 8s over het scherm en pikt de dichtstbijzijnde vijand: kleine schade, maar veel hits — en het onderbreekt zijn ability.' },
   fireaura10: { name: 'Vuuraura',    desc: 'Vuuraura 6s: wie je aanraakt brandt.' },
   triplejump: { name: 'Dubbel Sprong', desc: 'Een extra dubbel-jump — de rest van de match.' },
+  bananas:    { name: 'Monkey Mayhem', desc: 'Gooit 3 bananen die door de arena stuiteren: 15 schade bij een treffer. Wie daarna op een schil stapt, glijdt 0,8s uit. Jij bent even sneller.' },
   acrobat:    { name: 'Acrobaat',    desc: 'Salto: springt over aanvallen heen (kort onkwetsbaar) en landt met een kleine shockwave. Weinig schade, veel mobiliteit.' },
   earthquake: { name: 'Aardbeving',  desc: 'De map trilt 5s; je tegenstander wordt weggeschud.' },
   rage10:     { name: 'Rage',        desc: 'Rage 10s (2× schade).' },
@@ -517,6 +518,16 @@ const ACRO_SHOCK_DMG = 40;       // schade bij de landing
 const ACRO_SHOCK_KNOCK = 20;     // knockback van de shockwave
 const ACRO_SHOCK_RANGE = 72;     // horizontaal bereik van de shockwave
 // Pirate Captain-ability "Parrot Dive": papegaai vliegt 8s rond en pikt de dichtstbijzijnde vijand
+// ---- Bonzo-ability "Monkey Mayhem": 3 stuiterende bananen ----
+const BANANA_COUNT = 3;          // aantal bananen per worp
+const BANANA_DMG = 15;           // schade bij een directe treffer (daarna wordt het een schil)
+const BANANA_SLIP_MS = 800;      // op een schil stappen -> 0,8s uit balans
+const BANANA_DUR = 10000;        // bananen/schillen verdwijnen na 10s
+const BANANA_GRAV = 0.34;        // valversnelling van een banaan
+const BANANA_BOUNCE = 0.62;      // hoeveel snelheid een stuiter overhoudt
+const BANANA_HIT_R = 13;         // treffer-straal
+const BONZO_RUSH_MS = 2500;      // Bonzo is tijdens/na het gooien even sneller
+
 const PARROT_DUR = 8000;         // de papegaai blijft 8s in de lucht
 const PARROT_PECK_MS = 850;      // pikt ~elke 0,85s (veel kleine hits)
 const PARROT_DMG = 6;            // kleine schade per pik
