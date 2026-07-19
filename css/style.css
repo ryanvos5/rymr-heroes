@@ -1688,6 +1688,9 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
   overflow: hidden;                 /* niets steekt door de (gouden) rand heen */
 }
 .shop-card canvas { image-rendering: pixelated; background: transparent; }
+
+/* Skins-tab: melding als je nog geen held hebt waar skins voor bestaan */
+.shop-empty { grid-column: 1 / -1; padding: 24px 12px; text-align: center; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
 .shop-card .w-name { font-size: 16px; font-weight: bold; }
 .shop-card .w-slot {
   font-size: 9px;

@@ -4,7 +4,7 @@
    ============================================================ */
 
 class Player {
-  constructor(meleeId, rangedId, charId) {
+  constructor(meleeId, rangedId, charId, skinId) {
     this.x = 60;
     this.y = CONFIG.GROUND_Y;
     this.vy = 0;
@@ -17,9 +17,12 @@ class Player {
     this.rangedId = rangedId || null;       // null = geen vuurwapen uitgerust
     // wapen dat standaard in de hand getoond wordt
     this.weaponId = this.rangedId || this.meleeId;
-    this.pal = ch.palette;
-    this.build = ch.build || 'normal';
-    this.hairStyle = ch.hair || 'natural';
+    // uiterlijk via charRender: skin vervangt alleen kleuren/haar, nooit de build (hitbox!)
+    this.skinId = skinId || null;
+    const rend = charRender(charId, this.skinId);
+    this.pal = rend.palette;
+    this.build = rend.build;
+    this.hairStyle = rend.hair;
     this.meleeMul = ch.meleeMul || 1;
     this.maxHp = ch.maxHp || 100;
     this.hp = this.maxHp;
@@ -54,7 +57,7 @@ class Player {
     // Vince: vuuraura — elke 30s, 5s lang; aanraking geeft 3s burn
     this.fireAura = !!ch.fireAura;
     this.ninjaSalto = !!ch.ninjaSalto;   // Ninja: dubbeljump = vooruit-salto (uit — nu normale dubbel-jump)
-    this.outfit = ch.outfit || null;     // 'ninja' / 'monk' — extra kleding-look in de sprite
+    this.outfit = rend.outfit;           // 'ninja' / 'monk' / 'pirate' — extra kleding-look in de sprite
     this.auraNextAt = 30000;   // eerste aura na 30s spelen
     this.auraUntil = 0;
     this._auraOn = false;

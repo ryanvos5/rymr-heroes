@@ -59,7 +59,7 @@ const Game = {
     // al eerder voltooid? dan bij herhaling maar 15 munten (geen farmen)
     this.levelWasCleared = worldId ? (Storage.highestCleared(worldId) >= level.id) : false;
 
-    this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter);
+    this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter, Storage.skinFor(Storage.data.equippedCharacter));
     // dubbel-jump vanaf wereld 2
     this.player.maxJumps = worldId >= DOUBLE_JUMP_FROM_WORLD ? 2 : 1;
     this.player.jumps = this.player.maxJumps;
@@ -336,7 +336,7 @@ const Game = {
     co._pT += dt;
     if (co._pT >= 100 && window.Net) {
       co._pT = 0;
-      Net.versusSend('jp', { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: p.walkPhase || 0, a: this.time < p.attackAnimUntil ? 1 : 0, h: Math.round(p.hp), al: p.hp > 0 ? 1 : 0, ch: p.charId || 'ryan', g: p.onGround ? 1 : 0, f: atFin ? 1 : 0 });
+      Net.versusSend('jp', { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: p.walkPhase || 0, a: this.time < p.attackAnimUntil ? 1 : 0, h: Math.round(p.hp), al: p.hp > 0 ? 1 : 0, ch: p.charId || 'ryan', sk: Storage.skinFor(p.charId) || '', g: p.onGround ? 1 : 0, f: atFin ? 1 : 0 });
     }
     if (co.role === 'host') {
       co._zT += dt;
@@ -390,7 +390,7 @@ const Game = {
     if (!prev) { co.partner = Object.assign({}, p, { x: p.x, y: p.y, tx: p.x, ty: p.y }); }   // eerste keer: direct op de plek
     else {                                                                                    // daarna: doel-positie bewaren -> vloeiend interpoleren (geen lag/spring)
       prev.tx = p.x; prev.ty = p.y;
-      prev.d = p.d; prev.wp = p.wp; prev.a = p.a; prev.h = p.h; prev.al = p.al; prev.ch = p.ch; prev.g = p.g; prev.f = p.f;
+      prev.d = p.d; prev.wp = p.wp; prev.a = p.a; prev.h = p.h; prev.al = p.al; prev.ch = p.ch; prev.sk = p.sk; prev.g = p.g; prev.f = p.f;
     }
     co.partnerAtFinish = !!p.f;
   },
@@ -489,7 +489,7 @@ const Game = {
     if (window.Sfx) Sfx.music('arena');
     this.level = ARENA_LEVEL;
     UI.viewWorld = 1;
-    this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter);
+    this.player = new Player(Storage.data.equippedMelee, Storage.data.equippedRanged, Storage.data.equippedCharacter, Storage.skinFor(Storage.data.equippedCharacter));
     this.player.maxJumps = 1; this.player.jumps = 1;
     this.player.x = ARENA_LEVEL.length / 2; // midden van de arena
     this.zombies = []; this.bullets = []; this.particles = []; this.coinFx = []; this.ammoFx = []; this.ammoDrops = []; this.healthDrops = []; this.corpses = []; this.pendingZombies = [];
@@ -1627,11 +1627,11 @@ const Game = {
       }
       const pt = this.coop.partner;
       if (pt && pt.al) {
-        const pch = CHARACTERS[pt.ch] || CHARACTERS.ryan;
+        const pch = charRender(pt.ch, pt.sk);
         if (pt.g) Sprites.shadow(ctx, pt.x, pt.y + 1, 7);
         Sprites.drawCharacter(ctx, Math.round(pt.x), Math.round(pt.y), pt.d || 1, pch.palette, {
           walkPhase: pt.wp || 0, airborne: !pt.g, attacking: !!pt.a, weapon: 'bat',
-          build: pch.build, hair: pch.hair, t: this.time,
+          build: pch.build, hair: pch.hair, outfit: pch.outfit, t: this.time,
         });
         ctx.fillStyle = '#8fd0ff'; ctx.font = 'bold 8px "Courier New", monospace'; ctx.textAlign = 'center';
         ctx.fillText('P2', Math.round(pt.x), Math.round(pt.y) - 46); ctx.textAlign = 'left';
@@ -2696,7 +2696,7 @@ const Game = {
     const myChar = CHARACTERS[Storage.data.equippedCharacter] || {};
     const baseMelee = mode === 'smash' ? (myChar.startMelee || 'bat') : Storage.data.equippedMelee;
     const rangedId = mode === 'both' ? Storage.data.equippedRanged : null;
-    this.player = new Player(baseMelee, rangedId, Storage.data.equippedCharacter);
+    this.player = new Player(baseMelee, rangedId, Storage.data.equippedCharacter, Storage.skinFor(Storage.data.equippedCharacter));
     this._applyCharLevel(this.player);                 // per-character level-bonussen (+HP/+speed/langere abilities)
     this._setupPlayerArmor(this.player);               // harnas (blacksmith): extra grijze HP + slijtage-teller
     this.player.maxJumps = 2; this.player.jumps = 2;
@@ -5686,7 +5686,7 @@ const Game = {
     r.shieldHp = s.shp || 0;
     r.giant = s.gi === 1;
     r.heli = s.hl === 1;
-    r.alive = s.al !== 0; r.charId = s.ch || 'ryan';
+    r.alive = s.al !== 0; r.charId = s.ch || 'ryan'; r.skinId = s.sk || null;
     r.ducking = s.dk === 1; r.iv = s.iv === 1;   // tegenstander onzichtbaar
     r._fireHold = s.fb === 1;                     // tegenstander houdt een vuurbal vast
     if (typeof s.h === 'number') r.hp = s.h;
@@ -5703,7 +5703,7 @@ const Game = {
       x: Math.round(p.x), y: Math.round(p.y), vy: +(p.vy || 0).toFixed(1), d: p.dir,
       g: p.onGround ? 1 : 0, a: this.time < p.attackAnimUntil ? 1 : 0,
       sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
-      wid: p.weaponId || 0, su: (p.stunUntil && this.time < p.stunUntil) ? 1 : 0, fl: (p.flatUntil && this.time < p.flatUntil) ? 1 : 0, ht: Storage.data.equippedHat || 'none',
+      wid: p.weaponId || 0, su: (p.stunUntil && this.time < p.stunUntil) ? 1 : 0, fl: (p.flatUntil && this.time < p.flatUntil) ? 1 : 0, ht: Storage.data.equippedHat || 'none', sk: Storage.skinFor(p.charId) || '',
       rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: (p.burnUntil > this.time) ? 1 : 0, shp: Math.round(p.shieldHp || 0), gi: p.giant ? 1 : 0, hl: p.heli ? 1 : 0,
       wp: p.walkPhase || 0, al: p.dead ? 0 : 1, ch: Storage.data.equippedCharacter || 'ryan',
       h: Math.round(p.hp), mh: p.maxHp, dk: p.ducking ? 1 : 0,
@@ -5992,7 +5992,7 @@ const Game = {
     // tegenstander (ghost) — ROOD pijltje erboven; onzichtbare ninja tekenen we niet (jij ziet 'm niet)
     const r = this.vs.remote;
     if (r.alive && !r.iv) {
-      const rc = (CHARACTERS[r.charId] || CHARACTERS.ryan);
+      const rc = charRender(r.charId, r.skinId);
       { const rly = this.landingYFor(r); if (rly !== null) Sprites.shadow(ctx, r.x, rly + 1, r.giant ? 11 : 7, 1 - (rly - r.y) / 90); }   // schaduw krimpt met spronghoogte
       if (r.heli) { this.drawHeli(ctx, Math.round(r.x), Math.round(r.y), r.dir, rc.palette); }
       else {
@@ -6954,7 +6954,7 @@ const Game = {
     this.vs = { remote: { alive: false, x: -99999, y: 0, hp: 100, maxHp: 100 }, countdown: 0, roundFreezeUntil: 0, lastSwing: 0 };
     // lokale speler
     const baseMelee = (CHARACTERS[Storage.data.equippedCharacter] || {}).startMelee || 'bat';
-    this.player = new Player(baseMelee, null, Storage.data.equippedCharacter);
+    this.player = new Player(baseMelee, null, Storage.data.equippedCharacter, Storage.skinFor(Storage.data.equippedCharacter));
     this._applyCharLevel(this.player);                 // per-character level-bonussen
     this.player.maxJumps = 2; this.player.jumps = 2;
     this.player.baseMelee = baseMelee; this.player._baseMaxHp = this.player.maxHp;
@@ -7023,7 +7023,7 @@ const Game = {
     let pe = this.trainPeers[s.id]; if (!pe) pe = this.trainPeers[s.id] = { id: s.id };
     pe.nick = s.nick || 'Speler'; pe.x = s.x; pe.y = s.y; pe.dir = s.d || 1; pe.walkPhase = s.wp || 0;
     pe.attacking = s.a === 1; pe.swingWeapon = s.sw || null; pe.heldWeapon = s.hw || 'bat';
-    pe.hp = (s.hp != null) ? s.hp : 100; pe.maxHp = s.mh || 100; pe.charId = s.ch || 'ryan'; pe.hat = s.ht || 'none';
+    pe.hp = (s.hp != null) ? s.hp : 100; pe.maxHp = s.mh || 100; pe.charId = s.ch || 'ryan'; pe.hat = s.ht || 'none'; pe.skinId = s.sk || null;
     pe.fireHold = s.fb === 1; pe.giant = s.gi === 1; pe.iv = s.iv === 1; pe.rage = s.rg === 1; pe.burn = s.bn === 1;
     pe.lastSeen = this.time;
   },
@@ -7056,7 +7056,7 @@ const Game = {
       x: Math.round(p.x), y: Math.round(p.y), d: p.dir, wp: +(p.walkPhase || 0).toFixed(2),
       a: this.time < p.attackAnimUntil ? 1 : 0, sw: (this.time < (p.swingUntil || 0)) ? (p.swingWeapon || 0) : 0,
       hw: p.weaponId || p.meleeId || 'bat', hp: Math.round(Math.max(0, p.hp)), mh: p.maxHp,
-      ch: p.charId || 'ryan', ht: Storage.data.equippedHat || 'none', fb: p.fireballs > 0 ? 1 : 0,
+      ch: p.charId || 'ryan', ht: Storage.data.equippedHat || 'none', sk: Storage.skinFor(p.charId) || '', fb: p.fireballs > 0 ? 1 : 0,
       gi: p.giant ? 1 : 0, iv: (p._invisUntil && this.time < p._invisUntil) ? 1 : 0,
       rg: p.hasBuff('rage', this.time) ? 1 : 0, bn: p.burnUntil > this.time ? 1 : 0,
     });
@@ -7205,7 +7205,7 @@ const Game = {
   },
   drawTrainPeer(ctx, pe) {
     if (pe.iv) return;                                    // onzichtbare ninja: niet tekenen
-    const rc = CHARACTERS[pe.charId] || CHARACTERS.ryan;
+    const rc = charRender(pe.charId, pe.skinId);
     const airborne = pe.y < CONFIG.GROUND_Y - 5;
     { const ely = this.landingYFor(pe); if (ely !== null) Sprites.shadow(ctx, pe.x, ely + 1, pe.giant ? 11 : 7, 1 - (ely - pe.y) / 90); }   // schaduw krimpt met spronghoogte
     ctx.save(); ctx.translate(Math.round(pe.x), Math.round(pe.y)); const g = pe.giant ? 2.2 : 1; ctx.scale(g, g);

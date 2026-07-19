@@ -2436,7 +2436,7 @@ const UI = {
     this.el.shopCoins.textContent = Storage.data.coins;
     // robijn-saldo tonen op de crates/rubies-tabs; muntsaldo verbergen daar
     const rubyWrap = document.getElementById('shop-rubies-wrap'), coinWrap = document.getElementById('shop-coins-wrap');
-    const rubyTab = (tab === 'crates' || tab === 'rubies');
+    const rubyTab = (tab === 'crates' || tab === 'rubies' || tab === 'skins');
     if (rubyWrap) { rubyWrap.classList.toggle('hidden', !rubyTab); const rc = document.getElementById('shop-ruby-count'); if (rc) rc.textContent = Storage.rubies(); }
     if (coinWrap) coinWrap.classList.toggle('hidden', rubyTab);
     // subnote boven de grid (overleeft _galleryify, dat de grid leegmaakt)
@@ -2444,6 +2444,7 @@ const UI = {
     if (sub) {
       let txt = '';
       if (tab === 'crates') txt = tl('Gekochte crates gaan meteen open — je buit wordt direct bijgeschreven.');
+      else if (tab === 'skins') txt = tl('Skins zijn puur uiterlijk — ze veranderen niets aan je stats.');
       else if (tab === 'rubies' && !(window.IAP && IAP.available)) txt = tl('In-app aankopen worden binnenkort geactiveerd.');
       sub.textContent = txt; sub.classList.toggle('hidden', !txt);
     }
@@ -2451,6 +2452,7 @@ const UI = {
     this._charAnims = [];
     if (tab === 'chars') this.renderCharCards();
     else if (tab === 'hats') this.renderHatCards();
+    else if (tab === 'skins') this.renderSkinCards();
     else if (tab === 'powerups') this.renderPowerupCards(this.el.shopGrid, 'shop');
     else if (tab === 'crates') this.renderCrateCards();
     else if (tab === 'rubies') this.renderRubyCards();
@@ -3434,6 +3436,73 @@ const UI = {
       card.appendChild(iBadge);
       card.appendChild(btn);
       grid.appendChild(card);
+    });
+  },
+
+  /* ---------- SKINS-tab ----------
+     Per held: eerst de standaard-look, daarna z'n skins. Alleen helden die je bezit,
+     zodat de tab niet volloopt met dingen waar je niets mee kunt. */
+  renderSkinCards() {
+    const grid = this.el.shopGrid;
+    const owned = CHARACTER_ORDER.filter((cid) => Storage.ownsCharacter(cid) && skinsFor(cid).length);
+
+    if (!owned.length) {
+      const empty = document.createElement('div');
+      empty.className = 'shop-empty';
+      empty.textContent = tl('Koop eerst een held — daarna kun je hier skins voor hem kopen.');
+      grid.appendChild(empty);
+      return;
+    }
+
+    owned.forEach((cid) => {
+      const c = CHARACTERS[cid];
+      const cur = Storage.skinFor(cid);
+
+      // standaard-look = altijd gratis terug te zetten
+      [null].concat(skinsFor(cid)).forEach((sid) => {
+        const sk = sid ? SKINS[sid] : null;
+        const rar = sk ? (SKIN_RARITY[sk.rarity] || {}) : null;
+        const has = !sid || Storage.ownsSkin(sid);
+        const on = (cur || null) === sid;
+
+        const card = document.createElement('div');
+        card.className = 'shop-card' + (has ? ' owned' : '');
+        if (rar) card.style.borderColor = rar.col;
+
+        const rend = charRender(cid, sid);
+        card.appendChild(this._charCanvas(rend.palette, {
+          weapon: c.forcedMelee || 'bat', build: rend.build, hair: rend.hair,
+          hat: Storage.data.equippedHat, outfit: rend.outfit,
+        }));
+
+        // de shop is een carrousel (geen rijen), dus de held moet op de kaart zelf staan
+        const info = document.createElement('div');
+        info.innerHTML = '<div class="w-name">' + this._esc(sk ? sk.name : tl('Standaard')) + '</div>'
+          + '<div class="w-stats">' + this._esc(c.name)
+          + (rar ? ' · <span style="color:' + rar.col + '">' + this._esc(rar.name) + '</span>' : '') + '</div>';
+        card.appendChild(info);
+
+        const btn = document.createElement('button');
+        btn.className = 'shop-buy';
+        if (on) {
+          btn.classList.add('equipped'); btn.textContent = t('equipped');
+        } else if (has) {
+          btn.classList.add('equip'); btn.textContent = t('equip');
+          btn.onclick = () => { Storage.equipSkin(cid, sid); if (window.Sfx) Sfx.play('pickup'); this.renderShop(); };
+        } else {
+          const cost = skinCost(sid);
+          if (Storage.rubies() >= cost) {
+            btn.classList.add('buy'); btn.textContent = t('buy') + ' — ' + cost + ' ◆';
+            btn.onclick = () => {
+              if (Storage.buySkin(sid)) { Storage.equipSkin(cid, sid); if (window.Sfx) Sfx.play('pickup'); this.renderShop(); }
+            };
+          } else {
+            btn.classList.add('cant'); btn.textContent = cost + ' ◆ ' + t('too_few');
+          }
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+      });
     });
   },
 

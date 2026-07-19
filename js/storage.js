@@ -16,6 +16,8 @@ const DEFAULT_SAVE = {
   equippedCharacter: 'ryan',
   ownedHats: ['none'],
   equippedHat: 'none',
+  ownedSkins: [],           // gekochte skins (ids uit SKINS) — puur cosmetisch
+  equippedSkins: {},        // uitgeruste skin per held: { charId: skinId }
   // hoogst voltooide level per wereld: { "1": 0 } -> nog niets, level 1 speelbaar
   progress: { '1': 0 },
   arenaBest: 0,                 // hoogste ronde in Zombie Knock-out (oude mode)
@@ -52,6 +54,8 @@ const Storage = {
       this.data.ownedHats = this.data.ownedHats || ['none'];
       if (!this.data.ownedHats.includes('none')) this.data.ownedHats.unshift('none');
       if (!this.data.equippedHat) this.data.equippedHat = 'none';
+      if (!Array.isArray(this.data.ownedSkins)) this.data.ownedSkins = [];
+      if (!this.data.equippedSkins || typeof this.data.equippedSkins !== 'object') this.data.equippedSkins = {};
       this.data.progress = this.data.progress || { '1': 0 };
       if (typeof this.data.ammo !== 'number') this.data.ammo = STARTING_AMMO;
       if (typeof this.data.rockets !== 'number') this.data.rockets = 0;
@@ -125,6 +129,12 @@ const Storage = {
     for (const c of (cloud.ownedCharacters || [])) if (!d.ownedCharacters.includes(c)) d.ownedCharacters.push(c);
     for (const h of (cloud.ownedHats || [])) if (!(d.ownedHats || (d.ownedHats = ['none'])).includes(h)) d.ownedHats.push(h);
     if (cloud.equippedHat && (!d.equippedHat || d.equippedHat === 'none')) d.equippedHat = cloud.equippedHat;
+    // skins: bezit is de vereniging (nooit iets kwijtraken); een uitgeruste skin uit de cloud
+    // alleen overnemen voor helden waar lokaal nog niets uitgerust staat.
+    d.ownedSkins = d.ownedSkins || []; d.equippedSkins = d.equippedSkins || {};
+    for (const s of (cloud.ownedSkins || [])) if (!d.ownedSkins.includes(s)) d.ownedSkins.push(s);
+    const ces = cloud.equippedSkins || {};
+    for (const k of Object.keys(ces)) if (!d.equippedSkins[k]) d.equippedSkins[k] = ces[k];
     const cp = cloud.progress || {};
     for (const k of Object.keys(cp)) d.progress[k] = Math.max(d.progress[k] || 0, cp[k] || 0);
     // character-levels: neem per character het hoogste level (+ bijbehorende XP)
@@ -166,6 +176,7 @@ const Storage = {
       else if (key === 'weapons') { const ids = val === 'all' ? WEAPON_ORDER.slice() : val.split('|'); for (const id of ids) if (WEAPONS[id] && !this.data.ownedWeapons.includes(id)) this.data.ownedWeapons.push(id); changed = true; }
       else if (key === 'chars') { const ids = val === 'all' ? CHARACTER_ORDER.slice() : val.split('|'); for (const id of ids) if (CHARACTERS[id] && !this.data.ownedCharacters.includes(id)) this.data.ownedCharacters.push(id); changed = true; }
       else if (key === 'hats') { const ids = val === 'all' ? HAT_ORDER.slice() : val.split('|'); this.data.ownedHats = this.data.ownedHats || ['none']; for (const id of ids) if (HATS[id] && !this.data.ownedHats.includes(id)) this.data.ownedHats.push(id); changed = true; }
+      else if (key === 'skins') { const ids = val === 'all' ? SKIN_ORDER.slice() : val.split('|'); this.data.ownedSkins = this.data.ownedSkins || []; for (const id of ids) if (SKINS[id] && !this.data.ownedSkins.includes(id)) this.data.ownedSkins.push(id); changed = true; }
     });
     if (changed) {
       this.save();
@@ -326,6 +337,36 @@ const Storage = {
     if (!this.ownsHat(id)) return false;
     this.data.equippedHat = id; this.save(); return true;
   },
+
+  // ---- skins (cosmetisch, met robijnen) ----
+  ownsSkin(id) { return (this.data.ownedSkins || []).includes(id); },
+  buySkin(id) {
+    const s = SKINS[id];
+    if (!s || this.ownsSkin(id)) return false;
+    if (!this.ownsCharacter(s.char)) return false;             // eerst de held zelf bezitten
+    if (!this.spendRubies(skinCost(id))) return false;
+    (this.data.ownedSkins = this.data.ownedSkins || []).push(id);
+    this.save();
+    return true;
+  },
+  // skinId = null -> terug naar het standaard-uiterlijk van de held
+  equipSkin(charId, skinId) {
+    this.data.equippedSkins = this.data.equippedSkins || {};
+    if (!skinId) { delete this.data.equippedSkins[charId]; this.save(); return true; }
+    const s = SKINS[skinId];
+    if (!s || s.char !== charId || !this.ownsSkin(skinId)) return false;
+    this.data.equippedSkins[charId] = skinId;
+    this.save();
+    return true;
+  },
+  // uitgeruste skin van een held (null als er geen is of als 'ie niet meer geldig is)
+  skinFor(charId) {
+    const id = (this.data.equippedSkins || {})[charId];
+    if (!id || !SKINS[id] || SKINS[id].char !== charId || !this.ownsSkin(id)) return null;
+    return id;
+  },
+  // render-eigenschappen van de held die de speler nu op heeft (incl. skin)
+  myRender(charId) { const id = charId || this.data.equippedCharacter || 'ryan'; return charRender(id, this.skinFor(id)); },
 
   // ---- level-up: keert 300 munten per nieuw level uit; geeft info terug voor de popup ----
   claimLevelUps() {

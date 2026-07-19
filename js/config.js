@@ -372,6 +372,118 @@ const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'rick
 // Alle speelbare characters iets sneller lopen (t.o.v. hun eigen huidige snelheid; onderlinge verschillen blijven behouden).
 for (const _cid of CHARACTER_ORDER) { const _c = CHARACTERS[_cid]; if (_c && typeof _c.speedMul === 'number') _c.speedMul = +(_c.speedMul * 1.1).toFixed(3); }
 
+/* ============================================================
+   SKINS — puur cosmetisch, alleen met robijnen (◆).
+   Een skin vervangt het KLEURENPALET van een held (en mag de haarstijl wisselen).
+   BEWUST GEEN gameplay-effect: dit is een 1v1-PvP-game, dus alles wat de balans
+   raakt zou pay-to-win zijn. `build` komt daarom ALTIJD van de held zelf — de
+   hitbox-breedte (Fighter.w / hitHalfW) wordt daaruit afgeleid.
+   ============================================================ */
+const SKIN_RARITY = {
+  common:    { name: 'Gewoon',        col: '#9fb4c7', cost: 80 },
+  rare:      { name: 'Zeldzaam',      col: '#59a6ff', cost: 200 },
+  legendary: { name: 'Legendarisch',  col: '#ffb020', cost: 500 },
+};
+
+const SKINS = {
+  // ---- Ryan (startheld: iedereen heeft 'm, dus hier de meeste keuze) ----
+  ryan_azure:    { char: 'ryan', name: 'Azuur', rarity: 'common',
+    palette: { shirt: '#1f4a7a', shirtDark: '#12304f', pants: '#1a2430', shoe: '#0c1118' } },
+  ryan_crimson:  { char: 'ryan', name: 'Karmozijn', rarity: 'rare',
+    palette: { hair: '#2a1a12', hairDark: '#170e08', shirt: '#8e1f24', shirtDark: '#5a1116', pants: '#241416', shoe: '#0e0708' } },
+  ryan_gold:     { char: 'ryan', name: 'Gouden Ryan', rarity: 'legendary',
+    palette: { hair: '#f0c84a', hairDark: '#b8912e', shirt: '#e0b234', shirtDark: '#9a7618', pants: '#4a3a12', shoe: '#241a06', eye: '#4a3a12' } },
+
+  // ---- Jenze (fors, donkerblauw) ----
+  jenze_forest:  { char: 'jenze', name: 'Woudloper', rarity: 'common',
+    palette: { shirt: '#2f4a2e', shirtDark: '#1c301c', pants: '#26301f', shoe: '#121a0e' } },
+  jenze_royal:   { char: 'jenze', name: 'Koninklijk', rarity: 'rare',
+    palette: { shirt: '#4a2a6b', shirtDark: '#2e1745', pants: '#2a2038', shoe: '#141020', hair: '#c8a85a', hairDark: '#9a7e3a' } },
+
+  // ---- Tygo (lang, groengrijze tuniek) ----
+  tygo_sand:     { char: 'tygo', name: 'Woestijnzoon', rarity: 'common',
+    palette: { shirt: '#c2a468', shirtDark: '#8e7442', pants: '#6b5a38', shoe: '#3a301c' } },
+  tygo_shadow:   { char: 'tygo', name: 'Schaduwjager', rarity: 'legendary',
+    palette: { hair: '#161616', hairDark: '#000000', shirt: '#1a1e26', shirtDark: '#0c0e14', pants: '#14171c', shoe: '#08090c', eye: '#7ad0ff' } },
+
+  // ---- Vince (vuuraura, zwarte stekels) ----
+  vince_ice:     { char: 'vince', name: 'IJs-Vince', rarity: 'rare',
+    palette: { hair: '#bfe6f5', hairDark: '#7fb4c9', shirt: '#2a6f8a', shirtDark: '#184a5e', pants: '#1e2a33', shoe: '#0c1418', eye: '#7ad0ff' } },
+  vince_ember:   { char: 'vince', name: 'Sintel', rarity: 'legendary',
+    palette: { hair: '#ff7a1e', hairDark: '#b84a08', shirt: '#1a1210', shirtDark: '#0c0806', pants: '#181210', shoe: '#0a0706', eye: '#ff9d33' } },
+
+  // ---- Timo (klein & wendbaar) ----
+  timo_lime:     { char: 'timo', name: 'Limoen', rarity: 'common',
+    palette: { shirt: '#6aa82e', shirtDark: '#477418', pants: '#2e3a1e', shoe: '#161c0c' } },
+  timo_neon:     { char: 'timo', name: 'Neon', rarity: 'rare',
+    palette: { hair: '#e83ba8', hairDark: '#a81f76', shirt: '#1a1030', shirtDark: '#0c0718', pants: '#181028', shoe: '#0a0614', eye: '#3bf0e8' } },
+
+  // ---- Just (stevig & traag) ----
+  just_smith:    { char: 'just', name: 'Smid', rarity: 'common',
+    palette: { shirt: '#4a4a50', shirtDark: '#2e2e33', pants: '#33302c', shoe: '#1a1816' } },
+  just_bronze:   { char: 'just', name: 'Brons', rarity: 'rare',
+    palette: { hair: '#c87a2e', hairDark: '#8e5218', shirt: '#a06a2a', shirtDark: '#6b4416', pants: '#3a2a16', shoe: '#1c140a' } },
+
+  // ---- Ricky (rage, groen shirt) ----
+  ricky_arctic:  { char: 'ricky', name: 'Arctisch', rarity: 'common',
+    palette: { shirt: '#d8e4ec', shirtDark: '#a4b4c2', pants: '#2e3a44', shoe: '#161c22' } },
+  ricky_venom:   { char: 'ricky', name: 'Venijn', rarity: 'rare',
+    palette: { hair: '#2a1a3a', hairDark: '#180e24', shirt: '#3ac24a', shirtDark: '#1e7a2c', pants: '#2a1a3a', shoe: '#140c1c', eye: '#8ef03a' } },
+
+  // ---- Yarno (teal, zwart haar naar achteren) ----
+  yarno_midnight:{ char: 'yarno', name: 'Middernacht', rarity: 'common',
+    palette: { shirt: '#1e2440', shirtDark: '#101428', pants: '#181c2e', shoe: '#0a0c16' } },
+  yarno_bloodmoon:{ char: 'yarno', name: 'Bloedmaan', rarity: 'legendary',
+    palette: { hair: '#7a1020', hairDark: '#4a0810', shirt: '#1a0e10', shirtDark: '#0c0608', pants: '#181012', shoe: '#0a0506', eye: '#ff3b4a' } },
+
+  // ---- Pirate Captain (behoudt de piraten-outfit) ----
+  pirate_navy:   { char: 'pirate', name: 'Marineblauw', rarity: 'rare',
+    palette: { shirt: '#1f3a6b', shirtDark: '#122446', pants: '#1e2230', shoe: '#0e1018' } },
+  pirate_ghost:  { char: 'pirate', name: 'Spookkapitein', rarity: 'legendary',
+    palette: { hair: '#cfe0e4', hairDark: '#94a8ad', skin: '#a8c4c0', skinDark: '#7a9a96', shirt: '#33555e', shirtDark: '#1e353c', pants: '#243a40', shoe: '#121e22', eye: '#8ffff0' } },
+
+  // ---- Skeleton Knight (premium held) ----
+  skeleton_gilded:{ char: 'skeleton', name: 'Verguld', rarity: 'rare',
+    palette: { shirt: '#b8912e', shirtDark: '#7a5e18', eye: '#ffd24a' } },
+  skeleton_infernal:{ char: 'skeleton', name: 'Hels', rarity: 'legendary',
+    palette: { hair: '#e8d8d0', hairDark: '#a89890', shirt: '#5a1a1a', shirtDark: '#330c0c', pants: '#e0d0c8', shoe: '#a09088', eye: '#ff4a1e' } },
+
+  // ---- Journey-helden ----
+  ninja_crimson: { char: 'ninja', name: 'Karmozijnen Ninja', rarity: 'rare',
+    palette: { shirt: '#6b1420', shirtDark: '#3f0a12', pants: '#4a0e18', shoe: '#240710' } },
+  ninja_gold:    { char: 'ninja', name: 'Gouden Ninja', rarity: 'legendary',
+    palette: { shirt: '#3a3020', shirtDark: '#201a10', pants: '#2e2618', shoe: '#16120a', hair: '#f0c84a', hairDark: '#b8912e', eye: '#ffd24a' } },
+  monnik_jade:   { char: 'monnik', name: 'Jade', rarity: 'rare',
+    palette: { shirt: '#2e9a72', shirtDark: '#1a6b4c', pants: '#1e5a42', shoe: '#0e2e22' } },
+  guardian_obsidian:{ char: 'guardian', name: 'Obsidiaan', rarity: 'rare',
+    palette: { hair: '#3a3a42', hairDark: '#1e1e24', shirt: '#2a2a33', shirtDark: '#16161c', pants: '#1e1e24', shoe: '#0c0c10', eye: '#9d6bff' } },
+  kong_albino:   { char: 'kong', name: 'Albino-koning', rarity: 'legendary',
+    palette: { hair: '#e4e0da', hairDark: '#b0aca6', skin: '#ded9d2', skinDark: '#aba7a1', shirt: '#ded9d2', shirtDark: '#aba7a1', pants: '#9a958f', shoe: '#5e5a56', eye: '#ff5a5a' } },
+  koba_ashen:    { char: 'koba', name: 'Asgrauw', rarity: 'common',
+    palette: { skin: '#7a736c', skinDark: '#544e49', hair: '#4a443e', hairDark: '#2e2a26', shirt: '#4a443e', shirtDark: '#2e2a26' } },
+  bonzo_snow:    { char: 'bonzo', name: 'Sneeuwaap', rarity: 'common',
+    palette: { skin: '#e0dcd4', skinDark: '#aca8a0', hair: '#c4c0b8', hairDark: '#908c84', shirt: '#8ab4c8', shirtDark: '#5e8496' } },
+};
+
+const SKIN_ORDER = Object.keys(SKINS);
+// robijnprijs van een skin (uit de zeldzaamheid; een skin mag 'm overschrijven met costRubies)
+function skinCost(id) { const s = SKINS[id]; if (!s) return 0; return s.costRubies || (SKIN_RARITY[s.rarity] || {}).cost || 0; }
+// alle skins van één held, in vaste volgorde
+function skinsFor(charId) { return SKIN_ORDER.filter((id) => SKINS[id].char === charId); }
+/* Render-eigenschappen van een held, mét eventuele skin.
+   Overal waar een character getekend wordt gaat dit door één poort, zodat een skin
+   nooit per ongeluk maar op de helft van de plekken doorwerkt. */
+function charRender(charId, skinId) {
+  const c = CHARACTERS[charId] || CHARACTERS.ryan;
+  const s = (skinId && SKINS[skinId] && SKINS[skinId].char === charId) ? SKINS[skinId] : null;
+  return {
+    palette: s ? Object.assign({}, c.palette, s.palette || {}) : c.palette,
+    build: c.build || 'normal',                                  // NOOIT uit de skin: hitbox hangt hieraan
+    hair: (s && s.hair) || c.hair || 'natural',
+    outfit: (s && s.outfit !== undefined) ? s.outfit : (c.outfit || null),
+  };
+}
+
 // ---- CHARACTER-ABILITIES (oplaadbaar in een match: vlam-knop boven de melee-knop) ----
 const ABILITIES = {
   zapdash:    { name: 'Zap Dash',    desc: 'Dash naar je tegenstander: schade + knockback.' },
