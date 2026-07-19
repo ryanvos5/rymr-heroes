@@ -183,9 +183,6 @@ const UI = {
     $('btn-rank').onclick = () => this.openRankScreen();
     $('btn-rank-back').onclick = () => document.getElementById('rank-screen').classList.add('hidden');
     $('btn-mm-cancel').onclick = () => this.cancelMatchmaking();
-    try { this._testBotMap = localStorage.getItem('tps_testmap') || ''; } catch (e) { this._testBotMap = ''; }
-    const testSel = document.getElementById('mm-test-map');
-    if (testSel) testSel.onchange = () => { this._testBotMap = testSel.value; try { localStorage.setItem('tps_testmap', testSel.value); } catch (e) {} };
     $('btn-vs-host').onclick = () => this.versusHost();
     $('btn-vs-join').onclick = () => this.versusJoin();
     $('btn-vs-bot').onclick = () => this.openBotSetup();
@@ -1494,7 +1491,6 @@ const UI = {
     document.getElementById('versus-result').classList.add('hidden');
     document.getElementById('versus-mm').classList.remove('hidden');
     document.getElementById('btn-vs-back').classList.add('hidden');   // tijdens zoeken: alleen Cancel, geen Back
-    this._populateTestMap();
     this.show('versus');
     this._mmSearching = true;
     let left = 8; const cnt = document.getElementById('mm-count'); if (cnt) cnt.textContent = left;
@@ -1522,16 +1518,7 @@ const UI = {
     document.querySelector('.vs-wait-label').classList.add('hidden');   // geen code bij matchmaking
     document.getElementById('vs-bot-diff').classList.add('hidden');
   },
-  // test-map-keuze vullen (Willekeurig + alle versus-maps) — voor het testen tegen de bot
-  _populateTestMap() {
-    const sel = document.getElementById('mm-test-map'); if (!sel) return;
-    const cur = this._testBotMap || '';
-    sel.innerHTML = '';
-    const opt0 = document.createElement('option'); opt0.value = ''; opt0.textContent = t('test_map_random'); sel.appendChild(opt0);
-    for (const m of VERSUS_MAPS) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.name; sel.appendChild(o); }
-    sel.value = cur;
-  },
-  // geen online tegenstander binnen 8s -> matchmaking-bot (map: gekozen test-map of willekeurig)
+  // geen online tegenstander binnen 8s -> matchmaking-bot (altijd een willekeurige map)
   matchmakingToBot() {
     this._stopMatchmaking();
     if (window.Net) Net.leaveVersus();   // eventuele half-open verbinding opruimen
@@ -1558,14 +1545,11 @@ const UI = {
     document.getElementById('vs-lobby-opts').classList.add('hidden');
     const roul = document.getElementById('vs-roulette'); if (roul) roul.classList.remove('hidden');
     const t = document.getElementById('vs-roulette-title'); if (t) t.textContent = tl('Willekeurige map wordt gekozen…');
-    const forced = (this._testBotMap && VERSUS_MAPS.some((m) => m.id === this._testBotMap)) ? this._testBotMap : null;
-    const rt = document.getElementById('vs-roulette-title');
-    if (forced && rt) { const fm = VERSUS_MAPS.find((m) => m.id === forced); rt.textContent = tl('Test-map: ') + (fm ? fm.name : forced); }
     this._renderRoulette();
     this._spinRoulette();
     setTimeout(() => {
       if (this._vsStarted) return;
-      const map = forced || activeVersusMaps()[Math.floor(Math.random() * activeVersusMaps().length)].id;
+      const map = activeVersusMaps()[Math.floor(Math.random() * activeVersusMaps().length)].id;
       this._myVote = this._myVote || { mode: 'smash', rounds: SMASH_ROUNDS };
       this._myVote.map = map;
       this._landRoulette(map, () => this.startBotMatch());

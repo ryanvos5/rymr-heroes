@@ -628,11 +628,6 @@ body.pad-connected #touch-controls .tbtn[data-key] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .mm-spinner { animation: none !important; } }
 .mm-title { font-family: var(--pixel-font); font-weight: 900; font-size: clamp(15px, 3vw, 22px); color: #ffe27a; text-shadow: 2px 2px 0 #000; margin: 0; }
 .mm-sub { font-size: 13px; color: var(--text-dim); margin: 0; }
-.mm-test { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.mm-test label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); letter-spacing: .5px; }
-.mm-test label .ic { width: 13px; height: 13px; }
-.mm-test-sel { font-family: var(--pixel-font); font-size: 13px; font-weight: bold; color: #f3e9dc; background: #160d0a; border: 1px solid #4a2f22; border-radius: 7px; padding: 6px 10px; min-width: 180px; text-align: center; }
-.mm-test-sel:focus { outline: none; border-color: var(--gold); }
 #btn-mm-friends { margin-top: 2px; }
 
 /* lava knop-stijl (geanimeerd: gloeiende lava die stroomt + pulseert) */
