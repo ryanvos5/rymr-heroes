@@ -2974,7 +2974,8 @@ const UI = {
     CHARACTER_ORDER.forEach((cid) => {
       if (!Storage.ownsCharacter(cid)) return;
       const c = CHARACTERS[cid]; const equipped = Storage.data.equippedCharacter === cid;
-      const card = this._spriteCard(c.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: c.build, hair: c.hair, hat: Storage.data.equippedHat, outfit: c.outfit }, '<div class="w-name">' + c.name + '</div>', true);
+      const rend = charRender(cid, Storage.skinFor(cid));     // preview toont de skin die je op hebt
+      const card = this._spriteCard(rend.palette, { weapon: c.startMelee || c.forcedMelee || 'bat', build: rend.build, hair: rend.hair, hat: Storage.data.equippedHat, outfit: rend.outfit }, '<div class="w-name">' + c.name + '</div>', true);
       const spr = card.querySelector('canvas');          // op het plaatje tikken -> stats-venster van de hero
       if (spr) { spr.style.cursor = 'pointer'; this._tap(spr, () => this.openHeroStats(cid), { immediate: true }); }
       const iBadge = document.createElement('span'); iBadge.className = 'hero-info-i'; iBadge.textContent = 'i';   // info-icoon -> stats
@@ -2984,9 +2985,80 @@ const UI = {
       const btn = document.createElement('button'); btn.className = 'shop-buy';
       if (equipped) { btn.classList.add('equipped'); btn.textContent = t('equipped'); }
       else { btn.classList.add('equip'); btn.textContent = t('equip'); this._tap(btn, () => { Storage.equipCharacter(cid); this.renderInventory(); }); }
-      card.appendChild(btn); grid.appendChild(card);
+      card.appendChild(btn);
+      // snel van skin wisselen (alleen bij helden waar skins voor bestaan)
+      if (skinsFor(cid).length) {
+        const nOwned = skinsFor(cid).filter((id) => Storage.ownsSkin(id)).length;
+        const sBtn = document.createElement('button');
+        sBtn.className = 'shop-buy skin-btn';
+        sBtn.innerHTML = t('skin_btn') + (nOwned ? ' <b>' + nOwned + '</b>' : '');
+        this._tap(sBtn, () => this.openSkinPicker(cid));
+        card.appendChild(sBtn);
+      }
+      grid.appendChild(card);
     });
   },
+  /* Skin-kiezer: toont de standaard-look + alle skins van DEZE held die je hebt gekocht.
+     Niet-gekochte skins staan hier bewust niet — die koop je in de shop. */
+  openSkinPicker(cid) {
+    const c = CHARACTERS[cid]; if (!c) return;
+    let sc = document.getElementById('skin-picker');
+    if (!sc) {
+      sc = document.createElement('div'); sc.id = 'skin-picker'; sc.className = 'overlay hidden';
+      sc.innerHTML =
+        '<div class="overlay-box skin-pick-box">' +
+          '<button class="corner-back" id="btn-skin-pick-back" aria-label="Back"><svg class="ic"><use href="#ic-undo"/></svg></button>' +
+          '<h2 class="screen-title" id="sp-name"></h2>' +
+          '<div id="sp-grid" class="sp-grid"></div>' +
+          '<p id="sp-hint" class="screen-sub hidden"></p>' +
+        '</div>';
+      document.body.appendChild(sc);
+    }
+    document.getElementById('btn-skin-pick-back').onclick = () => sc.classList.add('hidden');
+    sc.onclick = (e) => { if (e.target === sc) sc.classList.add('hidden'); };
+    document.getElementById('sp-name').textContent = c.name;
+
+    const grid = document.getElementById('sp-grid');
+    grid.innerHTML = '';
+    this._charAnims = this._charAnims || [];
+    const cur = Storage.skinFor(cid);
+    const mine = skinsFor(cid).filter((id) => Storage.ownsSkin(id));
+
+    [null].concat(mine).forEach((sid) => {
+      const sk = sid ? SKINS[sid] : null;
+      const rar = sk ? (SKIN_RARITY[sk.rarity] || {}) : null;
+      const on = (cur || null) === sid;
+      const rend = charRender(cid, sid);
+
+      const cell = document.createElement('div');
+      cell.className = 'sp-cell' + (on ? ' on' : '');
+      if (rar) cell.style.borderColor = rar.col;
+      cell.appendChild(this._charCanvas(rend.palette, {
+        weapon: c.forcedMelee || c.startMelee || 'bat', build: rend.build, hair: rend.hair,
+        hat: Storage.data.equippedHat, outfit: rend.outfit,
+      }));
+      const nm = document.createElement('div'); nm.className = 'sp-nm';
+      nm.textContent = sk ? sk.name : tl('Standaard');
+      if (rar) nm.style.color = rar.col;
+      cell.appendChild(nm);
+      this._tap(cell, () => {
+        Storage.equipSkin(cid, sid);
+        if (window.Sfx) Sfx.play('pickup');
+        this.openSkinPicker(cid);      // meteen zichtbaar welke nu aan staat
+        this.renderInventory();        // en de kaart eronder bijwerken
+      }, { immediate: true });
+      grid.appendChild(cell);
+    });
+
+    const hint = document.getElementById('sp-hint');
+    if (!mine.length) {
+      hint.textContent = tl('Je hebt nog geen skins voor deze held. Koop ze in de shop bij Skins.');
+      hint.classList.remove('hidden');
+    } else hint.classList.add('hidden');
+
+    sc.classList.remove('hidden');
+  },
+
   // stats-venster van een hero (klik op het plaatje in de inventory)
   openHeroStats(cid) {
     const c = CHARACTERS[cid]; if (!c) return;

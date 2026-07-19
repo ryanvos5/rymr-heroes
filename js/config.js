@@ -274,8 +274,8 @@ const CHARACTERS = {
     palette: {
       hair: '#dfe3dc', hairDark: '#aeb2ab',
       skin: '#e8ece4', skinDark: '#b0b6ac',      // botwit (handen/botten)
-      eye: '#3aa0ff',                             // blauwe ogen achter het vizier
-      shirt: '#39414c', shirtDark: '#222831',     // donker staal-harnas / ribbenkast-basis
+      eye: '#3aa0ff',                             // blauwe ogen achter het vizier (stuurt ook de helmkam)
+      shirt: '#525b68', shirtDark: '#2c323b',     // staal van de ridderhelm (de sprite leest dit uit)
       pants: '#dfe3d8', shoe: '#a6aca0',           // botwitte beenderen + bot-grijze voeten
     },
     desc: 'Skeletridder (250 robijnen). Soul Drain: steelt 20 HP van de tegenstander — 20 schade én jij +20 HP.'
@@ -444,9 +444,11 @@ const SKINS = {
 
   // ---- Skeleton Knight (premium held) ----
   skeleton_gilded:{ char: 'skeleton', name: 'Verguld', rarity: 'rare',
-    palette: { shirt: '#b8912e', shirtDark: '#7a5e18', eye: '#ffd24a' } },
+    palette: { shirt: '#d8a832', shirtDark: '#8e6a14', skin: '#f4ecd4', skinDark: '#c2b48c', eye: '#ffd24a' } },
   skeleton_infernal:{ char: 'skeleton', name: 'Hels', rarity: 'legendary',
-    palette: { hair: '#e8d8d0', hairDark: '#a89890', shirt: '#5a1a1a', shirtDark: '#330c0c', pants: '#e0d0c8', shoe: '#a09088', eye: '#ff4a1e' } },
+    palette: { hair: '#5a4a44', hairDark: '#3a2e2a', skin: '#6e5f58', skinDark: '#463b36', shirt: '#7a1c14', shirtDark: '#3f0c08', pants: '#6e5f58', shoe: '#3a302c', eye: '#ff5a1e' } },
+  skeleton_frost: { char: 'skeleton', name: 'Vorstridder', rarity: 'rare',
+    palette: { shirt: '#4a7a94', shirtDark: '#28495c', skin: '#dff0f4', skinDark: '#a8c4cc', eye: '#7ff0ff' } },
 
   // ---- Journey-helden ----
   ninja_crimson: { char: 'ninja', name: 'Karmozijnen Ninja', rarity: 'rare',
