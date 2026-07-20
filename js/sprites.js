@@ -529,6 +529,52 @@ const Sprites = {
       this.px(ctx, this._shade(pal.eye, 0.45), cx + (dir > 0 ? 1 : -2), slitY - 1, 2, 1);  // gloed boven het vooroog
       this.px(ctx, pal.eye, cx + (dir > 0 ? 1 : -2), slitY, 2, 2);                   // vooroog: fel
       this.px(ctx, this._shade(pal.eye, -0.25), cx + (dir > 0 ? -3 : 2), slitY, 1, 2);     // achteroog: dof
+    } else if (pose.outfit === 'buccaneer') {
+      /* --- BOOTSMAN: blote gespierde torso, bandana, volle baard, gouden oorring ---
+         De romp is al huidkleur (palette.shirt = skin), hier komt alleen de
+         spierdefinitie, riem en hoofd-detail overheen. */
+      const sk = pal.shirt, skDk = pal.shirtDark, skLt = this._shade(sk, 0.26);
+      // borstspieren: twee blokken met een gleuf ertussen
+      this.px(ctx, skLt, cx - bh + 1, torsoTop + 1, bh - 1, 3);
+      this.px(ctx, skLt, cx + 1, torsoTop + 1, bh - 1, 3);
+      this.px(ctx, skDk, cx - 1, torsoTop + 1, 1, 4);                                // middengleuf
+      this.px(ctx, skDk, cx - bh + 1, torsoTop + 4, bh * 2 - 2, 1);                  // schaduw onder de borst
+      // buikspieren: twee rijen blokjes
+      for (let r = 0; r < 2; r++) {
+        this.px(ctx, skLt, cx - 3, torsoTop + 5 + r * 2, 2, 1);
+        this.px(ctx, skLt, cx + 1, torsoTop + 5 + r * 2, 2, 1);
+        this.px(ctx, skDk, cx - 1, torsoTop + 5 + r * 2, 1, 1);
+      }
+      // brede leren riem met gesp
+      this.px(ctx, '#4a2e18', cx - bh, torsoTop + torsoH - 4, bh * 2, 3);
+      this.px(ctx, '#2e1c0e', cx - bh, torsoTop + torsoH - 2, bh * 2, 1);
+      this.px(ctx, '#e8b53a', cx - 2, torsoTop + torsoH - 4, 4, 3);                  // gouden gesp
+      this.px(ctx, '#a8791c', cx - 1, torsoTop + torsoH - 3, 2, 1);
+      // schouder-litteken op de voorste schouder
+      this.px(ctx, skDk, cx + (dir > 0 ? bh - 3 : -bh + 1), torsoTop + 1, 1, 3);
+      // --- bandana: kapje over de schedel + knoop met twee wapperende linten achter ---
+      const bandana = '#c0392b', bandanaDk = '#8a2318', bandanaLt = this._shade(bandana, 0.3);
+      this.px(ctx, bandana, cx - hh, headTop - 1, hh * 2, 3);                        // kapje
+      this.px(ctx, bandanaLt, cx - hh + 1, headTop - 1, hh * 2 - 2, 1);              // glans bovenop
+      this.px(ctx, bandanaDk, cx - hh, headTop + 2, hh * 2, 1);                      // rand net boven de ogen
+      this.px(ctx, bandanaLt, cx - hh + 2, headTop, 2, 1);                           // lichtpuntje (stof-plooi)
+      const back = dir > 0 ? -1 : 1;                                                  // linten hangen naar achteren
+      this.px(ctx, bandanaDk, cx + back * (hh + 1), headTop, 2, 3);                  // knoop op het achterhoofd
+      for (let k = 0; k < 2; k++) {                                                   // twee linten, licht wapperend
+        const wob = Math.round(Math.sin((pose.t || 0) / 160 + k * 1.7) * 1.4);
+        const len = 4 - k;
+        const bx = dir > 0 ? cx - hh - 2 - len : cx + hh + 2;
+        this.px(ctx, k ? bandanaDk : bandana, bx, headTop + 2 + k * 3 + wob, len, 2);
+      }
+      // volle baard: donker langs de kaak, maar de mond blijft vrij (anders wordt het een masker)
+      this.px(ctx, pal.hairDark, cx - hh, headTop + headH - 4, 2, 4);                // bakkebaard links
+      this.px(ctx, pal.hairDark, cx + hh - 2, headTop + headH - 4, 2, 4);            // bakkebaard rechts
+      this.px(ctx, pal.hairDark, cx - hh + 1, headTop + headH - 2, hh * 2 - 2, 3);   // kin/snor-massa
+      this.px(ctx, pal.hair, cx - hh + 2, headTop + headH - 2, hh * 2 - 4, 1);       // lichtere baardtop
+      this.px(ctx, this._shade(sk, -0.3), cx - 2, headTop + headH - 3, 4, 1);        // mondlijn vrijgehouden
+      this.px(ctx, pal.hairDark, cx - 1, headTop + headH + 1, 3, 1);                 // punt onder de kin
+      // gouden oorring aan de achterkant
+      this.px(ctx, '#e8b53a', cx + back * hh, headTop + 5, 1, 2);
     } else if (pose.outfit === 'pirate') {
       // --- PIRATE CAPTAIN: kapiteinsjas met goudwerk + ooglap + driekante steek ---
       const gold = '#e8b53a', goldDk = '#a8761c', black = '#191920', blackLt = '#34343e';

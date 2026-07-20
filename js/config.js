@@ -268,6 +268,18 @@ const CHARACTERS = {
     },
     desc: 'Kapitein met een trouwe papegaai. Iets taaier (+5 HP). Zijn papegaai pikt je tegenstander lek en onderbreekt diens ability.'
   },
+  buccaneer: {
+    id: 'buccaneer', name: 'Buccaneer', cost: 0, journeyOnly: true,   // vrij te spelen: wereld 3, level 1
+    maxHp: 125, speedMul: 0.845, meleeMul: 1.15, build: 'bulky', hair: 'bald', ability: 'anchorslam', abChargeS: 50, outfit: 'buccaneer',   // x1.1-bump -> 0.93 -> Speed 93
+    palette: {
+      hair: '#2a1a12', hairDark: '#170e08',
+      skin: '#c98a52', skinDark: '#9a6436',       // door de zon gebruinde huid
+      eye: '#2a1a0e',
+      shirt: '#c98a52', shirtDark: '#9a6436',     // blote bovenlijf: romp = huid
+      pants: '#3a4a5e', shoe: '#2a1c14',          // blauwe zeemansbroek + laarzen
+    },
+    desc: 'Woeste bootsman: fors en sterk (+25 HP, +15% melee), maar traag. Ankerslag ramt iedereen in de buurt weg.'
+  },
   skeleton: {
     id: 'skeleton', name: 'Skeleton Knight', costRubies: 250,   // altijd te koop met robijnen (premium)
     maxHp: 95, speedMul: 1.0, meleeMul: 1.05, build: 'normal', hair: 'bald', ability: 'souldrain', abChargeS: 32, outfit: 'skeleton',
@@ -339,7 +351,7 @@ const CHARACTERS = {
   },
   ninja: {
     id: 'ninja', name: 'Ninja', cost: 0, journeyOnly: true,
-    maxHp: 100, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', abChargeS: 55, outfit: 'ninja',
+    maxHp: 100, speedMul: 1.1182, meleeMul: 1.0, build: 'normal', hair: 'bald', ability: 'invisible', abChargeS: 55, outfit: 'ninja',   // x1.1-bump -> 1.230 -> Speed 123
     palette: {
       hair: '#1a1a1e', hairDark: '#0c0c0e',
       skin: '#c99a6a', skinDark: '#9a7048',
@@ -368,7 +380,7 @@ const CHARACTERS = {
     palette: { hair: '#5a4030', hairDark: '#3a281c', skin: '#9a6a3a', skinDark: '#6e4824', eye: '#c83838', shirt: '#7a3a2a', shirtDark: '#4a1f14', pants: '#33240f', shoe: '#160d06' },
   },
 };
-const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'pirate', 'skeleton', 'bonzo', 'koba', 'kong', 'guardian', 'monnik', 'ninja'];
+const CHARACTER_ORDER = ['ryan', 'jenze', 'tygo', 'vince', 'timo', 'just', 'ricky', 'yarno', 'pirate', 'buccaneer', 'skeleton', 'bonzo', 'koba', 'kong', 'guardian', 'monnik', 'ninja'];
 // Alle speelbare characters iets sneller lopen (t.o.v. hun eigen huidige snelheid; onderlinge verschillen blijven behouden).
 for (const _cid of CHARACTER_ORDER) { const _c = CHARACTERS[_cid]; if (_c && typeof _c.speedMul === 'number') _c.speedMul = +(_c.speedMul * 1.1).toFixed(3); }
 
@@ -495,6 +507,7 @@ const ABILITIES = {
   parrotdive: { name: 'Parrot Dive', desc: 'Je papegaai vliegt 8s over het scherm en pikt de dichtstbijzijnde vijand: kleine schade, maar veel hits — en het onderbreekt zijn ability.' },
   fireaura10: { name: 'Vuuraura',    desc: 'Vuuraura 6s: wie je aanraakt brandt.' },
   triplejump: { name: 'Dubbel Sprong', desc: 'Een extra dubbel-jump — de rest van de match.' },
+  anchorslam: { name: 'Anchor Slam', desc: 'Ramt een reusachtig anker in de grond: 45 schade en een enorme knockback voor iedereen in een grote cirkel.' },
   bananas:    { name: 'Monkey Mayhem', desc: 'Gooit 3 bananen die door de arena stuiteren: 15 schade bij een treffer. Wie daarna op een schil stapt, glijdt 0,8s uit. Jij bent even sneller.' },
   acrobat:    { name: 'Acrobaat',    desc: 'Salto: springt over aanvallen heen (kort onkwetsbaar) en landt met een kleine shockwave. Weinig schade, veel mobiliteit.' },
   earthquake: { name: 'Aardbeving',  desc: 'De map trilt 5s; je tegenstander wordt weggeschud.' },
@@ -518,6 +531,12 @@ const ACRO_SHOCK_DMG = 40;       // schade bij de landing
 const ACRO_SHOCK_KNOCK = 20;     // knockback van de shockwave
 const ACRO_SHOCK_RANGE = 72;     // horizontaal bereik van de shockwave
 // Pirate Captain-ability "Parrot Dive": papegaai vliegt 8s rond en pikt de dichtstbijzijnde vijand
+// ---- Buccaneer-ability "Anchor Slam": anker in de grond -> schokgolf ----
+const ANCHOR_DMG = 45;           // schade binnen de cirkel
+const ANCHOR_RADIUS = 150;       // grote cirkel rond de inslag
+const ANCHOR_KNOCK = 34;         // sterke knockback
+const ANCHOR_WIND = 620;         // opheffen/neerkomen van het anker (ms)
+
 // ---- Bonzo-ability "Monkey Mayhem": 3 stuiterende bananen ----
 const BANANA_COUNT = 3;          // aantal bananen per worp
 const BANANA_DMG = 15;           // schade bij een directe treffer (daarna wordt het een schil)

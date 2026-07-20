@@ -4715,6 +4715,7 @@ const Game = {
       case 'traps': p._trapCharges = 3; this._abFx(p, '#caa84a'); this.addFloatText(p.x, p.y - 22, '3 VALLEN', '#ffd24a', false); break;   // 3 vallen in de hand — zelf plaatsen
       case 'stunstrike': p._stunStrikeUntil = now + 5000 * dm; this._abFx(p, '#8fd0ff'); break;
       case 'stunpulse': this.stunPulse(p, 'me'); break;
+      case 'anchorslam': this.anchorSlam(p, 'me'); break;
       case 'souldrain': this.soulDrain(p, 'me'); break;
       case 'invisible': p._invisUntil = now + 6000 * dm; this._abFx(p, '#b06bff'); break;
       default: break;
@@ -4850,10 +4851,43 @@ const Game = {
     return this.useAbility();
   },
   _abilityColor(ab) {
-    return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', bananas: '#f2c94c', acrobat: '#8fe0ff', longreach: '#5fe0b0', fireaura10: '#ff8a2a',
+    return ({ heal: '#5aff7a', highjump: '#8fd0ff', triplejump: '#8fd0ff', bananas: '#f2c94c', anchorslam: '#cfd8e2', acrobat: '#8fe0ff', longreach: '#5fe0b0', fireaura10: '#ff8a2a',
       rage10: '#ff5a3a', rage8: '#ff5a3a', ultrarage: '#ff2a2a', rage3: '#ff3a2a', zapdash: '#ffe27a',
       earthquake: '#c8a060', knife: '#bfe6ff', katanacombo: '#e8edf2', stunstrike: '#8fd0ff', stunpulse: '#8fd0ff', souldrain: '#a45bff', invisible: '#b06bff', parrotdive: '#3ad06a' })[ab] || '#c9a6ff';
   },
+  /* ===== Buccaneer-ability "Anchor Slam" =====
+     Ramt een reusachtig anker in de grond: schokgolf in een grote CIRKEL (dus ook wie
+     boven je op een platform staat), forse schade en een enorme knockback. */
+  anchorSlam(src, who) {
+    if (!src) return;
+    this.spawnAnchorFx(src.x, src.y);
+    this.shake = Math.max(this.shake, 13);
+    if (window.Sfx) Sfx.play('stomp');
+
+    const opp = who === 'me' ? (this.vsBot ? this.bot : (this.vs ? this.vs.remote : null)) : this.player;
+    if (!opp) return;
+    const inRange = Math.hypot((opp.x || 0) - src.x, (opp.y || 0) - src.y) <= ANCHOR_RADIUS;
+    if (!inRange) return;
+    if (opp.dead || (opp.respawnInvuln > 0)) return;
+    const kdir = (opp.x >= src.x) ? 1 : -1;
+    const hit = { dir: kdir, power: ANCHOR_KNOCK, vy: -8.5, dmg: ANCHOR_DMG, pvp: 1 };
+    if (who === 'me' && !this.vsBot) { if (window.Net) Net.versusSend('hit', hit); return; }
+    if (who === 'me') { this.applyHitToBot(kdir, ANCHOR_KNOCK, -8.5, ANCHOR_DMG); return; }
+    this.onVersusHit(hit);
+  },
+  // inslag: brede stofring + brokken die opspatten
+  spawnAnchorFx(x, y) {
+    if (!this.abilityFx) this.abilityFx = [];
+    this.abilityFx.push({ x, y, born: this.time, dur: 620, color: '#cfd8e2', ring: ANCHOR_RADIUS, anchor: true });
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * 6.2832;
+      this.particles.push(new Particle(x + Math.cos(a) * 10, y - 8 + Math.sin(a) * 6,
+        Math.cos(a) * 4.2, Math.sin(a) * 2.2 - 1.2, i % 3 ? '#b6c0cc' : '#7a848f', 560, 2));
+    }
+    for (let i = 0; i < 10; i++)   // opstuivend dek-hout
+      this.particles.push(new Particle(x + (Math.random() - 0.5) * 40, y - 4, (Math.random() - 0.5) * 3, -Math.random() * 3.4, '#8a5e36', 620, 2));
+  },
+
   // Monnik-ability: energiegolf die iedereen binnen bereik verdooft (werkt tegen bot én online)
   stunPulse(src, who) {
     if (!src) return;
@@ -4941,6 +4975,7 @@ const Game = {
     if (payload && payload.ab === 'heal') this.spawnHealFx(r);   // tegenstander (Jenze) heelt -> toon het groene HP-effect ook bij hem
     if (payload && payload.ab === 'longreach') { r._reachUntil = this.time + LONGREACH_MS; this._reachSweepFx(r); }   // tegenstander (Tygo) -> lange armen + zwaai-veeg, 6s
     if (payload && payload.ab === 'bananas') this.spawnBananas('foe');            // decor: de werper meldt de treffers
+    if (payload && payload.ab === 'anchorslam') { this.spawnAnchorFx(r.x, r.y); this.shake = Math.max(this.shake, 13); }   // schokgolf tonen; de schade komt als 'hit'
     if (payload && payload.ab === 'parrotdive') this.spawnParrot('foe');   // tegenstander (Pirate Captain) -> zijn papegaai duikt op mij
   },
   _abFx(p, col) {
@@ -5090,6 +5125,7 @@ const Game = {
       case 'traps': this.placeTraps(b, 'bot'); this._abFx(b, '#caa84a'); break;
       case 'stunstrike': b._stunStrikeUntil = now + 5000; this._abFx(b, '#8fd0ff'); break;
       case 'stunpulse': this.stunPulse(b, 'bot'); break;
+      case 'anchorslam': this.anchorSlam(b, 'bot'); break;
       case 'souldrain': this.soulDrain(b, 'bot'); break;
       case 'invisible': b._invisUntil = now + 6000; this._abFx(b, '#b06bff'); break;
       default: break;
@@ -5591,6 +5627,7 @@ const Game = {
       else if (b.ability === 'heal') want = b.hp < b.maxHp * 0.55;                   // pas helen als het nodig is
       else if (b.ability === 'fireaura10' || b.ability === 'knife') want = aDx < 90; // in de buurt om te raken
       else if (b.ability === 'souldrain') want = b.hp < b.maxHp * 0.9 || aDx < 300;  // steelt HP: inzetten als 'ie wat schade heeft of de speler in de buurt is
+      else if (b.ability === 'anchorslam') want = aDx < ANCHOR_RADIUS * 0.8;          // pas rammen als je echt binnen de cirkel staat
       else if (b.ability === 'bananas') want = aDx < 340;                            // bananen: pas gooien als je een beetje in de buurt bent
       else if (b.ability === 'acrobat') want = aDx < 80;                             // vlakbij: salto over de aanval + shockwave
       else if (b.ability === 'longreach') want = aDx < 120;                           // net binnen bereik: langer bereik + knockback
