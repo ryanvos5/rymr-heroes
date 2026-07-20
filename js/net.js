@@ -41,7 +41,10 @@ const Net = {
              een halve minuut voor 'ie het doorhad. Op 15s is dat veel sneller opgemerkt. */
         realtime: {
           params: { eventsPerSecond: 40 },
-          heartbeatIntervalMs: 15000,
+          // 10s: phoenix verklaart een socket pas dood als bij de VOLGENDE hartslag het
+          // antwoord op de vorige ontbreekt, dus detectie duurt tot 2x deze waarde.
+          // Op 15s was dat 30s — later dan de 22s waarop de match gestaakt wordt.
+          heartbeatIntervalMs: 10000,
           reconnectAfterMs: (tries) => [200, 400, 800, 1500, 3000][tries - 1] || 5000,
         },
       });
@@ -659,6 +662,31 @@ const Net = {
       try { this.sb.removeChannel(this.train.channel); } catch (e) {}
     }
     this.train = null;
+  },
+
+  /* Een websocket kan op mobiel STIL sterven: geen close-event, er komt alleen niets
+     meer door. Phoenix merkt dat pas als bij de volgende hartslag het antwoord op de
+     vorige ontbreekt — tot 2x de heartbeat, dus tientallen seconden. Dat is precies wat
+     de iOS-app deed: de match werd al gestaakt voordat de socket dood verklaard was.
+     De game weet het veel eerder (de tegenstander stuurt niets meer), en trapt dan hier
+     zelf een nieuwe verbinding af. */
+  pokeRealtime() {
+    const now = Date.now();
+    if (now - (this._pokeAt || 0) < 3000) return false;      // niet blijven rammen
+    this._pokeAt = now;
+    const rt = this.sb && this.sb.realtime;
+    if (!rt) return false;
+    try { rt.disconnect(); } catch (e) {}
+    try { rt.connect(); } catch (e) {}
+    // kanaal opnieuw aanhaken als phoenix dat niet uit zichzelf doet
+    const v = this.versus;
+    if (v && v.channel && !v.leaving) {
+      setTimeout(() => {
+        if (this.versus !== v || v.leaving) return;
+        if (v.channel.state !== 'joined') { try { v.channel.subscribe(); } catch (e) {} }
+      }, 700);
+    }
+    return true;
   },
 
   leaveVersus() {

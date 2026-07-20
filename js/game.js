@@ -5966,6 +5966,8 @@ const Game = {
     if (r && r.lastSeen > 0) {
       const stil = now - r.lastSeen;
       if (stil > NET_STALL_END_MS) { this.endVersus(false, false, true); return; }   // gestaakt: geen winnaar
+      // niet wachten tot de websocket-heartbeat het doorheeft: zelf herverbinden
+      if (stil > NET_STALL_POKE_MS && window.Net && Net.pokeRealtime) Net.pokeRealtime();
       const stalled = stil > NET_STALL_WARN_MS;
       if (stalled !== v.netStalled) {                 // alleen bij een wissel het DOM aanraken
         v.netStalled = stalled;

@@ -768,6 +768,11 @@ const AFK_KICK_MS = 15000;           // >15s geen input / uit de app -> uit de m
    backoff, zie net.js). Terug naar 30/s voor de vloeiendste sync. */
 const NET_STATE_MS = 33;
 const NET_STALL_WARN_MS = 3500;      // zo lang niets gehoord -> "verbinding kwijt"-melding tonen
+/* Zo lang niets gehoord -> zelf een nieuwe verbinding afdwingen. Bij 30 berichten/s
+   zijn 2,5s stilte al ~75 gemiste updates, dus dat is een betrouwbaar signaal en geen
+   normale jitter. Ligt bewust vóór de waarschuwing (3,5s): bij een gewone haper is de
+   verbinding alweer terug voordat de speler iets in beeld krijgt. */
+const NET_STALL_POKE_MS = 2500;
 const NET_STALL_END_MS = 22000;      // zo lang niets gehoord -> match staken (geen winnaar, geen RP)
 const MATCH_TIME_MS = 300000;        // matchmaking: 5 min tijdslimiet -> meeste rondes wint (gelijk = sudden death)
 const SMASH_DROP_EVERY = 5000;       // ms tussen drops (host bepaalt)
