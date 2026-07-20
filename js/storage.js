@@ -102,7 +102,12 @@ const Storage = {
     d.ammo = Math.max(d.ammo || 0, cloud.ammo || 0);
     d.rockets = Math.max(d.rockets || 0, cloud.rockets || 0);
     d.arenaBest = Math.max(d.arenaBest || 0, cloud.arenaBest || 0);
-    d.journey1 = Math.max(d.journey1 || 0, cloud.journey1 || 0);
+    // Journey-voortgang per wereld. Stond alleen op journey1, waardoor wereld 2 (en nu 3)
+    // niet meesynchroniseerde tussen apparaten -> per wereld het hoogste level nemen.
+    for (const w of (typeof JOURNEY_ORDER !== 'undefined' ? JOURNEY_ORDER : [1])) {
+      const k = 'journey' + w;
+      d[k] = Math.max(d[k] || 0, cloud[k] || 0);
+    }
     d.xp = Math.max(d.xp || 0, cloud.xp || 0);
     d.level = Math.max(d.level || 0, cloud.level || 0);   // al-uitgekeerde levels niet dubbel belonen
     // power-ups: neem per soort het hoogste aantal (anti-verlies); loadout: houd de lokale keuze

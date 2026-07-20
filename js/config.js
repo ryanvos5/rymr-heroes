@@ -906,6 +906,18 @@ const BEACH_LAYOUTS = [
   [{ x: 180, y: 150, w: 300 }, { x: 78, y: 112, w: 64 }, { x: 282, y: 112, w: 64 }, { x: 180, y: 80, w: 92 }],   // baas-arena
 ];
 // Temple-journey: DICHTE ondergrond (volle brede grond, geen gat) + per level iets andere platforms
+/* Wereld 3 — Piratenschip.
+   RUIM (level 1): krappe kelder onder de waterlijn, dichte vloer met een afgrond aan
+   de zijkanten, gestapelde kratten als platforms.
+   DEK (level 2-5): open dek met touwladders/ra's en het kraaiennest bovenin. */
+const SHIP_HOLD_LAYOUTS = [
+  [{ x: 180, y: 152, w: 268 }, { x: 92, y: 114, w: 56 }, { x: 268, y: 114, w: 56 }, { x: 180, y: 82, w: 60 }],
+];
+const SHIP_DECK_LAYOUTS = [
+  [{ x: 180, y: 152, w: 360 }, { x: 84, y: 116, w: 54 }, { x: 276, y: 116, w: 54 }, { x: 180, y: 80, w: 62 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 180, y: 118, w: 78 }, { x: 66, y: 86, w: 46 }, { x: 294, y: 86, w: 46 }],
+  [{ x: 180, y: 152, w: 360 }, { x: 62, y: 122, w: 48 }, { x: 298, y: 122, w: 48 }, { x: 132, y: 90, w: 44 }, { x: 228, y: 90, w: 44 }, { x: 180, y: 54, w: 38 }],
+];
 const TEMPLE_JOURNEY_LAYOUTS = [
   [{ x: 180, y: 152, w: 360 }, { x: 90, y: 112, w: 56 }, { x: 270, y: 112, w: 56 }],
   [{ x: 180, y: 152, w: 360 }, { x: 180, y: 116, w: 84 }, { x: 82, y: 82, w: 48 }, { x: 278, y: 82, w: 48 }],
@@ -994,6 +1006,25 @@ function buildTempleWorld() {
   return levels;
 }
 
+/* Wereld 3 — Piratenschip. Kort en pittig: 5 levels met TWEE bazen.
+   Level 1 is meteen een boss fight (de Buccaneer, in het ruim), 2-4 zijn bemanning
+   op het dek, level 5 is de Pirate Captain. Speelt op de bestaande 'pirate'-map. */
+function buildShipWorld() {
+  const names = ['BOOTSMAN', 'Het dek', 'Het want', 'Kraaiennest', 'KAPITEIN'];
+  const bosses = {
+    1: { bot: 'buccaneer', diff: 7 },
+    5: { bot: 'pirate', diff: 10, boss: true },
+  };
+  const levels = [];
+  for (let n = 1; n <= 5; n++) {
+    const lv = { id: n, name: names[n - 1], ship: true, reward: 0, drops: ['coco'], layout: (n - 1) % 3 };
+    if (bosses[n]) Object.assign(lv, bosses[n], { bossFight: true, drops: ['coco', 'dart', 'ninjastar'] });
+    else { lv.bot = 'indiaan'; lv.diff = 5 + n; }   // gewone bemanning
+    levels.push(lv);
+  }
+  return levels;
+}
+
 const JOURNEY = {
   1: {
     id: 1, name: 'Onbewoond Eiland',
@@ -1005,8 +1036,13 @@ const JOURNEY = {
     levels: buildTempleWorld(),
     unlocks: { 5: { char: 'guardian' }, 10: { char: 'monnik' }, 15: { char: 'ninja' } },
   },
+  3: {
+    id: 3, name: 'Piratenschip',
+    levels: buildShipWorld(),
+    unlocks: { 1: { char: 'buccaneer' } },   // de bootsman versla je in level 1 -> speelbaar
+  },
 };
-const JOURNEY_ORDER = [1, 2];
+const JOURNEY_ORDER = [1, 2, 3];
 
 /* ---------- SHOP-POWERUPS (koop met munten -> inventaris; activeer 1 per keer in een match) ----------
    'kind' = welk drop-effect wordt toegepast (hergebruikt applyDrop). Meermaals te kopen (stapelt). */

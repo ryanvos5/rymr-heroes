@@ -1781,8 +1781,26 @@ const Game = {
     worldId = worldId || 1;
     const world = JOURNEY[worldId]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
-    // ---- Temple-wereld: eigen tempel-arena met DICHTE ondergrond (geen gat), per level iets anders ----
     let mapObj;
+    // ---- Piratenschip-wereld: level 1 in het RUIM, daarna op het DEK ----
+    if (worldId === 3) {
+      const hold = idx === 1;                                   // level 1 = boss fight in het ruim
+      const layout = hold
+        ? SHIP_HOLD_LAYOUTS[0]
+        : SHIP_DECK_LAYOUTS[(lv.layout || 0) % SHIP_DECK_LAYOUTS.length];
+      mapObj = {
+        id: 'shipJ', name: lv.name,
+        sky: hold ? ['#2a2118', '#0d0a06'] : ['#1f4e7a', '#0c1d33'],
+        void: hold ? '#080605' : '#06121f',
+        plat: 'wood', wood: true, ship: true, shipIn: hold, noPortals: hold,
+        w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
+      };
+      this.journey = { world: worldId, idx, lv };
+      this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, bossFight: !!lv.bossFight, botChar: lv.bot, swapSides: Math.random() < 0.5 });
+      this.journey = { world: worldId, idx, lv };
+      return;
+    }
+    // ---- Temple-wereld: eigen tempel-arena met DICHTE ondergrond (geen gat), per level iets anders ----
     if (worldId === 2) {
       const interior = idx >= 10;    // vanaf level 10: de tempel van BINNEN (donkere zaal, dichte vloer, alleen via de zijkant eraf)
       const layout = interior
@@ -2626,6 +2644,255 @@ const Game = {
         } },
       ];
     }
+    /* ===================== WERELD 3 — PIRATENSCHIP ===================== */
+    // Gedeelde tekenhulpjes voor alle schip-scènes.
+    if (script === 'w3intro' || script === 'w3deck' || script === 'w3captain' || script === 'w3end') {
+      const P = (x) => Math.round(W * x), H = CONFIG.VIEW_H;
+      // zee met deinende golflijnen
+      const sea = (c, horizon) => {
+        c.fillStyle = '#1f4e7a'; c.fillRect(0, horizon, W, gy - horizon + 8);
+        c.strokeStyle = '#2f6f9a'; c.lineWidth = 1;
+        for (let y = horizon + 6; y < gy; y += 7) {
+          c.beginPath();
+          for (let x = 0; x <= W; x += 8) c.lineTo(x, y + Math.sin((x + clk() / 12) / 14) * 1.6);
+          c.stroke();
+        }
+      };
+      // houten dek/wand van planken
+      const planks = (c, y0, y1, col, colDk) => {
+        c.fillStyle = col; c.fillRect(0, y0, W, y1 - y0);
+        c.fillStyle = colDk;
+        for (let y = y0; y < y1; y += 8) c.fillRect(0, y, W, 1);
+        for (let x = 0; x < W; x += 46) c.fillRect(x, y0, 1, y1 - y0);
+      };
+      // tralies van de kooi (donker ijzer met glans)
+      const bars = (c, x0, x1, yTop, yBot, gap) => {
+        for (let x = x0; x <= x1; x += (gap || 12)) {
+          Sprites.px(c, '#3a3f47', x, yTop, 3, yBot - yTop);
+          Sprites.px(c, '#5a616b', x, yTop, 1, yBot - yTop);
+        }
+        Sprites.px(c, '#3a3f47', x0, yTop, x1 - x0 + 3, 3);
+        Sprites.px(c, '#3a3f47', x0, yBot - 3, x1 - x0 + 3, 3);
+      };
+      const lantern = (c, lx, ly) => {
+        Sprites.px(c, '#2a2018', lx - 1, ly - 10, 2, 5);
+        Sprites.px(c, '#6b5a2a', lx - 4, ly - 5, 8, 9);
+        const fl = 2.4 + Math.sin(clk() / 110 + lx) * 0.9;
+        c.globalAlpha = 0.26; c.fillStyle = '#ffb23a'; c.beginPath(); c.arc(lx, ly, fl + 13, 0, 6.2832); c.fill();
+        c.globalAlpha = 1; c.fillStyle = '#ffd06a'; c.beginPath(); c.arc(lx, ly, fl, 0, 6.2832); c.fill();
+      };
+      // een piraat-silhouet (bemanningslid) — donker, met bandana
+      const crew = (c, x, fy, dir, ph) => {
+        Sprites.drawCharacter(c, Math.round(x), Math.round(fy), dir, CHARACTERS.buccaneer.palette,
+          { walkPhase: ph || 0, weapon: 'machete', build: 'bulky', hair: 'bald', outfit: 'buccaneer', t: clk() });
+      };
+      const buc = (c, x, fy, dir, o) => {
+        const r = charRender('buccaneer', null);
+        Sprites.drawCharacter(c, Math.round(x), Math.round(fy), dir, r.palette,
+          Object.assign({ build: r.build, hair: r.hair, outfit: r.outfit, weapon: 'machete', t: clk() }, o || {}));
+      };
+      const cap = (c, x, fy, dir, o) => {
+        const r = charRender('pirate', null);
+        Sprites.drawCharacter(c, Math.round(x), Math.round(fy), dir, r.palette,
+          Object.assign({ build: r.build, hair: r.hair, outfit: r.outfit, weapon: 'sword', t: clk() }, o || {}));
+      };
+      const me = (c, x, fy, dir, o) => Sprites.drawCharacter(c, Math.round(x), Math.round(fy), dir, ch.palette, Object.assign({ weapon: null }, pose0, o || {}));
+
+      // ---------- 1. INTRO: tempel -> strand -> gevangen -> ruim -> uit de kooi ----------
+      if (script === 'w3intro') {
+        return [
+          { theme: 'temple', dur: 2600, cap: 'Je laat de tempel achter je en volgt het pad omlaag, naar zee.', draw: () => {
+            const c = this.ctx;
+            c.fillStyle = '#c98a52'; c.fillRect(0, gy - 60, W, 60);                    // zandpad
+            Sprites.px(c, '#9a5a4a', 0, 0, W, gy - 60);                                 // rotswand
+            for (let i = 0; i < 3; i++) Sprites.px(c, '#7a4438', 20 + i * 120, gy - 96, 46, 36);   // tempeltrappen achter je
+            me(c, P(0.42), gy - 2, 1, { walkPhase: clk() / 70 });
+          } },
+          { theme: 'beach', dur: 2600, cap: 'Op het strand ligt een schip voor anker… met zwarte zeilen.', draw: () => {
+            const c = this.ctx;
+            sea(c, gy - 52);
+            Sprites.px(c, '#e0c48a', 0, gy - 6, W, 14);                                 // strand
+            // schip in de verte
+            const sx = W * 0.72, bob = Math.sin(clk() / 420) * 2;
+            Sprites.px(c, '#4a2e18', sx - 40, gy - 40 + bob, 80, 14);
+            Sprites.px(c, '#2a1a10', sx - 40, gy - 28 + bob, 80, 3);
+            Sprites.px(c, '#3a2a18', sx - 2, gy - 84 + bob, 4, 46);                     // mast
+            Sprites.px(c, '#1a1a20', sx - 24, gy - 80 + bob, 48, 30);                   // zwart zeil
+            Sprites.px(c, '#2a2a32', sx - 24, gy - 80 + bob, 48, 3);
+            me(c, P(0.26), gy - 2, 1, { walkPhase: clk() / 80 });
+          } },
+          { theme: 'beach', dur: 2600, cap: 'Voor je het doorhebt sluiten piraten je in — je bent in de minderheid.', draw: (t) => {
+            const c = this.ctx;
+            sea(c, gy - 52); Sprites.px(c, '#e0c48a', 0, gy - 6, W, 14);
+            me(c, P(0.5), gy - 2, 1, {});
+            const p = Math.min(1, t / 2600), off = p * (W * 0.5 - 46);
+            crew(c, -20 + off, gy - 2, 1, clk() / 70);
+            crew(c, -52 + off, gy - 2, 1, clk() / 70 + 2);
+            crew(c, (W + 20) - off, gy - 2, -1, clk() / 70 + 1);
+            crew(c, (W + 52) - off, gy - 2, -1, clk() / 70 + 3);
+          } },
+          { theme: 'temple', dur: 2800, cap: 'Je wordt geboeid en diep in het ruim van het schip gegooid.', draw: (t) => {
+            const c = this.ctx;
+            c.fillStyle = '#0d0a06'; c.fillRect(0, 0, W, H);
+            planks(c, gy - 4, gy + 12, '#3a2a1a', '#241a10');                            // kelderplanken
+            planks(c, 0, gy - 4, '#2a2118', '#1a140e');                                  // wand
+            for (let i = 0; i < 4; i++) Sprites.px(c, '#5a4028', 14 + i * 92, gy - 26, 24, 22);   // kratten
+            lantern(c, P(0.18), 34);
+            const drop = Math.min(1, t / 1200);
+            me(c, P(0.56), gy - 2 - (1 - drop) * 40, -1, { ducking: drop > 0.8 });
+            if (drop > 0.85) { c.fillStyle = '#fff'; c.font = 'bold 11px "Courier New",monospace'; c.fillText('!', P(0.56) + 8, gy - 30); }
+          } },
+          { theme: 'temple', dur: 2800, cap: 'Achter tralies wacht je af… tot het slot meegeeft.', draw: (t) => {
+            const c = this.ctx;
+            c.fillStyle = '#0d0a06'; c.fillRect(0, 0, W, H);
+            planks(c, gy - 4, gy + 12, '#3a2a1a', '#241a10'); planks(c, 0, gy - 4, '#2a2118', '#1a140e');
+            lantern(c, P(0.16), 34);
+            me(c, P(0.38), gy - 2, 1, {});
+            const shake = Math.sin(clk() / 60) * (t > 1400 ? 1.2 : 0);
+            bars(c, Math.round(P(0.24) + shake), Math.round(P(0.56) + shake), gy - 58, gy - 1, 12);
+            if (t > 1600) for (let i = 0; i < 3; i++)                                     // stof bij het rammen
+              Sprites.px(c, '#6b5a3a', P(0.3) + i * 26, gy - 6 - (i % 2) * 3, 2, 2);
+          } },
+          { theme: 'temple', dur: 3000, cap: 'De kooi zwiept open — en daar staat de BOOTSMAN al te wachten.', draw: (t) => {
+            const c = this.ctx;
+            c.fillStyle = '#0d0a06'; c.fillRect(0, 0, W, H);
+            planks(c, gy - 4, gy + 12, '#3a2a1a', '#241a10'); planks(c, 0, gy - 4, '#2a2118', '#1a140e');
+            lantern(c, P(0.14), 34);
+            const open = Math.min(1, t / 900);
+            bars(c, P(0.18), Math.round(P(0.18) + 26 - open * 22), gy - 58, gy - 1, 11);  // deur zwaait weg
+            me(c, P(0.40), gy - 2, 1, { walkPhase: open > 0.6 ? clk() / 70 : 0 });
+            const bx = P(0.74), bob = Math.sin(clk() / 300) * 1.5;
+            buc(c, bx, gy - 2 - bob, -1, {});
+            if (t > 1500) { c.fillStyle = '#ffd24a'; c.font = 'bold 12px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('!', bx, gy - 54); c.textAlign = 'left'; }
+          } },
+        ];
+      }
+
+      // ---------- 2. NA DE BOOTSMAN: de trap op naar het dek ----------
+      if (script === 'w3deck') {
+        return [
+          { theme: 'temple', dur: 2600, cap: 'De bootsman ligt neer. Een smalle trap leidt omhoog, naar het licht.', draw: () => {
+            const c = this.ctx;
+            c.fillStyle = '#0d0a06'; c.fillRect(0, 0, W, H);
+            planks(c, gy - 4, gy + 12, '#3a2a1a', '#241a10'); planks(c, 0, gy - 4, '#2a2118', '#1a140e');
+            for (let i = 0; i < 6; i++) Sprites.px(c, '#5a4028', P(0.58) + i * 13, gy - 6 - i * 9, 15, 6);   // treden
+            c.globalAlpha = 0.5; c.fillStyle = '#ffd88a';                                  // daglicht bovenaan
+            c.beginPath(); c.moveTo(P(0.62), gy - 62); c.lineTo(W, gy - 96); c.lineTo(W, gy - 20); c.closePath(); c.fill();
+            c.globalAlpha = 1;
+            buc(c, P(0.26), gy - 2, 1, { squash: true });                                  // verslagen bootsman
+            me(c, P(0.5), gy - 2, 1, { walkPhase: clk() / 70 });
+          } },
+          { theme: 'beach', dur: 2800, cap: 'Je stapt het dek op. Zeewind, zwarte zeilen — en overal bemanning.', draw: (t) => {
+            const c = this.ctx;
+            sea(c, 84); planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+            Sprites.px(c, '#3a2a18', P(0.3) - 3, 10, 6, gy - 16); Sprites.px(c, '#3a2a18', P(0.72) - 3, 22, 6, gy - 28);   // masten
+            Sprites.px(c, '#1a1a20', P(0.3) - 30, 24, 60, 40); Sprites.px(c, '#1a1a20', P(0.72) - 24, 34, 48, 32);          // zeilen
+            const p = Math.min(1, t / 2800);
+            me(c, Math.round(P(0.12) + p * 40), gy - 2, 1, { walkPhase: clk() / 70 });
+            crew(c, P(0.56), gy - 2, -1, clk() / 90); crew(c, P(0.84), gy - 2, -1, clk() / 90 + 1.6);
+          } },
+        ];
+      }
+
+      // ---------- 3. VOOR LEVEL 5: de kapitein daagt je uit ----------
+      if (script === 'w3captain') {
+        return [
+          { theme: 'beach', dur: 2800, cap: 'De hele bemanning ligt neer. Alleen de KAPITEIN staat nog overeind.', draw: () => {
+            const c = this.ctx;
+            sea(c, 84); planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+            Sprites.px(c, '#3a2a18', P(0.5) - 3, 8, 6, gy - 14); Sprites.px(c, '#1a1a20', P(0.5) - 34, 20, 68, 44);
+            me(c, P(0.24), gy - 2, 1, {});
+            crew(c, P(0.42), gy - 2, 1, 0);                                                // verslagen bemanning
+            const cx2 = P(0.76);
+            cap(c, cx2, gy - 2, -1, {});
+            const pf = clk() / 260;                                                        // papegaai cirkelt boven hem
+            Sprites.drawParrot(c, Math.round(cx2 + Math.cos(pf) * 16), Math.round(gy - 62 + Math.sin(pf * 1.4) * 5), Math.cos(pf) > 0 ? 1 : -1, clk(), false);
+          } },
+          { theme: 'beach', dur: 2800, cap: 'Hij trekt z\'n sabel en roept z\'n papegaai. Dit is het laatste gevecht!', draw: (t) => {
+            const c = this.ctx;
+            sea(c, 84); planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+            Sprites.px(c, '#3a2a18', P(0.5) - 3, 8, 6, gy - 14); Sprites.px(c, '#1a1a20', P(0.5) - 34, 20, 68, 44);
+            me(c, P(0.28), gy - 2, 1, { attacking: t > 1200 });
+            const cx2 = P(0.72);
+            cap(c, cx2, gy - 2, -1, { attacking: true, swing: Math.min(1, t / 900) });
+            const pf = clk() / 200;
+            Sprites.drawParrot(c, Math.round(cx2 - 4 + Math.cos(pf) * 22), Math.round(gy - 70 + Math.sin(pf * 1.6) * 7), -1, clk(), true);
+            if (t > 1000) { c.fillStyle = '#ff6a4a'; c.font = 'bold 13px "Courier New",monospace'; c.textAlign = 'center'; c.fillText('!', cx2, gy - 58); c.textAlign = 'left'; }
+          } },
+        ];
+      }
+
+      // ---------- 4. NA DE KAPITEIN: roer, ijsberg, schipbreuk, ijseiland ----------
+      return [
+        { theme: 'beach', dur: 2600, cap: 'De kapitein is verslagen — en vlucht in paniek naar het roer.', draw: (t) => {
+          const c = this.ctx;
+          sea(c, 84); planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+          const p = Math.min(1, t / 2600);
+          me(c, P(0.24), gy - 2, 1, {});
+          cap(c, Math.round(P(0.5) + p * (W * 0.32)), gy - 2, 1, { walkPhase: clk() / 45 });
+          const wx = P(0.9), wy = gy - 26;                                                 // scheepsroer
+          c.strokeStyle = '#6b4a24'; c.lineWidth = 3; c.beginPath(); c.arc(wx, wy, 13, 0, 6.2832); c.stroke();
+          for (let k = 0; k < 6; k++) { const a = k * 1.047; c.beginPath(); c.moveTo(wx, wy); c.lineTo(wx + Math.cos(a) * 17, wy + Math.sin(a) * 17); c.stroke(); }
+        } },
+        { theme: 'beach', dur: 2800, cap: 'Hij rukt het roer om — het schip zwenkt hard naar stuurboord…', draw: () => {
+          const c = this.ctx;
+          sea(c, 84); planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+          const wx = P(0.78), wy = gy - 26, spin = clk() / 30;
+          cap(c, P(0.62), gy - 2, 1, {});
+          c.strokeStyle = '#6b4a24'; c.lineWidth = 3; c.beginPath(); c.arc(wx, wy, 13, 0, 6.2832); c.stroke();
+          for (let k = 0; k < 6; k++) { const a = k * 1.047 + spin; c.beginPath(); c.moveTo(wx, wy); c.lineTo(wx + Math.cos(a) * 17, wy + Math.sin(a) * 17); c.stroke(); }
+          me(c, P(0.3), gy - 2, 1, {});
+          c.fillStyle = '#cfe6ff'; c.font = 'bold 10px "Courier New",monospace';           // ijsberg doemt op
+          Sprites.px(c, '#dff0ff', W - 70, 60, 70, 46); Sprites.px(c, '#a8cfe8', W - 70, 96, 70, 10);
+        } },
+        { theme: 'beach', dur: 3000, cap: '…recht op een IJSBERG af. De romp scheurt open.', draw: (t) => {
+          const c = this.ctx;
+          sea(c, 84);
+          const hit = t > 700, jolt = hit ? Math.sin(clk() / 25) * 4 : 0;
+          c.save(); c.translate(jolt, 0);
+          planks(c, gy - 6, gy + 14, '#8a5e36', '#5a3a1e');
+          Sprites.px(c, '#dff0ff', W - 120, 30, 120, 82); Sprites.px(c, '#a8cfe8', W - 120, 102, 120, 12);
+          Sprites.px(c, '#ffffff', W - 108, 38, 30, 22);
+          me(c, P(0.3), gy - 2, 1, { squash: hit });
+          c.restore();
+          if (hit) for (let i = 0; i < 8; i++)
+            this.particles.push(new Particle(W - 130 + Math.random() * 40, gy - 20, (Math.random() - 0.5) * 4, -Math.random() * 3, '#8a5e36', 500, 2));
+        } },
+        { theme: 'beach', dur: 3000, cap: 'Het schip zinkt. Het water sleurt je mee de diepte in…', draw: (t) => {
+          const c = this.ctx;
+          const p = Math.min(1, t / 3000);
+          c.fillStyle = '#0c1d33'; c.fillRect(0, 0, W, H);
+          sea(c, 40);
+          const sink = p * 70;
+          Sprites.px(c, '#4a2e18', P(0.5) - 60, gy - 40 + sink, 120, 16);                  // wegzakkende romp
+          Sprites.px(c, '#3a2a18', P(0.5) - 2, gy - 96 + sink, 4, 58);
+          Sprites.px(c, '#1a1a20', P(0.5) - 26, gy - 92 + sink, 52, 34);
+          c.globalAlpha = 0.55; c.fillStyle = '#9ecbe8';                                    // opstijgende luchtbellen
+          for (let i = 0; i < 7; i++) { const bx = P(0.4) + i * 18, by = gy - ((clk() / 6 + i * 40) % 120); c.beginPath(); c.arc(bx, by, 2 + (i % 3), 0, 6.2832); c.fill(); }
+          c.globalAlpha = 1;
+        } },
+        { theme: 'beach', dur: 3200, cap: 'Je spoelt aan op een eiland van ijs. Het is er stil… en ijskoud.', draw: (t) => {
+          const c = this.ctx;
+          c.fillStyle = '#8fb8d8'; c.fillRect(0, 0, W, gy - 30);                            // bleke poolhemel
+          Sprites.px(c, '#cfe6f4', 0, gy - 30, W, 12);
+          Sprites.px(c, '#eaf6ff', 0, gy - 18, W, H - (gy - 18));                            // ijsvlakte tot onderaan (geen strand eronder)
+          for (let i = 0; i < 4; i++) { const ix = 20 + i * 96; Sprites.px(c, '#dff0ff', ix, gy - 52, 40, 34); Sprites.px(c, '#ffffff', ix + 4, gy - 48, 14, 12); }
+          c.globalAlpha = 0.7; c.fillStyle = '#ffffff';                                     // dwarrelende sneeuw
+          for (let i = 0; i < 26; i++) { const sx = (i * 53 + clk() / 30) % W, sy = ((i * 37 + clk() / 18) % gy); c.fillRect(Math.round(sx), Math.round(sy), 2, 2); }
+          c.globalAlpha = 1;
+          const wake = Math.min(1, t / 1600);
+          me(c, P(0.34), gy - 2, 1, { ducking: wake < 0.7 });
+        } },
+        { theme: 'beach', dur: 3000, cap: 'Wordt vervolgd…', draw: (t) => {
+          const c = this.ctx; c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+          const a = Math.min(1, t / 900); c.globalAlpha = a; c.fillStyle = '#dff0ff';
+          c.font = 'bold 17px "Courier New",monospace'; c.textAlign = 'center';
+          c.fillText((window.I18N && I18N.lang === 'en') ? 'TO BE CONTINUED…' : 'WORDT VERVOLGD…', W / 2, H / 2);
+          c.textAlign = 'left'; c.globalAlpha = 1;
+        } },
+      ];
+    }
+
     const sc = this._storyData; if (!sc) return [];
     const px = Math.round(W * 0.30), fxT = W * 0.68;
     return [
@@ -5934,6 +6201,8 @@ const Game = {
         // Gorilla King (Wereld 1, laatste level) verslagen -> outro-cutscene naar Wereld 2, dán de uitslag
         if (won && jworld === 1 && idx >= JOURNEY[1].levels.length) UI.playEndStory('kongwin', showRes);
         else if (won && jworld === 2 && idx >= JOURNEY[2].levels.length) UI.playEndStory('ninjawin', showRes);   // Wereld 2 voltooid-cutscene
+        else if (won && jworld === 3 && idx === 1) UI.playEndStory('w3deck', showRes);                          // bootsman verslagen -> trap op naar het dek
+        else if (won && jworld === 3 && idx >= JOURNEY[3].levels.length) UI.playEndStory('w3end', showRes);     // kapitein verslagen -> ijsberg & schipbreuk
         else showRes();
       }, 2600);
       return;

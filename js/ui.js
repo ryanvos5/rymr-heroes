@@ -372,7 +372,7 @@ const UI = {
     const grid = document.getElementById('journey-grid');
     if (!grid) return;
     // ===== wereldkaart: levels als knopen langs een slingerpad, in het thema van de wereld =====
-    grid.className = 'journey-map ' + (world === 2 ? 'temple' : 'island');
+    grid.className = 'journey-map ' + (world === 3 ? 'ship' : (world === 2 ? 'temple' : 'island'));
     grid.innerHTML = '';
     const levels = JOURNEY[world].levels;
     const cols = 5, x0 = 12, dx = 19, y0 = 20, dyr = 30, jit = [0, 5, -3, 6, -2];
@@ -422,6 +422,9 @@ const UI = {
     } else if (world === 2) {
       const script = this._journeyStory2For(n);
       if (script) { this.playStory(script, n); return; }
+    } else if (world === 3) {
+      const script = this._journeyStory3For(n);
+      if (script) { this.playStory(script, n); return; }
     }
     this.startJourneyLevel(n);
   },
@@ -440,6 +443,12 @@ const UI = {
     if (n === 5) return 'guardian';  // Temple Bewaker (baas 1)
     if (n === 10) return 'monnik';   // De Oude Monnik (baas 2)
     if (n === 15) return 'ninja';    // De Ninja (eindbaas wereld 2)
+    return null;
+  },
+  // Wereld 3-verhalen: opening (tempel -> strand -> gevangen -> ruim) en de kapitein.
+  _journeyStory3For(n) {
+    if (n === 1) return 'w3intro';     // gevangen genomen, ontsnappen uit de kooi -> bootsman
+    if (n === 5) return 'w3captain';   // de kapitein daagt je uit
     return null;
   },
   // verhaal-cutscene op het canvas afspelen, daarna het level starten
