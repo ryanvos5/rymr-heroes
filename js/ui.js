@@ -522,7 +522,7 @@ const UI = {
     document.getElementById('versus-hud').classList.add('hidden');
     const t = document.getElementById('vs-result-title');
     if (won && idx >= total) t.innerHTML = (JOURNEY[world].name.toUpperCase()) + tl(' VERSLAGEN! ') + this._ic('trophy'); else t.textContent = won ? tl('LEVEL GEHAALD!') : tl('VERLOREN');
-    t.className = 'screen-title ' + (noContest ? '' : (won ? 'win' : 'lose'));
+    t.className = 'screen-title ' + (won ? 'win' : 'lose');   // Journey kent geen noContest (dat is alleen online)
     document.getElementById('vs-result-score').textContent = (myScore || 0) + ' – ' + (oppScore || 0);
     const xpEl = document.getElementById('vs-result-xp');
     xpEl.classList.remove('hidden');
