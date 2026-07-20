@@ -304,10 +304,11 @@ I18N.CONTENT = {
     materials: { leather: { name: 'Leather' }, nails: { name: 'Nails' }, iron: { name: 'Iron' }, steel: { name: 'Steel' } },
     sets: { leather: { name: 'Squire' }, iron: { name: 'Knight' }, steel: { name: 'Royal Knight' } },
     slots: { hat: 'Helmet', chest: 'Chestplate', bottom: 'Legplate', feet: 'Boots' },
-    worlds: { 1: 'Uninhabited Island', 2: 'Lost Temple' },
+    worlds: { 1: 'Uninhabited Island', 2: 'Lost Temple', 3: 'Pirate Ship' },
     levels: {
       1: ['Washed Ashore', 'Breakers', 'Palm Reef', 'Monkey Business', 'BONZO', 'Lagoon', 'Clifftops', 'Sandbank', 'Forbidden Beach', 'KOBA', 'Coconut Palace', 'Storm Cape', 'Spring Tide', 'Ape Hill', 'GORILLA KING'],
       2: ['Gate', 'Courtyard', 'Colonnade', 'Altar', 'TEMPLE GUARDIAN', 'Cloister', 'Meditation Garden', 'Bell Tower', 'Hidden Chamber', 'MONK', 'Roof Gardens', 'Shadow Path', 'Trap Halls', 'Dojo', 'NINJA'],
+      3: ['BOSUN', 'The Deck', 'The Rigging', 'Crow\'s Nest', 'CAPTAIN'],
     },
   },
 };
@@ -354,9 +355,9 @@ I18N.applyContent = function () {
   if (typeof JOURNEY !== 'undefined') {
     if (!this._origJourney) {
       this._origJourney = { worlds: {}, levels: {} };
-      for (const w of [1, 2]) { if (!JOURNEY[w]) continue; this._origJourney.worlds[w] = JOURNEY[w].name; this._origJourney.levels[w] = (JOURNEY[w].levels || []).map(function (l) { return l.name; }); }
+      for (const w of (typeof JOURNEY_ORDER !== 'undefined' ? JOURNEY_ORDER : [1, 2])) { if (!JOURNEY[w]) continue; this._origJourney.worlds[w] = JOURNEY[w].name; this._origJourney.levels[w] = (JOURNEY[w].levels || []).map(function (l) { return l.name; }); }
     }
-    for (const w of [1, 2]) {
+    for (const w of (typeof JOURNEY_ORDER !== 'undefined' ? JOURNEY_ORDER : [1, 2])) {
       if (!JOURNEY[w]) continue;
       JOURNEY[w].name = (useEn && EN.worlds && EN.worlds[w]) ? EN.worlds[w] : this._origJourney.worlds[w];
       const lv = (useEn && EN.levels && EN.levels[w]) ? EN.levels[w] : this._origJourney.levels[w];
@@ -367,6 +368,22 @@ I18N.applyContent = function () {
 
 // ---- cutscene-onderschriften: NL blijft in game.js (bron); Engelse overlay hieronder ----
 I18N.CUT_EN = {
+  // ---- Wereld 3: Piratenschip ----
+  'Je laat de tempel achter je en volgt het pad omlaag, naar zee.': 'You leave the temple behind and follow the path down, towards the sea.',
+  'Op het strand ligt een schip voor anker\u2026 met zwarte zeilen.': 'A ship lies anchored off the beach\u2026 with black sails.',
+  'Voor je het doorhebt sluiten piraten je in \u2014 je bent in de minderheid.': 'Before you know it pirates close in \u2014 you are outnumbered.',
+  'Je wordt geboeid en diep in het ruim van het schip gegooid.': 'You are bound and thrown deep into the ship\u2019s hold.',
+  'Achter tralies wacht je af\u2026 tot het slot meegeeft.': 'Behind bars you bide your time\u2026 until the lock gives way.',
+  'De kooi zwiept open \u2014 en daar staat de BOOTSMAN al te wachten.': 'The cage swings open \u2014 and the BOSUN is already waiting.',
+  'De bootsman ligt neer. Een smalle trap leidt omhoog, naar het licht.': 'The bosun is down. A narrow stairway leads up, towards the light.',
+  'Je stapt het dek op. Zeewind, zwarte zeilen \u2014 en overal bemanning.': 'You step onto the deck. Sea wind, black sails \u2014 and crew everywhere.',
+  'De hele bemanning ligt neer. Alleen de KAPITEIN staat nog overeind.': 'The whole crew is down. Only the CAPTAIN is still standing.',
+  'Hij trekt z\'n sabel en roept z\'n papegaai. Dit is het laatste gevecht!': 'He draws his cutlass and calls his parrot. This is the final fight!',
+  'De kapitein is verslagen \u2014 en vlucht in paniek naar het roer.': 'The captain is beaten \u2014 and flees in panic to the helm.',
+  'Hij rukt het roer om \u2014 het schip zwenkt hard naar stuurboord\u2026': 'He wrenches the wheel \u2014 the ship swings hard to starboard\u2026',
+  '\u2026recht op een IJSBERG af. De romp scheurt open.': '\u2026straight at an ICEBERG. The hull tears open.',
+  'Het schip zinkt. Het water sleurt je mee de diepte in\u2026': 'The ship goes down. The water drags you into the depths\u2026',
+  'Je spoelt aan op een eiland van ijs. Het is er stil\u2026 en ijskoud.': 'You wash ashore on an island of ice. It is silent\u2026 and freezing.',
   'Na een zware storm word je wakker op een verlaten strand…': 'After a heavy storm you wake up on a deserted beach…',
   'Je schip is verdwenen — overal liggen wrakstukken.': 'Your ship is gone — wreckage everywhere.',
   'In de verte zie je een dicht oerwoud… en je hoort vreemde geluiden.': 'In the distance you see a dense jungle… and you hear strange sounds.',
