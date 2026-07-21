@@ -360,6 +360,17 @@ const CHARACTERS = {
     },
     desc: 'Ninja: dubbel-jump + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
   },
+  // ---- MATROOS: piraten-bemanning (alleen als bot in de Piratenschip-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
+  matroos: {
+    id: 'matroos', name: 'Matroos', maxHp: 90, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', outfit: 'buccaneer',
+    palette: {
+      hair: '#3a2a1a', hairDark: '#241809',
+      skin: '#b87848', skinDark: '#8a5630',       // wat bleker dan de bootsman
+      eye: '#2a1a0e',
+      shirt: '#b87848', shirtDark: '#8a5630',     // blote bovenlijf: romp = huid (buccaneer-outfit leest dit)
+      pants: '#5a4a3a', shoe: '#241a10',          // versleten bruine broek
+    },
+  },
   // ---- INDIAAN: tempel-minion (alleen als bot in de Temple-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
   indiaan: {
     id: 'indiaan', name: 'Indiaan', maxHp: 95, speedMul: 1.05, meleeMul: 1.0, build: 'normal', hair: 'spiky',
@@ -909,14 +920,9 @@ const BEACH_LAYOUTS = [
 /* Wereld 3 — Piratenschip.
    RUIM (level 1): krappe kelder onder de waterlijn, dichte vloer met een afgrond aan
    de zijkanten, gestapelde kratten als platforms.
-   DEK (level 2-5): open dek met touwladders/ra's en het kraaiennest bovenin. */
+   Level 2-5 speelt op de ECHTE Pirate Ship-versus-map (zelfde als online). */
 const SHIP_HOLD_LAYOUTS = [
   [{ x: 180, y: 152, w: 268 }, { x: 92, y: 114, w: 56 }, { x: 268, y: 114, w: 56 }, { x: 180, y: 82, w: 60 }],
-];
-const SHIP_DECK_LAYOUTS = [
-  [{ x: 180, y: 152, w: 360 }, { x: 84, y: 116, w: 54 }, { x: 276, y: 116, w: 54 }, { x: 180, y: 80, w: 62 }],
-  [{ x: 180, y: 152, w: 360 }, { x: 180, y: 118, w: 78 }, { x: 66, y: 86, w: 46 }, { x: 294, y: 86, w: 46 }],
-  [{ x: 180, y: 152, w: 360 }, { x: 62, y: 122, w: 48 }, { x: 298, y: 122, w: 48 }, { x: 132, y: 90, w: 44 }, { x: 228, y: 90, w: 44 }, { x: 180, y: 54, w: 38 }],
 ];
 const TEMPLE_JOURNEY_LAYOUTS = [
   [{ x: 180, y: 152, w: 360 }, { x: 90, y: 112, w: 56 }, { x: 270, y: 112, w: 56 }],
@@ -1019,7 +1025,7 @@ function buildShipWorld() {
   for (let n = 1; n <= 5; n++) {
     const lv = { id: n, name: names[n - 1], ship: true, reward: 0, drops: ['coco'], layout: (n - 1) % 3 };
     if (bosses[n]) Object.assign(lv, bosses[n], { bossFight: true, drops: ['coco', 'dart', 'ninjastar'] });
-    else { lv.bot = 'indiaan'; lv.diff = 5 + n; }   // gewone bemanning
+    else { lv.bot = 'matroos'; lv.diff = 5 + n; }   // gewone bemanning: piraat-matrozen
     levels.push(lv);
   }
   return levels;

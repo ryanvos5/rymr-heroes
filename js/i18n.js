@@ -206,6 +206,7 @@ I18N.CONTENT = {
       yarno: { desc: 'Balanced, a bit faster. Starts with a dagger.' },
       pirate: { name: 'Pirate Captain', desc: 'Captain with a loyal parrot. A bit tougher (+5 HP). His parrot pecks your opponent apart and interrupts their ability.' },
       skeleton: { name: 'Skeleton Knight', desc: 'Skeleton knight (250 rubies). Soul Drain: steals 20 HP from your opponent — 20 damage and you gain +20 HP.' },
+      matroos: { name: 'Deckhand' },
       buccaneer: { desc: 'Savage bosun: big and strong (+25 HP, +15% melee), but slow. His anchor slam blasts away anyone nearby.' },
       bonzo: { desc: 'Chimp: fast & agile. Throws 3 bouncing bananas. Journey only.' },
       koba: { desc: 'Brute: big & strong (+25% melee). Journey only.' },

@@ -1782,19 +1782,21 @@ const Game = {
     const world = JOURNEY[worldId]; if (!world) return;
     const lv = world.levels[idx - 1]; if (!lv) return;
     let mapObj;
-    // ---- Piratenschip-wereld: level 1 in het RUIM, daarna op het DEK ----
+    // ---- Piratenschip-wereld: level 1 in het RUIM, level 2-5 op de ECHTE Pirate Ship-map (zelfde als online) ----
     if (worldId === 3) {
       const hold = idx === 1;                                   // level 1 = boss fight in het ruim
-      const layout = hold
-        ? SHIP_HOLD_LAYOUTS[0]
-        : SHIP_DECK_LAYOUTS[(lv.layout || 0) % SHIP_DECK_LAYOUTS.length];
-      mapObj = {
-        id: 'shipJ', name: lv.name,
-        sky: hold ? ['#2a2118', '#0d0a06'] : ['#1f4e7a', '#0c1d33'],
-        void: hold ? '#080605' : '#06121f',
-        plat: 'wood', wood: true, ship: true, shipIn: hold, noPortals: hold,
-        w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: layout,
-      };
+      if (hold) {
+        mapObj = {
+          id: 'shipJ', name: lv.name,
+          sky: ['#2a2118', '#0d0a06'], void: '#080605',
+          plat: 'wood', wood: true, ship: true, shipIn: true, noPortals: true,
+          w: 360, fallY: 214, spawnL: { x: 120, y: 150 }, spawnR: { x: 240, y: 150 }, platforms: SHIP_HOLD_LAYOUTS[0],
+        };
+      } else {
+        // de volledige versus-map (masten, kraaiennesten, zeemonster-tentakel) met de levelnaam erop
+        const base = VERSUS_MAPS.find((m) => m.id === 'pirate');
+        mapObj = Object.assign({}, base, { name: lv.name });
+      }
       this.journey = { world: worldId, idx, lv };
       this.startVersus('host', { mapObj, mode: 'smash', bot: true, diff: lv.diff, journey: true, journeyDrops: (lv.drops || []), boss: !!lv.boss, bossFight: !!lv.bossFight, botChar: lv.bot, swapSides: Math.random() < 0.5 });
       this.journey = { world: worldId, idx, lv };
