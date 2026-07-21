@@ -76,6 +76,22 @@ const Sprites = {
 
   // Papegaai van de Pirate Captain (ability "Parrot Dive"): klein, fel, klappende vleugel.
   // pecking = true tijdens een pik -> kop schiet naar voren.
+  // piraten-bandana: kapje over de schedel + knoop met twee wapperende linten achter
+  _bandana(ctx, cx, headTop, hh, dir, t, col) {
+    const dk = this._shade(col, -0.3), lt = this._shade(col, 0.3);
+    this.px(ctx, col, cx - hh, headTop - 1, hh * 2, 3);                        // kapje
+    this.px(ctx, lt, cx - hh + 1, headTop - 1, hh * 2 - 2, 1);                 // glans bovenop
+    this.px(ctx, dk, cx - hh, headTop + 2, hh * 2, 1);                         // rand net boven de ogen
+    this.px(ctx, lt, cx - hh + 2, headTop, 2, 1);                              // lichtpuntje (stof-plooi)
+    this.px(ctx, dk, cx + (dir > 0 ? -1 : 1) * (hh + 1), headTop, 2, 3);       // knoop op het achterhoofd
+    for (let k = 0; k < 2; k++) {                                               // twee linten, licht wapperend
+      const wob = Math.round(Math.sin(t / 160 + k * 1.7) * 1.4);
+      const len = 4 - k;
+      const bx = dir > 0 ? cx - hh - 2 - len : cx + hh + 2;
+      this.px(ctx, k ? dk : col, bx, headTop + 2 + k * 3 + wob, len, 2);
+    }
+  },
+
   /* Banaan (Bonzo's Monkey Mayhem). Vliegend = gele boog die meedraait;
      als schil = plat op de grond met open punten, zodat je 'm als gevaar herkent. */
   drawBanana(ctx, cx, cy, rot, peel) {
@@ -529,6 +545,22 @@ const Sprites = {
       this.px(ctx, this._shade(pal.eye, 0.45), cx + (dir > 0 ? 1 : -2), slitY - 1, 2, 1);  // gloed boven het vooroog
       this.px(ctx, pal.eye, cx + (dir > 0 ? 1 : -2), slitY, 2, 2);                   // vooroog: fel
       this.px(ctx, this._shade(pal.eye, -0.25), cx + (dir > 0 ? -3 : 2), slitY, 1, 2);     // achteroog: dof
+    } else if (pose.outfit === 'sailor') {
+      /* --- MATROOS: klassiek gestreept zeemanshirt + halsdoek + bandana ---
+         Strepen uit het palet: shirt = basiskleur, shirtDark = streepkleur. */
+      const base = pal.shirt, stripe = pal.shirtDark;
+      this.px(ctx, base, cx - bh, torsoTop, bh * 2, torsoH - 1);               // shirt over de hele romp
+      for (let i = 1; i < torsoH - 2; i += 2)
+        this.px(ctx, stripe, cx - bh, torsoTop + i, bh * 2, 1);                // horizontale strepen
+      this.px(ctx, this._shade(base, -0.22), cx + (dir > 0 ? bh - 2 : -bh), torsoTop, 2, torsoH - 1);   // schaduwkant
+      this.px(ctx, this._shade(base, -0.16), cx - bh, torsoTop + torsoH - 2, bh * 2, 1);                // zoom onderaan
+      // rode halsdoek met knoopje
+      this.px(ctx, '#c0392b', cx - hh + 1, torsoTop - 1, hh * 2 - 2, 2);
+      this.px(ctx, '#8a2318', cx + (dir > 0 ? 1 : -3), torsoTop + 1, 2, 2);
+      // bandana in de eigen kleur van deze matroos
+      this._bandana(ctx, cx, headTop, hh, dir, pose.t || 0, pal.bandana || '#3a7ac2');
+      // stoppelbaard-schaduw op de kaak (lichter dan de bootsman-baard)
+      this.px(ctx, this._shade(pal.skinDark, -0.18), cx - hh + 1, headTop + headH - 2, hh * 2 - 2, 1);
     } else if (pose.outfit === 'buccaneer') {
       /* --- BOOTSMAN: blote gespierde torso, bandana, volle baard, gouden oorring ---
          De romp is al huidkleur (palette.shirt = skin), hier komt alleen de
@@ -552,20 +584,9 @@ const Sprites = {
       this.px(ctx, '#a8791c', cx - 1, torsoTop + torsoH - 3, 2, 1);
       // schouder-litteken op de voorste schouder
       this.px(ctx, skDk, cx + (dir > 0 ? bh - 3 : -bh + 1), torsoTop + 1, 1, 3);
-      // --- bandana: kapje over de schedel + knoop met twee wapperende linten achter ---
-      const bandana = '#c0392b', bandanaDk = '#8a2318', bandanaLt = this._shade(bandana, 0.3);
-      this.px(ctx, bandana, cx - hh, headTop - 1, hh * 2, 3);                        // kapje
-      this.px(ctx, bandanaLt, cx - hh + 1, headTop - 1, hh * 2 - 2, 1);              // glans bovenop
-      this.px(ctx, bandanaDk, cx - hh, headTop + 2, hh * 2, 1);                      // rand net boven de ogen
-      this.px(ctx, bandanaLt, cx - hh + 2, headTop, 2, 1);                           // lichtpuntje (stof-plooi)
-      const back = dir > 0 ? -1 : 1;                                                  // linten hangen naar achteren
-      this.px(ctx, bandanaDk, cx + back * (hh + 1), headTop, 2, 3);                  // knoop op het achterhoofd
-      for (let k = 0; k < 2; k++) {                                                   // twee linten, licht wapperend
-        const wob = Math.round(Math.sin((pose.t || 0) / 160 + k * 1.7) * 1.4);
-        const len = 4 - k;
-        const bx = dir > 0 ? cx - hh - 2 - len : cx + hh + 2;
-        this.px(ctx, k ? bandanaDk : bandana, bx, headTop + 2 + k * 3 + wob, len, 2);
-      }
+      // bandana (kleur uit het palet, zodat elke piraat een eigen doek kan dragen)
+      this._bandana(ctx, cx, headTop, hh, dir, pose.t || 0, pal.bandana || '#c0392b');
+      const back = dir > 0 ? -1 : 1;
       // volle baard: donker langs de kaak, maar de mond blijft vrij (anders wordt het een masker)
       this.px(ctx, pal.hairDark, cx - hh, headTop + headH - 4, 2, 4);                // bakkebaard links
       this.px(ctx, pal.hairDark, cx + hh - 2, headTop + headH - 4, 2, 4);            // bakkebaard rechts

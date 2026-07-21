@@ -360,15 +360,42 @@ const CHARACTERS = {
     },
     desc: 'Ninja: dubbel-jump + 6s onzichtbaarheid. Versla hem in de Temple-wereld.'
   },
-  // ---- MATROOS: piraten-bemanning (alleen als bot in de Piratenschip-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
-  matroos: {
-    id: 'matroos', name: 'Matroos', maxHp: 90, speedMul: 1.0, meleeMul: 1.0, build: 'normal', hair: 'bald', outfit: 'buccaneer',
+  /* ---- PIRATEN-BEMANNING: drie eigen matrozen, één per level (alleen als bot in de
+          Piratenschip-wereld; niet in de shop / niet in CHARACTER_ORDER) ---- */
+  zwabber: {
+    // level 2 "Het dek": de dekzwabber — klein, mager en snel, wit-blauw gestreept shirt
+    id: 'zwabber', name: 'Zwabber', maxHp: 75, speedMul: 1.1, meleeMul: 0.9, build: 'small', hair: 'bald', outfit: 'sailor',
     palette: {
-      hair: '#3a2a1a', hairDark: '#241809',
-      skin: '#b87848', skinDark: '#8a5630',       // wat bleker dan de bootsman
+      hair: '#4a3320', hairDark: '#2e2012',
+      skin: '#d8a878', skinDark: '#b8895e',
       eye: '#2a1a0e',
-      shirt: '#b87848', shirtDark: '#8a5630',     // blote bovenlijf: romp = huid (buccaneer-outfit leest dit)
-      pants: '#5a4a3a', shoe: '#241a10',          // versleten bruine broek
+      shirt: '#e8e4da', shirtDark: '#3a5a8a',     // wit shirt, blauwe strepen
+      pants: '#3a4a5e', shoe: '#241a10',
+      bandana: '#3a7ac2',                          // blauwe bandana
+    },
+  },
+  kanonnier: {
+    // level 3 "Het want": de kanonnier — fors en sterk, blote torso, door kruit getekende huid
+    id: 'kanonnier', name: 'Kanonnier', maxHp: 115, speedMul: 0.87, meleeMul: 1.1, build: 'bulky', hair: 'bald', outfit: 'buccaneer',
+    palette: {
+      hair: '#241809', hairDark: '#140c04',
+      skin: '#9a6234', skinDark: '#6e4420',       // donkerder, verweerd
+      eye: '#2a1a0e',
+      shirt: '#9a6234', shirtDark: '#6e4420',     // blote bovenlijf: romp = huid (buccaneer-outfit leest dit)
+      pants: '#2a2a30', shoe: '#16120e',
+      bandana: '#2e6f3a',                          // groene bandana
+    },
+  },
+  uitkijk: {
+    // level 4 "Kraaiennest": de uitkijk — lang en lenig, rood-wit gestreept shirt
+    id: 'uitkijk', name: 'Uitkijk', maxHp: 90, speedMul: 1.0, meleeMul: 1.0, build: 'tall', hair: 'bald', outfit: 'sailor',
+    palette: {
+      hair: '#6b4426', hairDark: '#4a2e18',
+      skin: '#c99a6a', skinDark: '#9a7048',
+      eye: '#2f6fb0',
+      shirt: '#e8e4da', shirtDark: '#a83232',     // wit shirt, rode strepen
+      pants: '#4a3a2e', shoe: '#241a10',
+      bandana: '#c9a227',                          // okergele bandana
     },
   },
   // ---- INDIAAN: tempel-minion (alleen als bot in de Temple-wereld; niet in de shop / niet in CHARACTER_ORDER) ----
@@ -1025,7 +1052,7 @@ function buildShipWorld() {
   for (let n = 1; n <= 5; n++) {
     const lv = { id: n, name: names[n - 1], ship: true, reward: 0, drops: ['coco'], layout: (n - 1) % 3 };
     if (bosses[n]) Object.assign(lv, bosses[n], { bossFight: true, drops: ['coco', 'dart', 'ninjastar'] });
-    else { lv.bot = 'matroos'; lv.diff = 5 + n; }   // gewone bemanning: piraat-matrozen
+    else { lv.bot = ['zwabber', 'kanonnier', 'uitkijk'][n - 2]; lv.diff = 5 + n; }   // per level een eigen bemanningslid
     levels.push(lv);
   }
   return levels;
