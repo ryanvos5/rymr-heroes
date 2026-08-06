@@ -551,7 +551,7 @@ I18N.UI_EN = {
   'Altijd erbij: munten, XP en smeed-materialen': 'Always included: coins, XP and forge materials',
   'en 2–10 robijnen': 'and 2–10 rubies',
   'en 5–20 robijnen': 'and 5–20 rubies',
-  'Welkom bij Rymr Heroes BETA': 'Welcome to Rymr Heroes BETA',
+  'Welkom bij Rymr Heroes': 'Welcome to Rymr Heroes',
   'We zijn net gestart! De komende maanden richten we ons op méér online spelers — en jij kunt ons daar enorm mee helpen:': 'We just launched! Over the coming months we’re focused on growing our online player base — and you can help a lot:',
   'Schrijf een review': 'Write a review',
   'Deel je idee': 'Share your idea',

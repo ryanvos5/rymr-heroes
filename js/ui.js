@@ -1109,7 +1109,7 @@ const UI = {
       sc = document.createElement('div'); sc.id = 'beta-popup'; sc.className = 'overlay hidden';
       sc.innerHTML = '<div class="overlay-box beta-box">' +
         '<button class="corner-back" id="btn-beta-close" aria-label="Close"><svg class="ic"><use href="#ic-x"/></svg></button>' +
-        '<h2 class="screen-title beta-title">' + tl('Welkom bij Rymr Heroes BETA') + '</h2>' +
+        '<h2 class="screen-title beta-title">' + tl('Welkom bij Rymr Heroes') + '</h2>' +
         '<p class="beta-text">' + tl('We zijn net gestart! De komende maanden richten we ons op méér online spelers — en jij kunt ons daar enorm mee helpen:') + '</p>' +
         '<div class="beta-btns">' +
           '<button class="stone-btn beta-review" id="btn-beta-review">⭐ ' + tl('Schrijf een review') + '</button>' +
