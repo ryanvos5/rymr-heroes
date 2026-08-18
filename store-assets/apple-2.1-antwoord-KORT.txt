@@ -1,0 +1,70 @@
+Hello,
+
+Thank you for the review. A screen recording is attached: one
+continuous take on a physical iPhone, starting with the device date and
+time, then launching the app and demonstrating sign-in, the core 1v1
+fighting gameplay (Journey and online), heroes, skins, the Blacksmith,
+the Shop with the in-app purchase flow, our Privacy Policy and Support
+pages, and account deletion.
+
+Our answers to your five questions:
+
+1. Features not represented in the screenshots, description or
+category? NO. Every feature is covered: online 1v1 matches, matches
+against bots, the singleplayer Journey campaign, unlockable heroes,
+cosmetic skins, the Blacksmith (forging armour), the shop, and the
+leaderboard and friends list.
+
+2. Domains, URLs or external services? YES - all listed here, and all
+contacted in the recording:
+- https://ldzdfgfaqiwwdogpltsu.supabase.co (Supabase, EU region): our
+  own backend, used for account sign-in (Apple, Google, e-mail), cloud
+  storage of the player's game progress, the leaderboard and friends
+  list, and the realtime WebSocket that synchronises online 1v1
+  matches.
+- https://rymrheroes.thebrandingfive.nl: our own website, opened in an
+  in-app browser only when the user taps Privacy Policy, Support, or
+  "Share an idea".
+- https://formsubmit.co: form-mail service used only by the "Share an
+  idea" page on that website (not by the app itself).
+- https://apps.apple.com: opened only when the user taps "Write a
+  review", linking to our own App Store product page.
+
+3. Can functionality change after approval without a new binary? NO.
+The app is a self-contained HTML5/JavaScript game wrapped with
+Capacitor. All code, assets, levels, heroes and maps are in the binary
+and loaded from the local app bundle. The app does not load, download
+or execute any remote code, and there is no remote configuration or
+feature-flag mechanism that can alter its behaviour. Our backend is
+used only for the user's own account data and online match
+synchronisation. Any change to the game requires a new binary.
+
+4. Payment, financial, health, medical, biometric or other sensitive
+data not declared? NO. All purchases are handled entirely by Apple's
+StoreKit 2; the app never sees payment or financial data. No health,
+medical, biometric or location data is collected. We store only the
+user's e-mail address, self-chosen nickname and game progress, exactly
+as declared in our App Privacy answers. Users can permanently delete
+their account and all data in the app (Settings > Account > Delete
+account).
+
+5. Third-party branding? YES, limited to two standard sign-in options
+on our login screen: "Sign in with Apple" (per Apple's Human Interface
+Guidelines) and "Continue with Google" (per Google's Sign-In branding
+guidelines). Both appear in the recording. All other artwork,
+characters, music and sound effects are original work created by us.
+
+Additional information: third-party libraries are Capacitor 6, the
+supabase-js client for our own backend, and Apple's StoreKit 2 - all
+bundled in the binary. There are no hidden or dormant features. The
+only content other players can see is a self-chosen nickname on the
+leaderboard and friends list; free-text chat is disabled in this
+version. Crates with randomised contents disclose their exact odds in
+the app before purchase (guideline 3.1.1).
+
+Demo account: thebrandingfiveappreview@gmail.com / RymrDemo2026!
+
+Please let us know if you need anything else.
+
+Kind regards,
+Ryan Vos - The Branding Five
