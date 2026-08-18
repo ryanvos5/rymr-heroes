@@ -1686,15 +1686,7 @@ function arenaRound(round) {
   };
 }
 
-/* ---------- Map-rotatie: welke maps staan uit (beheerd via de Map Maker, gesynct via de cloud) ----------
-   window.MAP_DISABLED bevat de uitgezette map-id's. activeVersusMaps() geeft de actieve maps. */
-try {
-  var _tpsRot = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('tps_maprotation')) || '{}');
-  window.MAP_DISABLED = new Set((_tpsRot && _tpsRot.disabled) || []);
-} catch (e) { window.MAP_DISABLED = new Set(); }
-function activeVersusMaps() {
-  var dis = (typeof window !== 'undefined' && window.MAP_DISABLED) ? window.MAP_DISABLED : null;
-  if (!dis || !dis.size) return VERSUS_MAPS;
-  var a = VERSUS_MAPS.filter(function (m) { return !dis.has(m.id); });
-  return a.length ? a : VERSUS_MAPS;   // altijd minstens 1 map actief houden
-}
+/* Alle versus-maps zitten in de app zelf. Er was hier een cloud-gestuurde rotatie die
+   maps kon uitzetten zonder nieuwe build; die is verwijderd, zodat het gedrag van de app
+   volledig door de ingediende binary wordt bepaald (Apple-richtlijn 2.5.2). */
+function activeVersusMaps() { return VERSUS_MAPS; }

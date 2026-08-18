@@ -51,7 +51,6 @@ const Net = {
     } catch (e) { console.warn('[Net] init faalde', e); return; }
     this.ready = true;
     if (this.isNative) this._initNativeAuthDeepLink();   // vang de social-login-redirect op in de app
-    this.loadMapRotation();   // welke maps staan aan/uit (cloud, door de eigenaar beheerd via de Map Maker)
 
     // bestaande sessie herstellen
     this.sb.auth.getSession().then(({ data }) => {
@@ -69,22 +68,6 @@ const Net = {
       this._refreshUI();
       if (this.lobby) this.lobbyRefreshNick();   // bij inloggen/uitloggen de naam updaten
     });
-  },
-
-  // ---- map-rotatie (cloud): welke maps zijn uitgezet ----
-  loadMapRotation() {
-    if (!this.sb) return;
-    this.sb.from('app_config').select('value').eq('key', 'rotation').maybeSingle().then(({ data }) => {
-      if (data && data.value && Array.isArray(data.value.disabled)) {
-        window.MAP_DISABLED = new Set(data.value.disabled);
-        try { localStorage.setItem('tps_maprotation', JSON.stringify({ disabled: data.value.disabled })); } catch (e) {}
-      }
-    }).catch(() => {});
-  },
-  // alleen de eigenaar mag schrijven (RLS); geeft de Supabase-promise terug
-  saveMapRotation(disabledArr) {
-    if (!this.sb) return Promise.reject(new Error('no client'));
-    return this.sb.from('app_config').upsert({ key: 'rotation', value: { disabled: disabledArr }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   },
 
   isLoggedIn() { return !!this.user; },

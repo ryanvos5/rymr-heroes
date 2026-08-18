@@ -1,0 +1,142 @@
+=====================================================================
+ANTWOORD OP GUIDELINE 2.1 - ADDITIONAL VERIFICATION REQUIRED
+Plakken in App Store Connect > App Review > "Reply to App Review"
+=====================================================================
+
+Hello,
+
+Thank you for the review. Please find the requested screen recording
+attached, along with our answers to all five questions below.
+
+---------------------------------------------------------------------
+1. SCREEN RECORDING
+---------------------------------------------------------------------
+The attached recording is one continuous take, captured live on a
+physical iPhone. It begins by showing the current date and time on the
+device, then launches Rymr Heroes and demonstrates:
+
+- Signing in (Sign in with Apple and the e-mail demo account) - this
+  demonstrates the app contacting our backend (see question 2)
+- The core gameplay described in our name, description and screenshots:
+  1v1 pixel-art fighting matches where you knock your opponent off the
+  platform - shown both in the singleplayer Journey campaign and in an
+  online 1v1 match
+- Heroes, cosmetic skins, the Blacksmith (armour) and the Inventory
+- The Shop, including the in-app purchase flow for rubies
+- Opening our Privacy Policy and Support pages (question 2)
+- Settings > Account > Delete account
+
+---------------------------------------------------------------------
+2. ANSWERS TO YOUR FIVE QUESTIONS
+---------------------------------------------------------------------
+
+Q1: Are there features in the app that are not represented in the
+    screenshots, description, or category in App Store Connect?
+
+A1: NO. Every feature in the app is covered by our description and
+    screenshots: online 1v1 matches, matches against bots, the
+    singleplayer Journey campaign, unlockable heroes, cosmetic skins,
+    the Blacksmith (forging armour), the shop, and the leaderboard and
+    friends list.
+
+Q2: Does the app contact any domains, URLs, or external services that
+    are not visible in the binary, disclosed in the App Privacy
+    questions, or included in the App Review Information?
+
+A2: YES - and all of them are listed here in full. Each is contacted in
+    the recording.
+
+    1. https://ldzdfgfaqiwwdogpltsu.supabase.co  (Supabase, EU region)
+       Our own backend. Used for account sign-in (Sign in with Apple,
+       Google, or e-mail), cloud storage of the player's game progress,
+       the leaderboard and friends list, and the realtime WebSocket
+       connection that synchronises online 1v1 matches.
+       Demonstrated in the recording by signing in and playing an
+       online match.
+
+    2. https://rymrheroes.thebrandingfive.nl
+       Our own website. Opened in an in-app browser only when the user
+       taps Privacy Policy, Support, or "Share an idea".
+       Demonstrated in the recording.
+
+    3. https://formsubmit.co
+       A form-mail service used only by the "Share an idea" page on our
+       website above (not by the app itself), to e-mail the submitted
+       suggestion to us.
+
+    4. https://apps.apple.com
+       Opened only when the user taps "Write a review", which links to
+       our own App Store product page.
+
+Q3: Can functionality or features be changed or introduced to the app
+    after App Review approval without submitting a new binary?
+
+A3: NO. The app is a self-contained HTML5/JavaScript game wrapped with
+    Capacitor. All game code, assets, levels, heroes and maps are
+    included in the binary and are loaded from the local app bundle.
+    The app does not load, download, or execute any code from a remote
+    source, and there is no remote configuration, feature flag, or
+    A/B mechanism that can alter its behaviour. Our backend is used
+    only for the player's own account data and for synchronising online
+    matches, as described in question 2. Any change to the game itself
+    requires a new binary submitted to App Review.
+
+Q4: Does the app process, transmit, or store payment, financial,
+    health, medical, biometric, or other sensitive data that is not
+    declared in the App Privacy questions?
+
+A4: NO. All purchases are handled entirely by Apple's StoreKit 2; the
+    app never sees or stores any payment or financial data. The app
+    collects no health, medical, biometric, or location data. The only
+    personal data we store is the user's e-mail address and self-chosen
+    nickname for their account, plus their game progress - exactly as
+    declared in our App Privacy answers. Users can permanently delete
+    their account and all associated data from within the app
+    (Settings > Account > Delete account), shown in the recording.
+
+Q5: Does the app reference, integrate with, or share branding, naming,
+    or visuals with any third-party brand, hardware product, financial
+    institution, or other protected service?
+
+A5: YES, limited to two standard sign-in integrations, both used as an
+    authentication option on our login screen:
+
+    - "Sign in with Apple", implemented and presented in accordance with
+      Apple's Human Interface Guidelines for Sign in with Apple.
+    - "Continue with Google" (Google Sign-In), implemented and presented
+      in accordance with Google's Sign-In branding guidelines.
+
+    Both are shown in the recording. Apart from these, the app contains
+    no third-party brands, logos, or visuals - all artwork, characters,
+    music and sound effects are original work created by us.
+
+---------------------------------------------------------------------
+3. ADDITIONAL INFORMATION
+---------------------------------------------------------------------
+
+Third-party SDKs and libraries (all bundled in the binary):
+- Capacitor 6 (core, app, browser, splash-screen, status-bar) - the
+  native wrapper around our HTML5 game
+- supabase-js - client library for our own backend described above
+- StoreKit 2 (Apple) - in-app purchases
+
+Hidden, dormant, or undocumented features: NONE.
+
+User-generated content: the only content other players can see is a
+self-chosen nickname, shown on the leaderboard and in the friends list.
+Free-text chat between players is disabled in this version of the app.
+
+Loot boxes: the app sells crates with randomised contents. The exact
+odds for every item are disclosed inside the app before purchase, on
+the crate itself, in line with guideline 3.1.1.
+
+Demo account for testing:
+  E-mail:   thebrandingfiveappreview@gmail.com
+  Password: RymrDemo2026!
+
+Please let us know if you need anything else - we are happy to provide
+further details or an additional recording.
+
+Kind regards,
+Ryan Vos
+The Branding Five
