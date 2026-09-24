@@ -7,7 +7,9 @@
     "build": "node scripts/build-www.mjs",
     "sync": "npm run build && npx cap sync ios",
     "add:ios": "npm run build && npx cap add ios",
-    "open:ios": "npx cap open ios"
+    "open:ios": "npx cap open ios",
+    "bump": "node scripts/bump.mjs",
+    "release": "npm run build && npx cap sync ios && node scripts/bump.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.3",
