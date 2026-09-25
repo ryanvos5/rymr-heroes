@@ -41,16 +41,26 @@ const Net = {
              een halve minuut voor 'ie het doorhad. Op 15s is dat veel sneller opgemerkt. */
         realtime: {
           params: { eventsPerSecond: 40 },
-          // 10s: phoenix verklaart een socket pas dood als bij de VOLGENDE hartslag het
-          // antwoord op de vorige ontbreekt, dus detectie duurt tot 2x deze waarde.
-          // Op 15s was dat 30s — later dan de 22s waarop de match gestaakt wordt.
-          heartbeatIntervalMs: 10000,
+          /* 3s. Phoenix verklaart een socket dood als bij de VOLGENDE hartslag het antwoord
+             op de vorige ontbreekt: detectie <= 2x deze waarde = 6s, daarna reconnect via
+             de snelle backoff. Dit is de enige juiste liveness-check: hij meet je EIGEN
+             socket. Eerder braken we de socket af zodra de TEGENSTANDER 2,5s stil was;
+             op 4G (reconnect 1-3s) hielden twee spelers elkaar zo in een lus tot de
+             match na 22s werd gestaakt. */
+          heartbeatIntervalMs: 3000,
           reconnectAfterMs: (tries) => [200, 400, 800, 1500, 3000][tries - 1] || 5000,
         },
       });
     } catch (e) { console.warn('[Net] init faalde', e); return; }
     this.ready = true;
     if (this.isNative) this._initNativeAuthDeepLink();   // vang de social-login-redirect op in de app
+    // iOS bevriest de websocket zodra de app naar de achtergrond gaat. Bij terugkomst
+    // meteen opnieuw verbinden i.p.v. wachten tot de heartbeat het merkt.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { this._hiddenAt = Date.now(); return; }
+      if (this._hiddenAt && Date.now() - this._hiddenAt > 1500) this.reconnectRealtime();
+      this._hiddenAt = 0;
+    });
 
     // bestaande sessie herstellen
     this.sb.auth.getSession().then(({ data }) => {
@@ -62,11 +72,17 @@ const Net = {
       this._refreshUI();
       if (this.lobby) this.lobbyRefreshNick();   // presence-naam bijwerken zodra sessie bekend is
     }).catch(() => { this.authReady = true; });
-    this.sb.auth.onAuthStateChange((_evt, session) => {
+    this.sb.auth.onAuthStateChange((evt, session) => {
       this.user = session ? session.user : null;
       this.authReady = true;
       this._refreshUI();
       if (this.lobby) this.lobbyRefreshNick();   // bij inloggen/uitloggen de naam updaten
+      /* Sign in with Apple/Google komt ALLEEN via dit event binnen (deep-link -> sessie).
+         Zonder afterLogin() kreeg zo'n speler geen profielrij (onvindbaar voor vrienden),
+         geen cloud-save en geen nickname-prompt. Eén keer per account: bij opstarten
+         heeft getSession() het al gedaan en vuurt SIGNED_IN daarna nog een keer. */
+      if (evt === 'SIGNED_OUT') this._loggedInFor = null;
+      if (evt === 'SIGNED_IN' && this.user) this.afterLogin().catch((e) => console.warn('[Net] afterLogin', e));
     });
   },
 
@@ -190,6 +206,12 @@ const Net = {
 
   // na (her)inloggen: profiel borgen + cloud-save mergen
   async afterLogin() {
+    /* Idempotent per account. Dit wordt bereikt vanaf drie kanten: getSession() bij opstarten,
+       login()/register() na e-mail-inloggen, en SIGNED_IN (het enige pad voor Apple/Google).
+       Bij e-mail-login vuurt SIGNED_IN zelfs vóór login() klaar is. Wie het eerst komt draait
+       het; de rest is een no-op. SIGNED_OUT zet de vlag weer terug. */
+    if (!this.user || this._loggedInFor === this.user.id) return;
+    this._loggedInFor = this.user.id;
     await this.ensureProfile();
     await this.loadCloudSave();
     if (window.UI && UI.afterNetLogin) UI.afterNetLogin();
@@ -201,7 +223,8 @@ const Net = {
     const row = { id: this.user.id, updated_at: new Date().toISOString() };
     if (nick) row.nickname = nick;   // alleen zetten als we een naam hebben (bestaande naam niet wissen)
     try {
-      await this.sb.from('game_profiles').upsert(row, { onConflict: 'id' });
+      const { error } = await this.sb.from('game_profiles').upsert(row, { onConflict: 'id' });
+      if (error) console.warn('[Net] ensureProfile', error);   // upsert gooit niet, dus zelf checken
     } catch (e) { console.warn('[Net] ensureProfile', e); }
   },
 
@@ -213,8 +236,10 @@ const Net = {
     if (!this.user) throw new Error('Je bent niet ingelogd.');
     const { error: e1 } = await this.sb.auth.updateUser({ data: { nickname: nick } });
     if (e1) throw e1;
+    // upsert i.p.v. update: bestond de profielrij niet, dan raakte UPDATE 0 rijen zonder
+    // fout en landde de naam nergens -> speler onvindbaar voor vrienden
     const { error: e2 } = await this.sb.from('game_profiles')
-      .update({ nickname: nick, updated_at: new Date().toISOString() }).eq('id', this.user.id);
+      .upsert({ id: this.user.id, nickname: nick, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if (e2) throw e2;
     if (this.user.user_metadata) this.user.user_metadata.nickname = nick;
     this._refreshUI();
@@ -647,21 +672,17 @@ const Net = {
     this.train = null;
   },
 
-  /* Een websocket kan op mobiel STIL sterven: geen close-event, er komt alleen niets
-     meer door. Phoenix merkt dat pas als bij de volgende hartslag het antwoord op de
-     vorige ontbreekt — tot 2x de heartbeat, dus tientallen seconden. Dat is precies wat
-     de iOS-app deed: de match werd al gestaakt voordat de socket dood verklaard was.
-     De game weet het veel eerder (de tegenstander stuurt niets meer), en trapt dan hier
-     zelf een nieuwe verbinding af. */
-  pokeRealtime() {
+  /* Verbinding opnieuw opzetten na terugkomst uit de achtergrond (iOS bevriest de socket).
+     Bewust NIET meer gekoppeld aan stilte van de tegenstander: dat gaf op mobiel een lus
+     waarin beide spelers elkaar bleven herverbinden. Liveness meet de heartbeat (3s). */
+  reconnectRealtime() {
     const now = Date.now();
-    if (now - (this._pokeAt || 0) < 3000) return false;      // niet blijven rammen
-    this._pokeAt = now;
+    if (now - (this._reconnectAt || 0) < 3000) return false;
+    this._reconnectAt = now;
     const rt = this.sb && this.sb.realtime;
     if (!rt) return false;
     try { rt.disconnect(); } catch (e) {}
     try { rt.connect(); } catch (e) {}
-    // kanaal opnieuw aanhaken als phoenix dat niet uit zichzelf doet
     const v = this.versus;
     if (v && v.channel && !v.leaving) {
       setTimeout(() => {
